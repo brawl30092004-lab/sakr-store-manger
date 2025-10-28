@@ -12,9 +12,14 @@ function MainContent({ selectedCategory }) {
 
     // Category Filter
     if (selectedCategory && selectedCategory !== 'all') {
-      result = result.filter(product => 
-        product.category.toLowerCase() === selectedCategory.toLowerCase()
-      );
+      result = result.filter(product => {
+        // Convert category ID back to category name for comparison
+        // Category ID format: "electronics" -> Category name: "Electronics"
+        // We need to match against the actual product.category value
+        const categoryId = selectedCategory.toLowerCase().replace(/\s+/g, '-');
+        const productCategoryId = product.category.toLowerCase().replace(/\s+/g, '-');
+        return productCategoryId === categoryId;
+      });
     }
 
     // Search Filter

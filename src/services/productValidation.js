@@ -154,6 +154,193 @@ export function validateProductPrice(price) {
 }
 
 /**
+ * Validate product description
+ * Must support English, Arabic, and mixed text with multiline support
+ * 
+ * @param {string} description - The product description to validate
+ * @returns {{valid: boolean, error: string|null}}
+ */
+export function validateProductDescription(description) {
+  // Must be a string
+  if (typeof description !== 'string') {
+    return {
+      valid: false,
+      error: 'Description must be a string'
+    };
+  }
+  
+  // Min 10 characters (after trimming)
+  const trimmedDescription = description.trim();
+  if (trimmedDescription.length < 10) {
+    return {
+      valid: false,
+      error: 'Description must be at least 10 characters long'
+    };
+  }
+  
+  // Max 1000 characters (before trimming)
+  if (description.length > 1000) {
+    return {
+      valid: false,
+      error: 'Description must not exceed 1000 characters'
+    };
+  }
+  
+  return { valid: true, error: null };
+}
+
+/**
+ * Validate product category
+ * Categories are case-sensitive and custom categories are allowed
+ * 
+ * @param {string} category - The product category to validate
+ * @returns {{valid: boolean, error: string|null}}
+ */
+export function validateProductCategory(category) {
+  // Must be a string
+  if (typeof category !== 'string') {
+    return {
+      valid: false,
+      error: 'Category must be a string'
+    };
+  }
+  
+  // Min 2 characters (after trimming)
+  const trimmedCategory = category.trim();
+  if (trimmedCategory.length < 2) {
+    return {
+      valid: false,
+      error: 'Category must be at least 2 characters long'
+    };
+  }
+  
+  // Max 50 characters (before trimming)
+  if (category.length > 50) {
+    return {
+      valid: false,
+      error: 'Category must not exceed 50 characters'
+    };
+  }
+  
+  return { valid: true, error: null };
+}
+
+/**
+ * Validate product discount flag
+ * 
+ * @param {boolean} discount - The discount flag to validate
+ * @returns {{valid: boolean, error: string|null}}
+ */
+export function validateProductDiscount(discount) {
+  // Must be a boolean
+  if (typeof discount !== 'boolean') {
+    return {
+      valid: false,
+      error: 'Discount must be a boolean (true or false)'
+    };
+  }
+  
+  return { valid: true, error: null };
+}
+
+/**
+ * Validate product discounted price
+ * Must be less than regular price when discount is true
+ * 
+ * @param {number} discountedPrice - The discounted price to validate
+ * @param {number} regularPrice - The regular price for comparison
+ * @param {boolean} discount - Whether discount is active
+ * @returns {{valid: boolean, error: string|null}}
+ */
+export function validateProductDiscountedPrice(discountedPrice, regularPrice, discount) {
+  // Must be a number
+  if (typeof discountedPrice !== 'number' || isNaN(discountedPrice)) {
+    return {
+      valid: false,
+      error: 'Discounted price must be a valid number'
+    };
+  }
+  
+  // Must be positive (greater than 0)
+  if (discountedPrice <= 0) {
+    return {
+      valid: false,
+      error: 'Discounted price must be greater than 0'
+    };
+  }
+  
+  // Must have maximum 2 decimal places
+  // Convert to string and check decimal places to avoid floating point issues
+  const priceStr = discountedPrice.toString();
+  const decimalIndex = priceStr.indexOf('.');
+  
+  if (decimalIndex !== -1) {
+    const decimalPlaces = priceStr.length - decimalIndex - 1;
+    if (decimalPlaces > 2) {
+      return {
+        valid: false,
+        error: 'Discounted price must have exactly 2 decimal places'
+      };
+    }
+  }
+  
+  // When discount is true, discounted price must be less than regular price
+  if (discount === true && regularPrice !== undefined) {
+    if (discountedPrice >= regularPrice) {
+      return {
+        valid: false,
+        error: 'Discounted price must be less than regular price'
+      };
+    }
+  }
+  
+  return { valid: true, error: null };
+}
+
+/**
+ * Validate product stock
+ * Must be a non-negative integer with max value of 9999
+ * 
+ * @param {number} stock - The stock quantity to validate
+ * @returns {{valid: boolean, error: string|null}}
+ */
+export function validateProductStock(stock) {
+  // Must be a number
+  if (typeof stock !== 'number' || isNaN(stock)) {
+    return {
+      valid: false,
+      error: 'Stock must be a valid number'
+    };
+  }
+  
+  // Must be an integer
+  if (!Number.isInteger(stock)) {
+    return {
+      valid: false,
+      error: 'Stock must be an integer'
+    };
+  }
+  
+  // Must be non-negative (0 is allowed)
+  if (stock < 0) {
+    return {
+      valid: false,
+      error: 'Stock cannot be negative'
+    };
+  }
+  
+  // Maximum stock is 9999
+  if (stock > 9999) {
+    return {
+      valid: false,
+      error: 'Stock cannot exceed 9999'
+    };
+  }
+  
+  return { valid: true, error: null };
+}
+
+/**
  * Format price to exactly 2 decimal places
  * Useful for UI display and input formatting
  * 
@@ -165,7 +352,89 @@ export function formatPrice(price) {
 }
 
 /**
- * Validate a complete product object (Part 1: id, name, price)
+ * Truncate text for display in product cards
+ * 
+ * @param {string} text - The text to truncate
+ * @param {number} maxLength - Maximum length before truncation (default: 50)
+ * @returns {string} Truncated text with ellipsis or original text
+ */
+export function truncateText(text, maxLength = 50) {
+  if (typeof text !== 'string') {
+    return '';
+  }
+  
+  if (text.length <= maxLength) {
+    return text;
+  }
+  
+  return text.substring(0, maxLength) + '...';
+}
+
+/**
+ * Extract unique categories from product list
+ * Returns a sorted array of unique category names
+ * 
+ * @param {Array} products - Array of product objects
+ * @returns {Array<string>} Sorted array of unique category names
+ */
+export function getCategoriesFromProducts(products) {
+  if (!Array.isArray(products) || products.length === 0) {
+    return [];
+  }
+  
+  const categorySet = new Set();
+  
+  products.forEach(product => {
+    if (product.category && typeof product.category === 'string') {
+      categorySet.add(product.category);
+    }
+  });
+  
+  return Array.from(categorySet).sort();
+}
+
+/**
+ * Get stock status based on stock quantity
+ * Returns status object with message, level, and color for UI display
+ * 
+ * @param {number} stock - The stock quantity
+ * @returns {{message: string, level: string, color: string}}
+ */
+export function getStockStatus(stock) {
+  if (typeof stock !== 'number' || isNaN(stock) || stock < 0) {
+    return {
+      message: 'Invalid stock',
+      level: 'error',
+      color: 'gray'
+    };
+  }
+  
+  if (stock === 0) {
+    return {
+      message: 'Out of Stock',
+      level: 'danger',
+      color: 'red'
+    };
+  }
+  
+  if (stock > 0 && stock <= 10) {
+    return {
+      message: `Only ${stock} left`,
+      level: 'warning',
+      color: 'orange'
+    };
+  }
+  
+  // stock > 10
+  return {
+    message: 'In Stock',
+    level: 'success',
+    color: 'green'
+  };
+}
+
+/**
+ * Validate a complete product object
  * 
  * @param {Object} product - The product object to validate
  * @param {Array} existingProducts - Array of existing products
@@ -201,6 +470,66 @@ export function validateProduct(product, existingProducts = [], isNew = false) {
     }
   } else {
     errors.price = 'Price is required';
+  }
+  
+  // Validate description
+  if (product.description !== undefined) {
+    const descriptionValidation = validateProductDescription(product.description);
+    if (!descriptionValidation.valid) {
+      errors.description = descriptionValidation.error;
+    }
+  } else {
+    errors.description = 'Description is required';
+  }
+  
+  // Validate category
+  if (product.category !== undefined) {
+    const categoryValidation = validateProductCategory(product.category);
+    if (!categoryValidation.valid) {
+      errors.category = categoryValidation.error;
+    }
+  } else {
+    errors.category = 'Category is required';
+  }
+  
+  // Validate discount
+  if (product.discount !== undefined) {
+    const discountValidation = validateProductDiscount(product.discount);
+    if (!discountValidation.valid) {
+      errors.discount = discountValidation.error;
+    }
+  } else {
+    errors.discount = 'Discount flag is required';
+  }
+  
+  // Validate discountedPrice
+  if (product.discountedPrice !== undefined) {
+    const discountedPriceValidation = validateProductDiscountedPrice(
+      product.discountedPrice,
+      product.price,
+      product.discount
+    );
+    if (!discountedPriceValidation.valid) {
+      errors.discountedPrice = discountedPriceValidation.error;
+    }
+  } else {
+    // DiscountedPrice is required when discount is true
+    if (product.discount === true) {
+      errors.discountedPrice = 'Discounted price is required when discount is true';
+    } else {
+      // When discount is false, discountedPrice should equal price (can be auto-set)
+      errors.discountedPrice = 'Discounted price is required';
+    }
+  }
+  
+  // Validate stock
+  if (product.stock !== undefined) {
+    const stockValidation = validateProductStock(product.stock);
+    if (!stockValidation.valid) {
+      errors.stock = stockValidation.error;
+    }
+  } else {
+    errors.stock = 'Stock is required';
   }
   
   return {
@@ -248,6 +577,63 @@ export const productValidationSchema = {
     },
     currency: 'EGP',
     description: 'Regular price in Egyptian Pounds'
+  },
+  
+  description: {
+    type: 'string',
+    required: true,
+    constraints: {
+      minLength: 10,
+      maxLength: 1000,
+      supportedLanguages: ['English', 'Arabic', 'Mixed'],
+      multiline: true
+    },
+    description: 'Detailed product description'
+  },
+  
+  category: {
+    type: 'string',
+    required: true,
+    constraints: {
+      minLength: 2,
+      maxLength: 50,
+      caseSensitive: true,
+      customAllowed: true
+    },
+    description: 'Product category for filtering'
+  },
+  
+  discount: {
+    type: 'boolean',
+    required: true,
+    constraints: {
+      values: [true, false]
+    },
+    description: 'Flag to indicate if product is on sale'
+  },
+  
+  discountedPrice: {
+    type: 'number',
+    required: 'conditional', // Required when discount = true
+    constraints: {
+      positive: true,
+      decimalPlaces: 2,
+      lessThan: 'price' // Must be less than regular price when discount is true
+    },
+    currency: 'EGP',
+    default: 'price', // Defaults to regular price when discount is false
+    description: 'Sale price when product is discounted'
+  },
+  
+  stock: {
+    type: 'integer',
+    required: true,
+    constraints: {
+      nonNegative: true,
+      min: 0,
+      max: 9999
+    },
+    description: 'Available inventory quantity'
   }
 };
 
@@ -257,7 +643,15 @@ export default {
   validateProductId,
   validateProductName,
   validateProductPrice,
+  validateProductDescription,
+  validateProductCategory,
+  validateProductDiscount,
+  validateProductDiscountedPrice,
+  validateProductStock,
   validateProduct,
   formatPrice,
+  truncateText,
+  getCategoriesFromProducts,
+  getStockStatus,
   productValidationSchema
 };

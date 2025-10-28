@@ -1,13 +1,29 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useSelector } from 'react-redux';
+import { getCategoriesFromProducts } from '../services/productValidation';
 import './Sidebar.css';
 
 function Sidebar({ selectedCategory, onCategorySelect }) {
-  const categories = [
-    { id: 'all', name: 'All', icon: '📦', count: 23 },
-    { id: 'apparel', name: 'Apparel', icon: '👕', count: 0 },
-    { id: 'home', name: 'Home Goods', icon: '🏠', count: 0 },
-    { id: 'accessories', name: 'Accessories', icon: '💼', count: 0 },
-  ];
+  const { items: products } = useSelector((state) => state.products);
+
+  // Generate dynamic categories from products
+  const dynamicCategories = useMemo(() => {
+    const categoryNames = getCategoriesFromProducts(products);
+    return categoryNames.map(categoryName => ({
+      id: categoryName.toLowerCase().replace(/\s+/g, '-'),
+      name: categoryName,
+      icon: '�',
+      count: products.filter(p => p.category === categoryName).length
+    }));
+  }, [products]);
+
+  // Add "All" category at the beginning
+  const categories = useMemo(() => {
+    return [
+      { id: 'all', name: 'All', icon: '📦', count: products.length },
+      ...dynamicCategories
+    ];
+  }, [dynamicCategories, products.length]);
 
   const filters = [
     { id: 'featured', name: 'Featured', icon: '⭐' },
