@@ -1,6 +1,21 @@
 import { generateNextProductId, validateProduct } from './productValidation.js';
 
 /**
+ * Ensure product.image is synced with images.primary for backward compatibility
+ * @param {Object} product - Product object to process
+ * @returns {Object} Product with synced image field
+ */
+function syncLegacyImageField(product) {
+  if (product.images && product.images.primary) {
+    return {
+      ...product,
+      image: product.images.primary
+    };
+  }
+  return product;
+}
+
+/**
  * ProductService - Handles all file system interactions with products.json
  * Uses Electron IPC to communicate with the main process for file operations
  */
@@ -30,13 +45,16 @@ class ProductService {
 
   /**
    * Save products to products.json
+   * Automatically syncs the legacy image field with images.primary
    * @param {Array} products - Array of product objects to save
    * @returns {Promise<void>}
    * @throws {Error} If writing fails
    */
   async saveProducts(products) {
     try {
-      await window.electron.fs.saveProducts(this.projectPath, products);
+      // Sync legacy image field for all products before saving
+      const productsWithSyncedImages = products.map(product => syncLegacyImageField(product));
+      await window.electron.fs.saveProducts(this.projectPath, productsWithSyncedImages);
     } catch (error) {
       console.error('ProductService: Error saving products', error);
       throw error;
@@ -45,6 +63,7 @@ class ProductService {
 
   /**
    * Add a new product
+   * Automatically syncs the legacy image field with images.primary
    * @param {Object} product - Product object to add (without ID)
    * @returns {Promise<Array>} Updated products array
    * @throws {Error} If validation fails
@@ -55,11 +74,11 @@ class ProductService {
     // Generate the next unique ID
     const newId = generateNextProductId(products);
     
-    // Create the new product with generated ID
-    const newProduct = {
+    // Create the new product with generated ID and synced image field
+    const newProduct = syncLegacyImageField({
       ...product,
       id: newId
-    };
+    });
     
     // Validate the new product
     const validation = validateProduct(newProduct, products, true);
@@ -77,6 +96,7 @@ class ProductService {
 
   /**
    * Update an existing product
+   * Automatically syncs the legacy image field with images.primary
    * @param {string} id - Product ID to update
    * @param {Object} updatedProduct - Updated product data (ID cannot be changed)
    * @returns {Promise<Array>} Updated products array
@@ -90,12 +110,12 @@ class ProductService {
       throw new Error(`Product with ID ${id} not found`);
     }
     
-    // Ensure ID is not changed
-    const productToUpdate = {
+    // Ensure ID is not changed and sync image field
+    const productToUpdate = syncLegacyImageField({
       ...products[index],
       ...updatedProduct,
       id: products[index].id // Preserve original ID (immutable)
-    };
+    });
     
     // Validate the updated product
     const validation = validateProduct(productToUpdate, products, false);

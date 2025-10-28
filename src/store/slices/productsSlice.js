@@ -2,6 +2,27 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import ProductService from '../../services/productService';
 
 /**
+ * Default Product Object Template
+ * Used as the starting point for creating new products
+ */
+export const defaultProduct = {
+  id: 0,                    // Will be auto-generated
+  name: "",
+  price: 0.00,
+  description: "",
+  image: "",                // Auto-populated from images.primary
+  images: {
+    primary: "",
+    gallery: []
+  },
+  category: "Apparel",      // Or the first category in the list
+  discount: false,
+  discountedPrice: 0.00,
+  stock: 0,
+  isNew: true               // New products are marked as "New" by default
+};
+
+/**
  * Async thunk to load products from products.json
  */
 export const loadProducts = createAsyncThunk(

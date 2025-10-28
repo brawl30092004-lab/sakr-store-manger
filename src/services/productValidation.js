@@ -341,6 +341,129 @@ export function validateProductStock(stock) {
 }
 
 /**
+ * Validate product images object
+ * Must have a primary image and optional gallery array
+ * 
+ * @param {Object} images - The images object to validate
+ * @returns {{valid: boolean, error: string|null}}
+ */
+export function validateProductImages(images) {
+  // Must be an object
+  if (typeof images !== 'object' || images === null || Array.isArray(images)) {
+    return {
+      valid: false,
+      error: 'Images must be an object'
+    };
+  }
+  
+  // Must have primary property
+  if (!images.hasOwnProperty('primary')) {
+    return {
+      valid: false,
+      error: 'Images object must have a primary property'
+    };
+  }
+  
+  // Validate primary image
+  const primaryValidation = validateProductImagePrimary(images.primary);
+  if (!primaryValidation.valid) {
+    return primaryValidation;
+  }
+  
+  // Validate gallery if present
+  if (images.hasOwnProperty('gallery')) {
+    const galleryValidation = validateProductImageGallery(images.gallery);
+    if (!galleryValidation.valid) {
+      return galleryValidation;
+    }
+  }
+  
+  return { valid: true, error: null };
+}
+
+/**
+ * Validate product primary image
+ * Must be a non-empty string (relative file path)
+ * 
+ * @param {string} primary - The primary image path to validate
+ * @returns {{valid: boolean, error: string|null}}
+ */
+export function validateProductImagePrimary(primary) {
+  // Must be a string
+  if (typeof primary !== 'string') {
+    return {
+      valid: false,
+      error: 'Primary image must be a string'
+    };
+  }
+  
+  // Cannot be empty
+  if (primary.trim().length === 0) {
+    return {
+      valid: false,
+      error: 'Primary image cannot be empty'
+    };
+  }
+  
+  return { valid: true, error: null };
+}
+
+/**
+ * Validate product image gallery
+ * Must be an array of strings with max 10 images
+ * 
+ * @param {Array} gallery - The gallery array to validate
+ * @returns {{valid: boolean, error: string|null}}
+ */
+export function validateProductImageGallery(gallery) {
+  // Must be an array
+  if (!Array.isArray(gallery)) {
+    return {
+      valid: false,
+      error: 'Gallery must be an array'
+    };
+  }
+  
+  // Max 10 images
+  if (gallery.length > 10) {
+    return {
+      valid: false,
+      error: 'Gallery cannot exceed 10 images'
+    };
+  }
+  
+  // Each element must be a string
+  for (let i = 0; i < gallery.length; i++) {
+    if (typeof gallery[i] !== 'string') {
+      return {
+        valid: false,
+        error: `Gallery image at index ${i} must be a string`
+      };
+    }
+  }
+  
+  return { valid: true, error: null };
+}
+
+/**
+ * Validate product isNew flag
+ * 
+ * @param {boolean} isNew - The isNew flag to validate
+ * @returns {{valid: boolean, error: string|null}}
+ */
+export function validateProductIsNew(isNew) {
+  // Must be a boolean
+  if (typeof isNew !== 'boolean') {
+    return {
+      valid: false,
+      error: 'isNew must be a boolean (true or false)'
+    };
+  }
+  
+  return { valid: true, error: null };
+}
+
+/**
  * Format price to exactly 2 decimal places
  * Useful for UI display and input formatting
  * 
@@ -532,6 +655,26 @@ export function validateProduct(product, existingProducts = [], isNew = false) {
     errors.stock = 'Stock is required';
   }
   
+  // Validate images
+  if (product.images !== undefined) {
+    const imagesValidation = validateProductImages(product.images);
+    if (!imagesValidation.valid) {
+      errors.images = imagesValidation.error;
+    }
+  } else {
+    errors.images = 'Images object is required';
+  }
+  
+  // Validate isNew
+  if (product.isNew !== undefined) {
+    const isNewValidation = validateProductIsNew(product.isNew);
+    if (!isNewValidation.valid) {
+      errors.isNew = isNewValidation.error;
+    }
+  } else {
+    errors.isNew = 'isNew flag is required';
+  }
+  
   return {
     valid: Object.keys(errors).length === 0,
     errors
@@ -634,6 +777,52 @@ export const productValidationSchema = {
       max: 9999
     },
     description: 'Available inventory quantity'
+  },
+  
+  images: {
+    type: 'object',
+    required: true,
+    properties: {
+      primary: {
+        type: 'string',
+        required: true,
+        constraints: {
+          noEmptyWhitespace: true
+        },
+        description: 'Main product image (relative file path)'
+      },
+      gallery: {
+        type: 'array',
+        required: false,
+        default: [],
+        constraints: {
+          maxLength: 10,
+          elementType: 'string'
+        },
+        description: 'Additional product images (array of file paths)'
+      }
+    },
+    description: 'Modern image management system'
+  },
+  
+  image: {
+    type: 'string',
+    required: false, // Optional but recommended
+    autoPopulated: true,
+    constraints: {
+      syncWith: 'images.primary'
+    },
+    description: 'Legacy fallback image path (auto-populated from images.primary)'
+  },
+  
+  isNew: {
+    type: 'boolean',
+    required: true,
+    default: true, // New products are marked as "New" by default
+    constraints: {
+      values: [true, false]
+    },
+    description: 'Flag to mark product as new/featured'
   }
 };
 
@@ -648,6 +837,10 @@ export default {
   validateProductDiscount,
   validateProductDiscountedPrice,
   validateProductStock,
+  validateProductImages,
+  validateProductImagePrimary,
+  validateProductImageGallery,
+  validateProductIsNew,
   validateProduct,
   formatPrice,
   truncateText,
