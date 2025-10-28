@@ -1,5 +1,6 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs-extra');
 
 let mainWindow;
 
@@ -29,6 +30,42 @@ function createWindow() {
     mainWindow = null;
   });
 }
+
+// IPC Handlers for File System Operations
+ipcMain.handle('fs:loadProducts', async (event, projectPath) => {
+  try {
+    const productsFilePath = path.join(projectPath, 'products.json');
+    
+    // Check if file exists
+    const exists = await fs.pathExists(productsFilePath);
+    
+    if (!exists) {
+      // Create empty products.json
+      await fs.writeJSON(productsFilePath, [], { spaces: 2, encoding: 'utf8' });
+      return [];
+    }
+    
+    // Read and parse products.json with UTF-8 encoding
+    const products = await fs.readJSON(productsFilePath, { encoding: 'utf8' });
+    return products;
+  } catch (error) {
+    console.error('Error loading products:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('fs:saveProducts', async (event, projectPath, products) => {
+  try {
+    const productsFilePath = path.join(projectPath, 'products.json');
+    
+    // Write products.json with 2-space indentation and UTF-8 encoding
+    await fs.writeJSON(productsFilePath, products, { spaces: 2, encoding: 'utf8' });
+    return true;
+  } catch (error) {
+    console.error('Error saving products:', error);
+    throw error;
+  }
+});
 
 // Create window when app is ready
 app.whenReady().then(() => {
