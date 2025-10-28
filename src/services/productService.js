@@ -1,3 +1,5 @@
+import { generateNextProductId, validateProduct } from './productValidation.js';
+
 /**
  * ProductService - Handles all file system interactions with products.json
  * Uses Electron IPC to communicate with the main process for file operations
@@ -43,12 +45,32 @@ class ProductService {
 
   /**
    * Add a new product
-   * @param {Object} product - Product object to add
+   * @param {Object} product - Product object to add (without ID)
    * @returns {Promise<Array>} Updated products array
+   * @throws {Error} If validation fails
    */
   async addProduct(product) {
     const products = await this.loadProducts();
-    products.push(product);
+    
+    // Generate the next unique ID
+    const newId = generateNextProductId(products);
+    
+    // Create the new product with generated ID
+    const newProduct = {
+      ...product,
+      id: newId
+    };
+    
+    // Validate the new product
+    const validation = validateProduct(newProduct, products, true);
+    if (!validation.valid) {
+      const errorMessages = Object.entries(validation.errors)
+        .map(([field, error]) => `${field}: ${error}`)
+        .join(', ');
+      throw new Error(`Product validation failed: ${errorMessages}`);
+    }
+    
+    products.push(newProduct);
     await this.saveProducts(products);
     return products;
   }
@@ -56,16 +78,36 @@ class ProductService {
   /**
    * Update an existing product
    * @param {string} id - Product ID to update
-   * @param {Object} updatedProduct - Updated product data
+   * @param {Object} updatedProduct - Updated product data (ID cannot be changed)
    * @returns {Promise<Array>} Updated products array
+   * @throws {Error} If validation fails or product not found
    */
   async updateProduct(id, updatedProduct) {
     const products = await this.loadProducts();
     const index = products.findIndex(p => p.id === id);
-    if (index !== -1) {
-      products[index] = { ...products[index], ...updatedProduct };
-      await this.saveProducts(products);
+    
+    if (index === -1) {
+      throw new Error(`Product with ID ${id} not found`);
     }
+    
+    // Ensure ID is not changed
+    const productToUpdate = {
+      ...products[index],
+      ...updatedProduct,
+      id: products[index].id // Preserve original ID (immutable)
+    };
+    
+    // Validate the updated product
+    const validation = validateProduct(productToUpdate, products, false);
+    if (!validation.valid) {
+      const errorMessages = Object.entries(validation.errors)
+        .map(([field, error]) => `${field}: ${error}`)
+        .join(', ');
+      throw new Error(`Product validation failed: ${errorMessages}`);
+    }
+    
+    products[index] = productToUpdate;
+    await this.saveProducts(products);
     return products;
   }
 
