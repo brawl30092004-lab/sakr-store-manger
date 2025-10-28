@@ -1,7 +1,7 @@
 import React from 'react';
 import './Sidebar.css';
 
-function Sidebar() {
+function Sidebar({ selectedCategory, onCategorySelect }) {
   const categories = [
     { id: 'all', name: 'All', icon: '📦', count: 23 },
     { id: 'apparel', name: 'Apparel', icon: '👕', count: 0 },
@@ -21,7 +21,11 @@ function Sidebar() {
         <div className="sidebar-divider"></div>
         <ul className="sidebar-list">
           {categories.map((category) => (
-            <li key={category.id} className="sidebar-item">
+            <li 
+              key={category.id} 
+              className={`sidebar-item ${selectedCategory === category.id ? 'active' : ''}`}
+              onClick={() => onCategorySelect(category.id)}
+            >
               <span className="sidebar-icon">{category.icon}</span>
               <span className="sidebar-label">{category.name}</span>
               {category.count !== undefined && (

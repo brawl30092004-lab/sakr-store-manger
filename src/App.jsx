@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { loadProducts } from './store/slices/productsSlice';
 import Sidebar from './components/Sidebar';
@@ -10,6 +10,7 @@ function App() {
   const dispatch = useDispatch();
   const { items: products, loading, error } = useSelector((state) => state.products);
   const { projectPath } = useSelector((state) => state.settings);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
     // Load products on app startup
@@ -44,8 +45,11 @@ function App() {
       </nav>
 
       <div className="app-body">
-        <Sidebar />
-        <MainContent />
+        <Sidebar 
+          selectedCategory={selectedCategory}
+          onCategorySelect={setSelectedCategory}
+        />
+        <MainContent selectedCategory={selectedCategory} />
       </div>
 
       <StatusBar />
