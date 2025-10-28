@@ -1,0 +1,26 @@
+.main-content {
+  flex: 1;
+  background-color: #ffffff;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.main-content-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #666;
+}
+
+.main-content-placeholder h2 {
+  font-size: 24px;
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.main-content-placeholder p {
+  font-size: 14px;
+  margin: 0;
+}
