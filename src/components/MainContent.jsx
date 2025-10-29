@@ -4,6 +4,7 @@ import { addProduct, updateProduct, deleteProduct, duplicateProduct } from '../s
 import { defaultProduct } from '../store/slices/productsSlice';
 import ProductForm from './ProductForm';
 import ProductImage from './ProductImage';
+import ExportDialog from './ExportDialog';
 import './MainContent.css';
 
 const MainContent = forwardRef(({ selectedCategory }, ref) => {
@@ -12,6 +13,7 @@ const MainContent = forwardRef(({ selectedCategory }, ref) => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [selectedProductId, setSelectedProductId] = useState(null);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const { items: products, loading, error } = useSelector((state) => state.products);
   const dispatch = useDispatch();
   
@@ -158,6 +160,14 @@ const MainContent = forwardRef(({ selectedCategory }, ref) => {
         >
           + New Product
         </button>
+        
+        <button 
+          className="btn-export"
+          onClick={() => setIsExportDialogOpen(true)}
+          title="Export products to organized folder structure"
+        >
+          📦 Export Products
+        </button>
       </div>
 
       {/* Search Bar */}
@@ -274,6 +284,12 @@ const MainContent = forwardRef(({ selectedCategory }, ref) => {
           </div>
         </div>
       )}
+      
+      {/* Export Dialog */}
+      <ExportDialog 
+        isOpen={isExportDialogOpen}
+        onClose={() => setIsExportDialogOpen(false)}
+      />
     </div>
   );
 });

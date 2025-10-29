@@ -16,6 +16,15 @@ contextBridge.exposeInMainWorld('electron', {
     loadProducts: (projectPath) => ipcRenderer.invoke('fs:loadProducts', projectPath),
     saveProducts: (projectPath, products) => ipcRenderer.invoke('fs:saveProducts', projectPath, products),
     getImagePath: (projectPath, relativePath) => ipcRenderer.invoke('fs:getImagePath', projectPath, relativePath),
+    joinPath: (...parts) => ipcRenderer.invoke('fs:joinPath', ...parts),
+  },
+
+  // Export API
+  export: {
+    createDirectory: (dirPath) => ipcRenderer.invoke('export:createDirectory', dirPath),
+    fileExists: (filePath) => ipcRenderer.invoke('export:fileExists', filePath),
+    copyFile: (sourcePath, targetPath) => ipcRenderer.invoke('export:copyFile', sourcePath, targetPath),
+    saveJSON: (filePath, data) => ipcRenderer.invoke('export:saveJSON', filePath, data),
   },
 
   // Image Processing API

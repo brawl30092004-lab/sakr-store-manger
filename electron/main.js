@@ -658,6 +658,71 @@ ipcMain.handle('app:getVersion', () => {
   return app.getVersion();
 });
 
+// Export Service Handlers
+
+/**
+ * Create directory (recursive)
+ */
+ipcMain.handle('export:createDirectory', async (event, dirPath) => {
+  try {
+    await fs.ensureDir(dirPath);
+    return { success: true };
+  } catch (error) {
+    console.error('Error creating directory:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+/**
+ * Check if file exists
+ */
+ipcMain.handle('export:fileExists', async (event, filePath) => {
+  try {
+    return await fs.pathExists(filePath);
+  } catch (error) {
+    console.error('Error checking file existence:', error);
+    return false;
+  }
+});
+
+/**
+ * Copy file
+ */
+ipcMain.handle('export:copyFile', async (event, sourcePath, targetPath) => {
+  try {
+    await fs.copy(sourcePath, targetPath, { overwrite: true });
+    return { success: true };
+  } catch (error) {
+    console.error('Error copying file:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+/**
+ * Save JSON file
+ */
+ipcMain.handle('export:saveJSON', async (event, filePath, data) => {
+  try {
+    await fs.writeJSON(filePath, data, { spaces: 2, encoding: 'utf8' });
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving JSON:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+/**
+ * Join file paths
+ */
+ipcMain.handle('fs:joinPath', async (event, ...parts) => {
+  try {
+    return path.join(...parts);
+  } catch (error) {
+    console.error('Error joining paths:', error);
+    throw error;
+  }
+});
+
 // Create window when app is ready
 app.whenReady().then(() => {
   // Register custom protocol to serve local images

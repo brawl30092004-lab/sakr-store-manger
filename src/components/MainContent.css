@@ -11,6 +11,7 @@
 .toolbar {
   display: flex;
   justify-content: flex-end;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
@@ -34,6 +35,29 @@
 }
 
 .btn-new-product:active {
+  transform: scale(0.98);
+}
+
+.btn-export {
+  background-color: #1f6feb;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-export:hover {
+  background-color: #388bfd;
+}
+
+.btn-export:active {
   transform: scale(0.98);
 }
 
