@@ -383,7 +383,7 @@ ipcMain.handle('settings:testConnection', async (event, config) => {
     const configService = getConfigService();
     
     // Get the full config with decrypted token
-    let fullConfig = configService.getConfigWithToken();
+    let fullConfig = configService.getConfigWithToken() || {};
     
     // If a new token is provided, use it instead
     if (config.token && config.token !== '••••••••') {
@@ -439,8 +439,8 @@ ipcMain.handle('git:getStatus', async (event) => {
     const configService = getConfigService();
     const config = configService.getConfigWithToken();
     
-    // Validate we have a project path
-    if (!config.projectPath) {
+    // Validate we have config and a project path
+    if (!config || !config.projectPath) {
       return {
         success: false,
         message: 'No project path configured',
@@ -483,8 +483,8 @@ ipcMain.handle('git:publish', async (event, commitMessage = null) => {
     const configService = getConfigService();
     const config = configService.getConfigWithToken();
     
-    // Validate we have a project path
-    if (!config.projectPath) {
+    // Validate we have config and a project path
+    if (!config || !config.projectPath) {
       return {
         success: false,
         message: 'No project path configured. Please configure your project in Settings.'

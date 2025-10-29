@@ -84,7 +84,7 @@ class ConfigService {
     try {
       // Check if config file exists
       if (!existsSync(this.configFilePath)) {
-        console.log('Configuration file not found:', this.configFilePath);
+        // Config file doesn't exist yet - this is normal on first run
         return null;
       }
 
