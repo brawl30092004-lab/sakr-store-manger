@@ -11,6 +11,7 @@ function StatusBar() {
     message: 'Ready'
   });
   const [isPublishing, setIsPublishing] = useState(false);
+  const [publishError, setPublishError] = useState(null);
   const statusCheckInterval = useRef(null);
 
   // Check git status on component mount and set up periodic checks
@@ -82,20 +83,40 @@ function StatusBar() {
     }
 
     setIsPublishing(true);
+    setPublishError(null);
     
     try {
-      // TODO: Implement publish functionality
-      console.log('Publishing to GitHub...');
+      console.log('Publishing changes to GitHub...');
       
-      // Placeholder for actual publish logic
-      // This will be implemented in the next phase
-      setTimeout(() => {
-        alert('Publish functionality will be implemented in the next phase');
-        setIsPublishing(false);
-      }, 1000);
+      // Call the publish API
+      const result = await window.electron.publishToGitHub();
+      
+      if (result.success) {
+        // Success - show notification
+        alert(`✓ ${result.message}\n\nCommit: ${result.commitMessage || 'Changes published'}\nBranch: ${result.branch || 'main'}`);
+        
+        // Refresh git status to update the UI
+        await checkGitStatus();
+      } else {
+        // Failed - show error
+        setPublishError(result.message || 'Failed to publish changes');
+        
+        // Provide more detailed error information
+        let errorDetails = result.message;
+        if (result.step) {
+          errorDetails += `\n\nFailed at step: ${result.step}`;
+        }
+        if (result.error && result.error !== result.message) {
+          errorDetails += `\n\nDetails: ${result.error}`;
+        }
+        
+        alert(`✗ Publish Failed\n\n${errorDetails}`);
+      }
     } catch (error) {
       console.error('Failed to publish:', error);
-      alert(`Failed to publish: ${error.message}`);
+      setPublishError(error.message || 'An unexpected error occurred');
+      alert(`✗ Publish Failed\n\n${error.message}`);
+    } finally {
       setIsPublishing(false);
     }
   };
@@ -104,21 +125,32 @@ function StatusBar() {
     <div className="status-bar">
       <div className="status-message">
         <span className={`status-indicator ${gitStatus.hasChanges ? 'changes' : 'ready'}`}></span>
-        <span>{gitStatus.message}</span>
-        {gitStatus.hasChanges && gitStatus.totalChanges > 0 && (
+        <span>{isPublishing ? 'Publishing...' : gitStatus.message}</span>
+        {gitStatus.hasChanges && gitStatus.totalChanges > 0 && !isPublishing && (
           <span className="status-details">
             {gitStatus.modified > 0 && ` • ${gitStatus.modified} modified`}
             {gitStatus.created > 0 && ` • ${gitStatus.created} added`}
             {gitStatus.deleted > 0 && ` • ${gitStatus.deleted} deleted`}
           </span>
         )}
+        {publishError && (
+          <span className="status-error"> • Error: {publishError}</span>
+        )}
       </div>
       <button 
-        className="publish-btn" 
+        className={`publish-btn ${isPublishing ? 'publishing' : ''}`}
         disabled={!gitStatus.hasChanges || isPublishing}
         onClick={handlePublish}
+        title={gitStatus.hasChanges ? 'Publish all changes to GitHub' : 'No changes to publish'}
       >
-        {isPublishing ? 'Publishing...' : 'Publish to GitHub'}
+        {isPublishing ? (
+          <>
+            <span className="spinner"></span>
+            Publishing...
+          </>
+        ) : (
+          'Publish to GitHub'
+        )}
       </button>
     </div>
   );

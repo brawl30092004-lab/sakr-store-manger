@@ -22,6 +22,12 @@
   margin-left: 4px;
 }
 
+.status-error {
+  color: #F44336;
+  font-size: 12px;
+  margin-left: 4px;
+}
+
 .status-indicator {
   width: 10px;
   height: 10px;
@@ -64,6 +70,9 @@
   font-size: 13px;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .publish-btn:hover:not(:disabled) {
@@ -74,4 +83,25 @@
   background-color: #555;
   color: #999;
   cursor: not-allowed;
+}
+
+.publish-btn.publishing {
+  background-color: #106ebe;
+  cursor: wait;
+}
+
+/* Spinner animation for publishing state */
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

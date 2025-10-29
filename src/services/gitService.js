@@ -262,6 +262,320 @@ class GitService {
       throw new Error(`Failed to pull: ${error.message}`);
     }
   }
+
+  /**
+   * Pulls the latest changes from the remote repository
+   * Executes fetch and pull to ensure we're up-to-date before committing
+   * @param {string} branch - Branch name (defaults to current branch)
+   * @returns {Promise<Object>} - Result object with success status and details
+   */
+  async pullLatestChanges(branch = null) {
+    try {
+      // Get current branch if not specified
+      if (!branch) {
+        const status = await this.git.status();
+        branch = status.current;
+      }
+
+      console.log(`Pulling latest changes from origin/${branch}...`);
+
+      // Fetch latest changes from remote
+      await this.git.fetch('origin');
+
+      // Pull changes from the specified branch
+      const pullResult = await this.git.pull('origin', branch);
+
+      // Check for conflicts
+      if (pullResult.summary.conflicts.length > 0) {
+        return {
+          success: false,
+          error: 'Merge conflicts detected',
+          conflicts: pullResult.summary.conflicts,
+          message: `Merge conflicts found in ${pullResult.summary.conflicts.length} file(s). Please resolve conflicts manually.`
+        };
+      }
+
+      return {
+        success: true,
+        message: pullResult.summary.changes > 0 
+          ? `Pulled ${pullResult.summary.changes} change(s) successfully` 
+          : 'Already up to date',
+        changes: pullResult.summary.changes,
+        insertions: pullResult.summary.insertions,
+        deletions: pullResult.summary.deletions
+      };
+    } catch (error) {
+      console.error('Failed to pull latest changes:', error);
+      
+      // Check for merge conflict errors
+      if (error.message.includes('conflict') || error.message.includes('CONFLICT')) {
+        return {
+          success: false,
+          error: 'Merge conflicts detected',
+          message: 'Merge conflicts detected. Please resolve conflicts manually and try again.'
+        };
+      }
+
+      return {
+        success: false,
+        error: error.message,
+        message: `Failed to pull latest changes: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Stages and commits all changes with a commit message
+   * @param {string} message - Commit message (optional, will auto-generate if not provided)
+   * @returns {Promise<Object>} - Result object with success status and commit details
+   */
+  async commitChanges(message = null) {
+    try {
+      // Get current status to check for changes
+      const status = await this.getStatus();
+
+      if (status.isClean) {
+        return {
+          success: false,
+          error: 'No changes to commit',
+          message: 'There are no changes to commit.'
+        };
+      }
+
+      // Auto-generate commit message if not provided
+      if (!message) {
+        const { modified, created, deleted } = status;
+        const parts = [];
+        
+        if (created > 0) parts.push(`Added ${created} file(s)`);
+        if (modified > 0) parts.push(`Modified ${modified} file(s)`);
+        if (deleted > 0) parts.push(`Deleted ${deleted} file(s)`);
+        
+        message = parts.length > 0 
+          ? `Update products via Store Manager: ${parts.join(', ')}`
+          : 'Update products via Store Manager';
+      }
+
+      console.log(`Committing changes with message: ${message}`);
+
+      // Stage all changes (including new files, modifications, and deletions)
+      await this.git.add('.');
+
+      // Commit the staged changes
+      const commitResult = await this.git.commit(message);
+
+      return {
+        success: true,
+        message: 'Changes committed successfully',
+        commit: commitResult.commit,
+        summary: commitResult.summary,
+        branch: commitResult.branch,
+        commitMessage: message
+      };
+    } catch (error) {
+      console.error('Failed to commit changes:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: `Failed to commit changes: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Pushes changes to GitHub with authentication
+   * Temporarily sets the remote URL with credentials, pushes, then restores the original URL
+   * @param {string} branch - Branch name (defaults to current branch)
+   * @param {string} username - GitHub username (optional, uses config if not provided)
+   * @param {string} token - GitHub token (optional, uses config if not provided)
+   * @returns {Promise<Object>} - Result object with success status and push details
+   */
+  async pushToGitHub(branch = null, username = null, token = null) {
+    let originalRemoteUrl = null;
+
+    try {
+      // Use provided credentials or fall back to config
+      const authUsername = username || this.config.username;
+      const authToken = token || this.config.token;
+
+      // Validate credentials
+      if (!authUsername || !authToken) {
+        return {
+          success: false,
+          error: 'Missing credentials',
+          message: 'GitHub username and token are required for push operations.'
+        };
+      }
+
+      // Get current branch if not specified
+      if (!branch) {
+        const status = await this.git.status();
+        branch = status.current;
+      }
+
+      // Get the current remote URL
+      const remotes = await this.git.getRemotes(true);
+      const originRemote = remotes.find(r => r.name === 'origin');
+      
+      if (!originRemote) {
+        return {
+          success: false,
+          error: 'No remote configured',
+          message: 'No "origin" remote found. Please configure the repository URL in Settings.'
+        };
+      }
+
+      originalRemoteUrl = originRemote.refs.push || originRemote.refs.fetch;
+
+      // Parse the repository URL to extract owner and repo
+      const repoMatch = originalRemoteUrl.match(/github\.com[/:]([\w-]+)\/([\w-]+)/);
+      if (!repoMatch) {
+        return {
+          success: false,
+          error: 'Invalid repository URL',
+          message: 'Could not parse GitHub repository URL.'
+        };
+      }
+
+      const owner = repoMatch[1];
+      const repo = repoMatch[2].replace(/\.git$/, '');
+
+      // Create authenticated remote URL
+      const authenticatedUrl = `https://${authUsername}:${authToken}@github.com/${owner}/${repo}.git`;
+
+      console.log(`Pushing to GitHub: ${owner}/${repo} (branch: ${branch})`);
+
+      // Temporarily set the remote URL with authentication
+      await this.git.remote(['set-url', 'origin', authenticatedUrl]);
+
+      // Push changes
+      const pushResult = await this.git.push('origin', branch);
+
+      // Restore the original remote URL (without credentials)
+      await this.git.remote(['set-url', 'origin', originalRemoteUrl]);
+
+      return {
+        success: true,
+        message: `Successfully pushed to ${owner}/${repo}`,
+        branch,
+        remoteUrl: `https://github.com/${owner}/${repo}`
+      };
+    } catch (error) {
+      console.error('Failed to push to GitHub:', error);
+
+      // Restore the original remote URL if it was changed
+      if (originalRemoteUrl) {
+        try {
+          await this.git.remote(['set-url', 'origin', originalRemoteUrl]);
+        } catch (restoreError) {
+          console.error('Failed to restore original remote URL:', restoreError);
+        }
+      }
+
+      // Parse error message for common issues
+      let errorMessage = error.message;
+      if (error.message.includes('authentication failed') || error.message.includes('401')) {
+        errorMessage = 'Authentication failed. Please check your GitHub username and token.';
+      } else if (error.message.includes('403')) {
+        errorMessage = 'Access forbidden. Your token may not have the necessary permissions.';
+      } else if (error.message.includes('could not resolve host')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      }
+
+      return {
+        success: false,
+        error: error.message,
+        message: `Failed to push to GitHub: ${errorMessage}`
+      };
+    }
+  }
+
+  /**
+   * Publishes all changes to GitHub
+   * Executes the full workflow: pull, commit, and push
+   * @param {string} commitMessage - Custom commit message (optional)
+   * @returns {Promise<Object>} - Result object with success status and detailed information
+   */
+  async publishChanges(commitMessage = null) {
+    const startTime = Date.now();
+    const results = {
+      pull: null,
+      commit: null,
+      push: null
+    };
+
+    try {
+      // Step 1: Pull latest changes
+      console.log('Step 1/3: Pulling latest changes...');
+      results.pull = await this.pullLatestChanges();
+
+      if (!results.pull.success) {
+        return {
+          success: false,
+          error: results.pull.error,
+          message: results.pull.message,
+          step: 'pull',
+          results
+        };
+      }
+
+      // Step 2: Commit changes
+      console.log('Step 2/3: Committing changes...');
+      results.commit = await this.commitChanges(commitMessage);
+
+      if (!results.commit.success) {
+        // If there are no changes to commit, it's not really an error
+        if (results.commit.error === 'No changes to commit') {
+          return {
+            success: true,
+            message: 'Already up to date. No changes to publish.',
+            results
+          };
+        }
+
+        return {
+          success: false,
+          error: results.commit.error,
+          message: results.commit.message,
+          step: 'commit',
+          results
+        };
+      }
+
+      // Step 3: Push to GitHub
+      console.log('Step 3/3: Pushing to GitHub...');
+      results.push = await this.pushToGitHub();
+
+      if (!results.push.success) {
+        return {
+          success: false,
+          error: results.push.error,
+          message: results.push.message,
+          step: 'push',
+          results
+        };
+      }
+
+      // Success!
+      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+      return {
+        success: true,
+        message: `Successfully published changes to GitHub in ${duration}s`,
+        duration,
+        commitMessage: results.commit.commitMessage,
+        branch: results.push.branch,
+        results
+      };
+    } catch (error) {
+      console.error('Publish workflow failed:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: `Publish workflow failed: ${error.message}`,
+        results
+      };
+    }
+  }
 }
 
 export default GitService;

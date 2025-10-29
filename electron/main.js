@@ -419,6 +419,54 @@ ipcMain.handle('git:getStatus', async (event) => {
   }
 });
 
+/**
+ * IPC Handler for publishing changes to GitHub
+ */
+ipcMain.handle('git:publish', async (event, commitMessage = null) => {
+  try {
+    // Dynamically import the ES modules
+    const { getConfigService } = await import('../src/services/configService.js');
+    const GitService = (await import('../src/services/gitService.js')).default;
+    
+    const configService = getConfigService();
+    const config = configService.getConfigWithToken();
+    
+    // Validate we have a project path
+    if (!config.projectPath) {
+      return {
+        success: false,
+        message: 'No project path configured. Please configure your project in Settings.'
+      };
+    }
+
+    // Validate we have GitHub credentials
+    if (!config.username || !config.token || !config.repoUrl) {
+      return {
+        success: false,
+        message: 'GitHub credentials not configured. Please set up your GitHub connection in Settings.'
+      };
+    }
+    
+    // Create GitService instance
+    const gitService = new GitService(config.projectPath, {
+      username: config.username,
+      token: config.token,
+      repoUrl: config.repoUrl
+    });
+    
+    // Execute the publish workflow
+    const result = await gitService.publishChanges(commitMessage);
+    return result;
+  } catch (error) {
+    console.error('Error publishing to GitHub:', error);
+    return {
+      success: false,
+      message: `Failed to publish: ${error.message}`,
+      error: error.message
+    };
+  }
+});
+
 // Create window when app is ready
 app.whenReady().then(() => {
   createWindow();
