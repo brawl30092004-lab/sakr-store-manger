@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electron', {
   fs: {
     loadProducts: (projectPath) => ipcRenderer.invoke('fs:loadProducts', projectPath),
     saveProducts: (projectPath, products) => ipcRenderer.invoke('fs:saveProducts', projectPath, products),
+    getImagePath: (projectPath, relativePath) => ipcRenderer.invoke('fs:getImagePath', projectPath, relativePath),
   },
 
   // Image Processing API

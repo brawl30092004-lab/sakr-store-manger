@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { addProduct, updateProduct, deleteProduct, duplicateProduct } from '../store/slices/productsSlice';
 import { defaultProduct } from '../store/slices/productsSlice';
 import ProductForm from './ProductForm';
+import ProductImage from './ProductImage';
 import './MainContent.css';
 
 const MainContent = forwardRef(({ selectedCategory }, ref) => {
@@ -182,17 +183,7 @@ const MainContent = forwardRef(({ selectedCategory }, ref) => {
           filteredProducts.map((product) => (
             <div key={product.id} className="product-card">
               {/* Product Image */}
-              <div className="product-image">
-                <img 
-                  src={product.image || product.images?.primary || 'placeholder.jpg'} 
-                  alt={product.name}
-                  onError={(e) => {
-                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="18" fill="%23999"%3ENo Image%3C/text%3E%3C/svg%3E';
-                  }}
-                />
-                {product.isNew && <span className="badge badge-new">New</span>}
-                {product.discount && <span className="badge badge-discount">Sale</span>}
-              </div>
+              <ProductImage product={product} />
 
               {/* Product Info */}
               <div className="product-info">

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, protocol } from 'electron';
 import pkg from 'electron-updater';
 const { autoUpdater } = pkg;
 import path from 'path';
@@ -77,6 +77,47 @@ ipcMain.handle('fs:saveProducts', async (event, projectPath, products) => {
   } catch (error) {
     console.error('Error saving products:', error);
     throw error;
+  }
+});
+
+/**
+ * IPC Handler to get absolute path for image
+ * Resolves relative image paths (e.g., "images/product-1.jpg") to absolute paths
+ */
+ipcMain.handle('fs:getImagePath', async (event, projectPath, relativePath) => {
+  try {
+    if (!relativePath) {
+      return null;
+    }
+    
+    // Handle data URLs - return as is
+    if (relativePath.startsWith('data:')) {
+      return relativePath;
+    }
+    
+    // Handle already resolved URLs
+    if (relativePath.startsWith('local-image://') || relativePath.startsWith('file://')) {
+      return relativePath;
+    }
+    
+    // Resolve relative path to absolute path
+    const absolutePath = path.join(projectPath, relativePath);
+    
+    // Check if file exists
+    const exists = await fs.pathExists(absolutePath);
+    
+    if (!exists) {
+      console.warn(`Image not found: ${absolutePath}`);
+      return null;
+    }
+    
+    // Return custom protocol URL that works in both dev and production
+    // Use forward slashes and encode the path
+    const normalizedPath = absolutePath.replace(/\\/g, '/');
+    return `local-image://${normalizedPath}`;
+  } catch (error) {
+    console.error('Error resolving image path:', error);
+    return null;
   }
 });
 
@@ -619,6 +660,27 @@ ipcMain.handle('app:getVersion', () => {
 
 // Create window when app is ready
 app.whenReady().then(() => {
+  // Register custom protocol to serve local images
+  protocol.registerFileProtocol('local-image', (request, callback) => {
+    const url = request.url.replace('local-image://', '');
+    const decodedPath = decodeURIComponent(url);
+    
+    try {
+      // Security check: ensure the path doesn't try to escape using ..
+      const normalizedPath = path.normalize(decodedPath);
+      if (normalizedPath.includes('..')) {
+        console.error('Invalid path - directory traversal detected:', normalizedPath);
+        callback({ error: -6 }); // FILE_NOT_FOUND
+        return;
+      }
+      
+      callback({ path: normalizedPath });
+    } catch (error) {
+      console.error('Error serving image:', error);
+      callback({ error: -6 }); // FILE_NOT_FOUND
+    }
+  });
+  
   // Setup auto-updater
   setupAutoUpdater();
   

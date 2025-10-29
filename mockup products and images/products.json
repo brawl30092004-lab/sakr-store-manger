@@ -24,9 +24,9 @@
     "name": "Modern Coffee Mug",
     "price": 15.5,
     "description": "A stylish ceramic mug with a matte finish.",
-    "image": "images/mug.jpg",
+    "image": "images/product-2-primary.jpg",
     "images": {
-      "primary": "images/mug.jpg",
+      "primary": "images/product-2-primary.jpg",
       "gallery": [
         "images/mockup.jpg",
         "images/mockup.jpg"
@@ -74,7 +74,7 @@
     "discount": false,
     "discountedPrice": 10,
     "stock": 15,
-    "isNew": false
+    "isNew": true
   },
   {
     "id": 5,

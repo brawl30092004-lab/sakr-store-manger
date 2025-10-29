@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { validateUploadedImage, fileToDataURL, validateGalleryCount } from '../services/imageService';
 import './GalleryUpload.css';
 
@@ -10,21 +11,36 @@ function GalleryUpload({ value = [], onChange, error }) {
   const [validationError, setValidationError] = useState(null);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [imagePreviews, setImagePreviews] = useState({});
+  const [resolvedPaths, setResolvedPaths] = useState({});
   const fileInputRef = useRef(null);
+  const projectPath = useSelector(state => state.settings.projectPath);
 
-  // Generate previews for File objects
+  // Generate previews for File objects and resolve paths for existing images
   useEffect(() => {
-    const generatePreviews = async () => {
+    const processImages = async () => {
       const newPreviews = {};
+      const newResolvedPaths = {};
       
       for (let i = 0; i < value.length; i++) {
         const item = value[i];
+        
         if (item instanceof File && !imagePreviews[i]) {
+          // Generate preview for new File objects
           try {
             const dataURL = await fileToDataURL(item);
             newPreviews[i] = dataURL;
           } catch (error) {
             console.error('Failed to generate preview:', error);
+          }
+        } else if (typeof item === 'string' && !item.startsWith('data:') && !item.startsWith('local-image://') && !item.startsWith('file://')) {
+          // Resolve path for existing images
+          if (projectPath && window.electron?.fs?.getImagePath) {
+            try {
+              const absolutePath = await window.electron.fs.getImagePath(projectPath, item);
+              newResolvedPaths[i] = absolutePath;
+            } catch (error) {
+              console.error('Failed to resolve image path:', error);
+            }
           }
         }
       }
@@ -32,15 +48,21 @@ function GalleryUpload({ value = [], onChange, error }) {
       if (Object.keys(newPreviews).length > 0) {
         setImagePreviews(prev => ({ ...prev, ...newPreviews }));
       }
+      if (Object.keys(newResolvedPaths).length > 0) {
+        setResolvedPaths(prev => ({ ...prev, ...newResolvedPaths }));
+      }
     };
     
-    generatePreviews();
-  }, [value]);
+    processImages();
+  }, [value, projectPath]);
 
   // Get display URL for an item (either File object or string path)
   const getDisplayUrl = (item, index) => {
     if (typeof item === 'string') {
-      return item; // Existing path
+      if (item.startsWith('data:') || item.startsWith('local-image://') || item.startsWith('file://')) {
+        return item; // Data URL or already resolved path
+      }
+      return resolvedPaths[index] || item; // Use resolved path or fallback to original
     } else if (item instanceof File) {
       return imagePreviews[index] || ''; // Preview from File object
     }

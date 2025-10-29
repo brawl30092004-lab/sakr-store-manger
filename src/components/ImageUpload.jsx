@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useImagePath } from '../hooks/useImagePath';
 import { validateUploadedImage, fileToDataURL, formatFileSize } from '../services/imageService';
 import { showWarning, ToastMessages } from '../services/toastService';
 import './ImageUpload.css';
@@ -14,6 +15,24 @@ function ImageUpload({ value, onChange, error }) {
   const [validationError, setValidationError] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
+  
+  // Resolve existing image path if it's a relative path
+  const resolvedPath = useImagePath(typeof value === 'string' ? value : null);
+
+  // Update preview when value changes (for existing images)
+  useEffect(() => {
+    if (typeof value === 'string' && value && !value.startsWith('data:')) {
+      // It's a file path, use the resolved path
+      setPreview(resolvedPath);
+      setFileInfo(null); // Clear file info for existing images
+    } else if (typeof value === 'string' && value.startsWith('data:')) {
+      // It's a data URL
+      setPreview(value);
+    } else if (!value) {
+      setPreview(null);
+      setFileInfo(null);
+    }
+  }, [value, resolvedPath]);
 
   // Handle file selection
   const handleFileSelect = async (file) => {
