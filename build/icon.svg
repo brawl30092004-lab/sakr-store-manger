@@ -1,0 +1,33 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="256" height="256" rx="32" fill="#2563eb"/>
+  
+  <!-- Store/Shop Icon -->
+  <g transform="translate(32, 48)">
+    <!-- Awning/Roof -->
+    <path d="M 0 20 Q 96 0 192 20 L 192 40 L 0 40 Z" fill="#dbeafe" stroke="#1e40af" stroke-width="3"/>
+    
+    <!-- Store Front -->
+    <rect x="0" y="40" width="192" height="120" fill="#eff6ff" stroke="#1e40af" stroke-width="3"/>
+    
+    <!-- Door -->
+    <rect x="70" y="90" width="52" height="70" fill="#93c5fd" stroke="#1e40af" stroke-width="2"/>
+    <circle cx="110" cy="125" r="4" fill="#1e40af"/>
+    
+    <!-- Windows -->
+    <rect x="20" y="60" width="35" height="40" fill="#bfdbfe" stroke="#1e40af" stroke-width="2"/>
+    <line x1="37.5" y1="60" x2="37.5" y2="100" stroke="#1e40af" stroke-width="2"/>
+    <line x1="20" y1="80" x2="55" y2="80" stroke="#1e40af" stroke-width="2"/>
+    
+    <rect x="137" y="60" width="35" height="40" fill="#bfdbfe" stroke="#1e40af" stroke-width="2"/>
+    <line x1="154.5" y1="60" x2="154.5" y2="100" stroke="#1e40af" stroke-width="2"/>
+    <line x1="137" y1="80" x2="172" y2="80" stroke="#1e40af" stroke-width="2"/>
+    
+    <!-- Decorative stripes on awning -->
+    <line x1="30" y1="20" x2="30" y2="40" stroke="#1e40af" stroke-width="2"/>
+    <line x1="60" y1="15" x2="60" y2="40" stroke="#1e40af" stroke-width="2"/>
+    <line x1="96" y1="12" x2="96" y2="40" stroke="#1e40af" stroke-width="2"/>
+    <line x1="132" y1="15" x2="132" y2="40" stroke="#1e40af" stroke-width="2"/>
+    <line x1="162" y1="20" x2="162" y2="40" stroke="#1e40af" stroke-width="2"/>
+  </g>
+</svg>
