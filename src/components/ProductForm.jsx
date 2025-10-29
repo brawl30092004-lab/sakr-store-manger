@@ -130,40 +130,91 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
 
     try {
       const productData = { ...formData };
+      const hasPendingPrimaryImage = pendingImages.primary instanceof File;
+      const galleryFiles = (productData.images.gallery || []).filter(item => item instanceof File);
+      const hasNewImages = hasPendingPrimaryImage || galleryFiles.length > 0;
 
-      // Process primary image if there's a new upload
-      if (pendingImages.primary instanceof File) {
-        console.log('Processing primary image...');
-        const primaryPath = await processProductImage(
-          pendingImages.primary,
-          projectPath,
-          formData.id,
-          'primary',
-          null
-        );
-        productData.images.primary = primaryPath;
-        productData.image = primaryPath; // Also set legacy image field
-      }
+      // If this is a new product (id === 0) and has new images, we need a two-step save
+      if (formData.id === 0 && hasNewImages) {
+        console.log('New product with images - saving in two steps');
+        
+        // Step 1: Save product without images to get an ID
+        const tempProductData = {
+          ...productData,
+          images: {
+            primary: '',
+            gallery: []
+          }
+        };
+        
+        // Save and get the returned products array
+        const savedProducts = await onSave(tempProductData);
+        
+        // Find the newly created product to get its ID
+        const newProduct = savedProducts[savedProducts.length - 1];
+        const newProductId = newProduct.id;
+        console.log('Product saved with ID:', newProductId);
+        
+        // Step 2: Process images with the new product ID
+        if (hasPendingPrimaryImage) {
+          console.log('Processing primary image with ID:', newProductId);
+          const primaryPath = await processProductImage(
+            pendingImages.primary,
+            projectPath,
+            newProductId,
+            'primary',
+            null
+          );
+          productData.images.primary = primaryPath;
+          productData.image = primaryPath;
+        }
 
-      // Process gallery images if there are any
-      if (productData.images.gallery && productData.images.gallery.length > 0) {
-        console.log('Processing gallery images...');
-        console.log('Gallery array:', productData.images.gallery);
-        
-        // Separate File objects from existing paths
-        const galleryFiles = productData.images.gallery.filter(item => item instanceof File);
-        const existingPaths = productData.images.gallery.filter(item => typeof item === 'string');
-        
-        console.log('Gallery files to process:', galleryFiles.length);
-        console.log('Existing gallery paths:', existingPaths);
-        console.log('Project path:', projectPath);
-        console.log('Product ID:', formData.id);
-        
         if (galleryFiles.length > 0) {
-          // Calculate correct indices for new images based on existing count
+          console.log('Processing gallery images with ID:', newProductId);
+          const existingPaths = (productData.images.gallery || []).filter(item => typeof item === 'string');
           const startIndex = existingPaths.length;
           
-          // Process new File objects
+          const newGalleryPaths = await Promise.all(
+            galleryFiles.map((file, index) =>
+              processProductImage(
+                file,
+                projectPath,
+                newProductId,
+                'gallery',
+                startIndex + index
+              )
+            )
+          );
+          
+          productData.images.gallery = [...existingPaths, ...newGalleryPaths];
+        }
+
+        // Step 3: Update the product with image paths
+        productData.id = newProductId;
+        await onSave(productData);
+      } else {
+        // Existing product or no new images - process normally
+        
+        // Process primary image if there's a new upload
+        if (hasPendingPrimaryImage) {
+          console.log('Processing primary image...');
+          const primaryPath = await processProductImage(
+            pendingImages.primary,
+            projectPath,
+            formData.id,
+            'primary',
+            null
+          );
+          productData.images.primary = primaryPath;
+          productData.image = primaryPath; // Also set legacy image field
+        }
+
+        // Process gallery images if there are any
+        if (galleryFiles.length > 0) {
+          console.log('Processing gallery images...');
+          const existingPaths = (productData.images.gallery || []).filter(item => typeof item === 'string');
+          const startIndex = existingPaths.length;
+          
           const newGalleryPaths = await Promise.all(
             galleryFiles.map((file, index) =>
               processProductImage(
@@ -171,25 +222,21 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
                 projectPath,
                 formData.id,
                 'gallery',
-                startIndex + index  // Use correct index based on existing images
+                startIndex + index
               )
             )
           );
           
-          console.log('Newly processed gallery paths:', newGalleryPaths);
-          
-          // Combine existing paths with new paths
           productData.images.gallery = [...existingPaths, ...newGalleryPaths];
         } else {
           // No new files, just keep existing paths
+          const existingPaths = (productData.images.gallery || []).filter(item => typeof item === 'string');
           productData.images.gallery = existingPaths;
         }
-        
-        console.log('Final gallery paths:', productData.images.gallery);
-      }
 
-      // Save the product with processed image paths
-      await onSave(productData);
+        // Save the product with processed image paths
+        await onSave(productData);
+      }
 
       // Clear pending images and draft
       setPendingImages({ primary: null });

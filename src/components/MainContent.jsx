@@ -68,16 +68,20 @@ const MainContent = forwardRef(({ selectedCategory }, ref) => {
   };
 
   // Handle saving product
-  const handleSaveProduct = (productData) => {
+  const handleSaveProduct = async (productData) => {
     if (editingProduct) {
       // Update existing product
-      dispatch(updateProduct({
+      await dispatch(updateProduct({
         id: editingProduct.id,
         updates: productData
-      }));
+      })).unwrap();
+      // For updates, return the current products state
+      return products;
     } else {
       // Add new product
-      dispatch(addProduct(productData));
+      const result = await dispatch(addProduct(productData)).unwrap();
+      // Return the updated products array from the action
+      return result;
     }
   };
 

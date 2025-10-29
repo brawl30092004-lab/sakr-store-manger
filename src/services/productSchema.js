@@ -10,11 +10,11 @@ import * as yup from 'yup';
  * This schema validates all product fields with proper constraints and error messages
  */
 export const productSchema = yup.object().shape({
-  // ID - Positive integer
+  // ID - Non-negative integer (0 for new products, positive for existing)
   id: yup
     .number()
     .integer('ID must be an integer')
-    .positive('ID must be a positive number'),
+    .min(0, 'ID must be 0 or greater'),
 
   // Name - Required string, 3-200 characters, supports English/Arabic
   name: yup
