@@ -2,19 +2,23 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 import { loadProducts } from './store/slices/productsSlice';
+import { setProjectPath } from './store/slices/settingsSlice';
 import { attachKeyboardShortcuts } from './services/keyboardShortcuts';
+import { showSuccess, showError } from './services/toastService';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import StatusBar from './components/StatusBar';
 import Settings from './components/Settings';
+import DataSourceNotFoundDialog from './components/DataSourceNotFoundDialog';
 import './App.css';
 
 function App() {
   const dispatch = useDispatch();
   const { items: products, loading, error } = useSelector((state) => state.products);
-  const { projectPath } = useSelector((state) => state.settings);
+  const { projectPath, dataSource } = useSelector((state) => state.settings);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [currentView, setCurrentView] = useState('main'); // 'main' or 'settings'
+  const [showDataSourceDialog, setShowDataSourceDialog] = useState(false);
   
   // Refs for keyboard shortcut handlers
   const mainContentRef = useRef(null);
@@ -22,13 +26,33 @@ function App() {
   useEffect(() => {
     // Load products on app startup
     console.log('App mounted, dispatching loadProducts...');
-    dispatch(loadProducts());
+    dispatch(loadProducts()).unwrap()
+      .catch((err) => {
+        // Check if error is due to missing products.json
+        if (err.includes('PRODUCTS_NOT_FOUND') || err.includes('ENOENT')) {
+          console.log('Products file not found, showing dialog');
+          setShowDataSourceDialog(true);
+        }
+      });
   }, [dispatch]);
+
+  // Reload products when data source changes
+  useEffect(() => {
+    if (dataSource) {
+      console.log('Data source changed to:', dataSource);
+      dispatch(loadProducts()).unwrap()
+        .catch((err) => {
+          if (err.includes('PRODUCTS_NOT_FOUND') || err.includes('ENOENT')) {
+            setShowDataSourceDialog(true);
+          }
+        });
+    }
+  }, [dataSource, dispatch]);
 
   // Debug logging
   useEffect(() => {
-    console.log('Redux State:', { products, loading, error, projectPath });
-  }, [products, loading, error, projectPath]);
+    console.log('Redux State:', { products, loading, error, projectPath, dataSource });
+  }, [products, loading, error, projectPath, dataSource]);
 
   // Setup keyboard shortcuts
   useEffect(() => {
@@ -75,10 +99,63 @@ function App() {
     return cleanup;
   }, [currentView]);
 
+  // Handle creating new products.json file
+  const handleCreateNewFile = async () => {
+    try {
+      await window.electron.fs.createEmptyProducts(projectPath);
+      showSuccess('Created empty products.json file');
+      setShowDataSourceDialog(false);
+      // Reload products
+      dispatch(loadProducts());
+    } catch (error) {
+      console.error('Failed to create products.json:', error);
+      showError('Failed to create products.json: ' + error.message);
+    }
+  };
+
+  // Handle browsing for existing file
+  const handleBrowseForExisting = async () => {
+    try {
+      const selectedPath = await window.electron.browseDirectory();
+      if (selectedPath) {
+        dispatch(setProjectPath(selectedPath));
+        setShowDataSourceDialog(false);
+        // Try to load products from new path
+        dispatch(loadProducts()).unwrap()
+          .then(() => {
+            showSuccess('Products loaded successfully');
+          })
+          .catch((err) => {
+            if (err.includes('PRODUCTS_NOT_FOUND') || err.includes('ENOENT')) {
+              setShowDataSourceDialog(true);
+            }
+          });
+      }
+    } catch (error) {
+      console.error('Failed to browse directory:', error);
+      showError('Failed to browse directory: ' + error.message);
+    }
+  };
+
+  // Handle closing dialog
+  const handleCloseDialog = () => {
+    setShowDataSourceDialog(false);
+  };
+
 
   return (
     <div className="App">
       <Toaster />
+      
+      {/* Data Source Not Found Dialog */}
+      {showDataSourceDialog && (
+        <DataSourceNotFoundDialog
+          onCreateNew={handleCreateNewFile}
+          onBrowseExisting={handleBrowseForExisting}
+          onClose={handleCloseDialog}
+        />
+      )}
+      
       <header className="app-header">
         <div className="app-title">
           <h1>Sakr Store Manager</h1>

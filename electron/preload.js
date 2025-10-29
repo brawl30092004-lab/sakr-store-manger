@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('electron', {
   
   // File System API for products.json
   fs: {
+    checkProjectPath: (projectPath) => ipcRenderer.invoke('fs:checkProjectPath', projectPath),
+    createEmptyProducts: (projectPath) => ipcRenderer.invoke('fs:createEmptyProducts', projectPath),
     loadProducts: (projectPath) => ipcRenderer.invoke('fs:loadProducts', projectPath),
     saveProducts: (projectPath, products) => ipcRenderer.invoke('fs:saveProducts', projectPath, products),
     getImagePath: (projectPath, relativePath) => ipcRenderer.invoke('fs:getImagePath', projectPath, relativePath),

@@ -21,29 +21,57 @@ function syncLegacyImageField(product) {
 /**
  * ProductService - Handles all file system interactions with products.json
  * Uses Electron IPC to communicate with the main process for file operations
+ * Supports both local file system and GitHub repository sources
  */
 class ProductService {
   /**
    * Constructor
    * @param {string} projectPath - The path to the Sakr Store repository
+   * @param {string} dataSource - Data source type: 'local' or 'github'
    */
-  constructor(projectPath) {
+  constructor(projectPath, dataSource = 'local') {
     this.projectPath = projectPath;
+    this.dataSource = dataSource;
   }
 
   /**
-   * Load products from products.json
+   * Load products from the configured data source
    * @returns {Promise<Array>} Array of products
    * @throws {Error} If reading fails
    */
   async loadProducts() {
     try {
-      const products = await window.electron.fs.loadProducts(this.projectPath);
-      return products;
+      if (this.dataSource === 'github') {
+        return await this.loadProductsFromGitHub();
+      } else {
+        return await this.loadProductsFromLocal();
+      }
     } catch (error) {
       console.error('ProductService: Error loading products', error);
       throw error;
     }
+  }
+
+  /**
+   * Load products from local file system
+   * @private
+   * @returns {Promise<Array>} Array of products
+   */
+  async loadProductsFromLocal() {
+    const products = await window.electron.fs.loadProducts(this.projectPath);
+    return products;
+  }
+
+  /**
+   * Load products from GitHub repository
+   * @private
+   * @returns {Promise<Array>} Array of products
+   * @throws {Error} Always throws - not yet implemented
+   */
+  async loadProductsFromGitHub() {
+    // TODO: Implement GitHub integration
+    // This will fetch products.json from the configured GitHub repository
+    throw new Error('GitHub data source is not yet implemented. Please use Local Files mode.');
   }
 
   /**

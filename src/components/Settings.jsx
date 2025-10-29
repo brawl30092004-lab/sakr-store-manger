@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { showSuccess, showError, showInfo, ToastMessages } from '../services/toastService';
+import DataSourceSelector from './DataSourceSelector';
 import './Settings.css';
 
 /**
@@ -7,6 +9,9 @@ import './Settings.css';
  * Allows users to configure GitHub repository and Personal Access Token
  */
 function Settings() {
+  // Get current data source from Redux
+  const dataSource = useSelector((state) => state.settings.dataSource);
+  
   const [formData, setFormData] = useState({
     repoUrl: '',
     username: '',
@@ -105,6 +110,17 @@ function Settings() {
    * Tests the GitHub connection
    */
   const handleTestConnection = async () => {
+    // Only allow testing in GitHub mode
+    if (dataSource !== 'github') {
+      const message = 'Connection test is only available for GitHub mode';
+      setStatus({
+        message,
+        type: 'info'
+      });
+      showInfo(message);
+      return;
+    }
+
     // Validate form data
     if (!formData.repoUrl || !formData.username || !formData.projectPath) {
       const message = 'Please fill in all required fields before testing';
@@ -166,26 +182,41 @@ function Settings() {
    * Saves the settings
    */
   const handleSave = async () => {
-    // Validate form data
-    if (!formData.repoUrl || !formData.username || !formData.projectPath) {
-      const message = 'Please fill in all required fields';
-      setStatus({
-        message,
-        type: 'error'
-      });
-      showError(message);
-      return;
-    }
+    // For local mode, only projectPath is required
+    // For GitHub mode, all fields are required
+    if (dataSource === 'local') {
+      // Local mode: only validate projectPath
+      if (!formData.projectPath) {
+        const message = 'Please select a project path';
+        setStatus({
+          message,
+          type: 'error'
+        });
+        showError(message);
+        return;
+      }
+    } else {
+      // GitHub mode: validate all fields
+      if (!formData.repoUrl || !formData.username || !formData.projectPath) {
+        const message = 'Please fill in all required fields';
+        setStatus({
+          message,
+          type: 'error'
+        });
+        showError(message);
+        return;
+      }
 
-    // Check if token is provided or exists
-    if (!formData.token && !hasExistingToken) {
-      const message = 'Please provide a Personal Access Token';
-      setStatus({
-        message,
-        type: 'error'
-      });
-      showError(message);
-      return;
+      // Check if token is provided or exists
+      if (!formData.token && !hasExistingToken) {
+        const message = 'Please provide a Personal Access Token';
+        setStatus({
+          message,
+          type: 'error'
+        });
+        showError(message);
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -256,17 +287,27 @@ function Settings() {
       <div className="settings-header">
         <h1>Settings</h1>
         <p className="settings-description">
-          Configure your GitHub integration for product data synchronization
+          Configure your data source and GitHub integration for product data synchronization
         </p>
       </div>
 
       <div className="settings-content">
+        {/* Data Source Selector */}
+        <DataSourceSelector />
+
         <div className="settings-section">
           <h2>GitHub Configuration</h2>
           
+          {dataSource === 'local' && (
+            <div className="info-message">
+              <strong>Note:</strong> GitHub settings are optional when using Local Files mode. 
+              You only need to configure the Local Project Path below.
+            </div>
+          )}
+          
           <div className="form-group">
             <label htmlFor="repoUrl">
-              Repository URL <span className="required">*</span>
+              Repository URL {dataSource === 'github' && <span className="required">*</span>}
             </label>
             <input
               type="text"
@@ -276,6 +317,7 @@ function Settings() {
               onChange={handleInputChange}
               placeholder="https://github.com/username/repository"
               className="form-input"
+              disabled={dataSource === 'local'}
             />
             <small className="form-hint">
               Example: https://github.com/yourusername/sakr-store-data
@@ -284,7 +326,7 @@ function Settings() {
 
           <div className="form-group">
             <label htmlFor="username">
-              GitHub Username <span className="required">*</span>
+              GitHub Username {dataSource === 'github' && <span className="required">*</span>}
             </label>
             <input
               type="text"
@@ -294,12 +336,13 @@ function Settings() {
               onChange={handleInputChange}
               placeholder="Enter your GitHub username"
               className="form-input"
+              disabled={dataSource === 'local'}
             />
           </div>
 
           <div className="form-group">
             <label htmlFor="token">
-              Personal Access Token (PAT) <span className="required">*</span>
+              Personal Access Token (PAT) {dataSource === 'github' && <span className="required">*</span>}
             </label>
             <input
               type="password"
@@ -309,6 +352,7 @@ function Settings() {
               onChange={handleInputChange}
               placeholder="Enter your GitHub PAT"
               className="form-input"
+              disabled={dataSource === 'local'}
             />
             <small className="form-hint">
               Create a token with 'repo' permissions at{' '}
@@ -361,8 +405,9 @@ function Settings() {
           <button
             type="button"
             onClick={handleTestConnection}
-            disabled={isTesting || isLoading}
+            disabled={isTesting || isLoading || dataSource === 'local'}
             className="btn btn-test"
+            title={dataSource === 'local' ? 'Connection test is only available for GitHub mode' : ''}
           >
             {isTesting ? 'Testing...' : 'Test Connection'}
           </button>

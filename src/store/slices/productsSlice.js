@@ -31,12 +31,13 @@ export const loadProducts = createAsyncThunk(
     try {
       const state = getState();
       const projectPath = state.settings.projectPath;
+      const dataSource = state.settings.dataSource || 'local';
       
       if (!projectPath) {
         throw new Error('Project path is not set');
       }
 
-      const productService = new ProductService(projectPath);
+      const productService = new ProductService(projectPath, dataSource);
       const products = await productService.loadProducts();
       return products;
     } catch (error) {
@@ -54,12 +55,13 @@ export const saveProducts = createAsyncThunk(
     try {
       const state = getState();
       const projectPath = state.settings.projectPath;
+      const dataSource = state.settings.dataSource || 'local';
       
       if (!projectPath) {
         throw new Error('Project path is not set');
       }
 
-      const productService = new ProductService(projectPath);
+      const productService = new ProductService(projectPath, dataSource);
       await productService.saveProducts(products);
       return products;
     } catch (error) {
@@ -77,12 +79,13 @@ export const addProduct = createAsyncThunk(
     try {
       const state = getState();
       const projectPath = state.settings.projectPath;
+      const dataSource = state.settings.dataSource || 'local';
       
       if (!projectPath) {
         throw new Error('Project path is not set');
       }
 
-      const productService = new ProductService(projectPath);
+      const productService = new ProductService(projectPath, dataSource);
       const updatedProducts = await productService.addProduct(product);
       return updatedProducts;
     } catch (error) {
@@ -100,12 +103,13 @@ export const updateProduct = createAsyncThunk(
     try {
       const state = getState();
       const projectPath = state.settings.projectPath;
+      const dataSource = state.settings.dataSource || 'local';
       
       if (!projectPath) {
         throw new Error('Project path is not set');
       }
 
-      const productService = new ProductService(projectPath);
+      const productService = new ProductService(projectPath, dataSource);
       const updatedProducts = await productService.updateProduct(id, updates);
       return updatedProducts;
     } catch (error) {
@@ -123,12 +127,13 @@ export const deleteProduct = createAsyncThunk(
     try {
       const state = getState();
       const projectPath = state.settings.projectPath;
+      const dataSource = state.settings.dataSource || 'local';
       
       if (!projectPath) {
         throw new Error('Project path is not set');
       }
 
-      const productService = new ProductService(projectPath);
+      const productService = new ProductService(projectPath, dataSource);
       const updatedProducts = await productService.deleteProduct(id);
       return updatedProducts;
     } catch (error) {
@@ -146,12 +151,13 @@ export const duplicateProduct = createAsyncThunk(
     try {
       const state = getState();
       const projectPath = state.settings.projectPath;
+      const dataSource = state.settings.dataSource || 'local';
       
       if (!projectPath) {
         throw new Error('Project path is not set');
       }
 
-      const productService = new ProductService(projectPath);
+      const productService = new ProductService(projectPath, dataSource);
       const updatedProducts = await productService.duplicateProduct(id);
       return updatedProducts;
     } catch (error) {

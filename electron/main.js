@@ -45,6 +45,48 @@ function createWindow() {
 }
 
 // IPC Handlers for File System Operations
+
+/**
+ * Check if project path exists and is accessible
+ */
+ipcMain.handle('fs:checkProjectPath', async (event, projectPath) => {
+  try {
+    if (!projectPath) {
+      return { exists: false, isDirectory: false, error: 'No path provided' };
+    }
+    
+    const exists = await fs.pathExists(projectPath);
+    if (!exists) {
+      return { exists: false, isDirectory: false, error: 'Path does not exist' };
+    }
+    
+    const stats = await fs.stat(projectPath);
+    return { exists: true, isDirectory: stats.isDirectory(), error: null };
+  } catch (error) {
+    return { exists: false, isDirectory: false, error: error.message };
+  }
+});
+
+/**
+ * Create empty products.json file at the specified path
+ */
+ipcMain.handle('fs:createEmptyProducts', async (event, projectPath) => {
+  try {
+    const productsFilePath = path.join(projectPath, 'products.json');
+    
+    // Ensure directory exists
+    await fs.ensureDir(projectPath);
+    
+    // Create empty products.json
+    await fs.writeJSON(productsFilePath, [], { spaces: 2, encoding: 'utf8' });
+    
+    return { success: true, path: productsFilePath };
+  } catch (error) {
+    console.error('Error creating products.json:', error);
+    throw error;
+  }
+});
+
 ipcMain.handle('fs:loadProducts', async (event, projectPath) => {
   try {
     const productsFilePath = path.join(projectPath, 'products.json');
@@ -53,9 +95,8 @@ ipcMain.handle('fs:loadProducts', async (event, projectPath) => {
     const exists = await fs.pathExists(productsFilePath);
     
     if (!exists) {
-      // Create empty products.json
-      await fs.writeJSON(productsFilePath, [], { spaces: 2, encoding: 'utf8' });
-      return [];
+      // Don't auto-create, throw error so UI can prompt user
+      throw new Error('PRODUCTS_NOT_FOUND');
     }
     
     // Read and parse products.json with UTF-8 encoding
