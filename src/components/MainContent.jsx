@@ -1,10 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { addProductLocal, updateProductLocal } from '../store/slices/productsSlice';
+import { defaultProduct } from '../store/slices/productsSlice';
+import ProductForm from './ProductForm';
 import './MainContent.css';
 
 function MainContent({ selectedCategory }) {
   const [searchText, setSearchText] = useState('');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
   const { items: products, loading, error } = useSelector((state) => state.products);
+  const dispatch = useDispatch();
 
   // Filtering Pipeline
   const filteredProducts = useMemo(() => {
@@ -34,6 +40,43 @@ function MainContent({ selectedCategory }) {
     return result;
   }, [products, selectedCategory, searchText]);
 
+  // Handle opening form for new product
+  const handleNewProduct = () => {
+    setEditingProduct(null);
+    setIsFormOpen(true);
+  };
+
+  // Handle opening form for editing product
+  const handleEditProduct = (product) => {
+    setEditingProduct(product);
+    setIsFormOpen(true);
+  };
+
+  // Handle closing form
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setEditingProduct(null);
+  };
+
+  // Handle saving product
+  const handleSaveProduct = (productData) => {
+    if (editingProduct) {
+      // Update existing product
+      dispatch(updateProductLocal({
+        id: editingProduct.id,
+        data: productData
+      }));
+    } else {
+      // Add new product
+      const newProduct = {
+        ...productData,
+        id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1,
+        image: productData.images?.primary || ''
+      };
+      dispatch(addProductLocal(newProduct));
+    }
+  };
+
   if (loading) {
     return (
       <div className="main-content">
@@ -52,6 +95,16 @@ function MainContent({ selectedCategory }) {
 
   return (
     <div className="main-content">
+      {/* Toolbar with New Product Button */}
+      <div className="toolbar">
+        <button 
+          className="btn-new-product"
+          onClick={handleNewProduct}
+        >
+          + New Product
+        </button>
+      </div>
+
       {/* Search Bar */}
       <div className="search-bar">
         <input
@@ -111,7 +164,13 @@ function MainContent({ selectedCategory }) {
 
               {/* Action Buttons */}
               <div className="product-actions">
-                <button className="btn-action btn-edit" title="Edit">✏️ Edit</button>
+                <button 
+                  className="btn-action btn-edit" 
+                  title="Edit"
+                  onClick={() => handleEditProduct(product)}
+                >
+                  ✏️ Edit
+                </button>
                 <button className="btn-action btn-duplicate" title="Duplicate">📋 Duplicate</button>
                 <button className="btn-action btn-delete" title="Delete">🗑️ Delete</button>
               </div>
@@ -119,6 +178,15 @@ function MainContent({ selectedCategory }) {
           ))
         )}
       </div>
+
+      {/* Product Form Modal */}
+      {isFormOpen && (
+        <ProductForm
+          product={editingProduct || defaultProduct}
+          onClose={handleCloseForm}
+          onSave={handleSaveProduct}
+        />
+      )}
     </div>
   );
 }

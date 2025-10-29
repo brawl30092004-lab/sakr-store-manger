@@ -7,6 +7,36 @@
   flex-direction: column;
 }
 
+/* Toolbar */
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.btn-new-product {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-new-product:hover {
+  background-color: #45a049;
+}
+
+.btn-new-product:active {
+  transform: scale(0.98);
+}
+
 /* Loading and Error States */
 .loading-message,
 .error-message {
