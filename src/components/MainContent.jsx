@@ -69,10 +69,12 @@ const MainContent = forwardRef(({ selectedCategory }, ref) => {
 
   // Handle saving product
   const handleSaveProduct = async (productData) => {
-    if (editingProduct) {
+    // Check if this is an update (productData.id > 0) or a new product (productData.id === 0)
+    if (editingProduct || productData.id > 0) {
       // Update existing product
+      const productId = editingProduct?.id || productData.id;
       await dispatch(updateProduct({
-        id: editingProduct.id,
+        id: productId,
         updates: productData
       })).unwrap();
       // For updates, return the current products state

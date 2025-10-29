@@ -62,10 +62,11 @@ export const productSchema = yup.object().shape({
       return value.trim().length >= 2;
     }),
 
-  // Discount - Boolean flag
+  // Discount - Boolean flag (optional)
   discount: yup
     .boolean()
-    .required('Discount flag is required'),
+    .notRequired()
+    .default(false),
 
   // Discounted Price - Conditionally required when discount is true
   discountedPrice: yup
@@ -98,10 +99,11 @@ export const productSchema = yup.object().shape({
     .min(0, 'Stock cannot be negative')
     .max(9999, 'Stock cannot exceed 9999'),
 
-  // isNew - Boolean flag
+  // isNew - Boolean flag (optional)
   isNew: yup
     .boolean()
-    .required('isNew flag is required'),
+    .notRequired()
+    .default(true),
 
   // Images - Object with primary and gallery
   images: yup
@@ -125,7 +127,8 @@ export const productSchema = yup.object().shape({
             return typeof value === 'string' || value instanceof File;
           })
         )
-        .max(10, 'Gallery cannot exceed 10 images')
+        .max(100, 'Gallery cannot exceed 100 images')
+        .notRequired()
         .default([])
     })
     .required('Images object is required'),

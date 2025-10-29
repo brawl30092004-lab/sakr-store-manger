@@ -228,11 +228,16 @@ export function validateProductCategory(category) {
 /**
  * Validate product discount flag
  * 
- * @param {boolean} discount - The discount flag to validate
+ * @param {boolean} discount - The discount flag to validate (optional)
  * @returns {{valid: boolean, error: string|null}}
  */
 export function validateProductDiscount(discount) {
-  // Must be a boolean
+  // Discount is optional - if not provided, it's valid
+  if (discount === undefined || discount === null) {
+    return { valid: true, error: null };
+  }
+  
+  // If provided, must be a boolean
   if (typeof discount !== 'boolean') {
     return {
       valid: false,
@@ -410,12 +415,17 @@ export function validateProductImagePrimary(primary) {
 
 /**
  * Validate product image gallery
- * Must be an array of strings with max 10 images
+ * Must be an array of strings with max 100 images (optional)
  * 
  * @param {Array} gallery - The gallery array to validate
  * @returns {{valid: boolean, error: string|null}}
  */
 export function validateProductImageGallery(gallery) {
+  // Gallery is optional - if not provided, it's valid
+  if (gallery === undefined || gallery === null) {
+    return { valid: true, error: null };
+  }
+  
   // Must be an array
   if (!Array.isArray(gallery)) {
     return {
@@ -424,11 +434,11 @@ export function validateProductImageGallery(gallery) {
     };
   }
   
-  // Max 10 images
-  if (gallery.length > 10) {
+  // Max 100 images
+  if (gallery.length > 100) {
     return {
       valid: false,
-      error: 'Gallery cannot exceed 10 images'
+      error: 'Gallery cannot exceed 100 images'
     };
   }
   
@@ -448,11 +458,16 @@ export function validateProductImageGallery(gallery) {
 /**
  * Validate product isNew flag
  * 
- * @param {boolean} isNew - The isNew flag to validate
+ * @param {boolean} isNew - The isNew flag to validate (optional)
  * @returns {{valid: boolean, error: string|null}}
  */
 export function validateProductIsNew(isNew) {
-  // Must be a boolean
+  // isNew is optional - if not provided, it's valid
+  if (isNew === undefined || isNew === null) {
+    return { valid: true, error: null };
+  }
+  
+  // If provided, must be a boolean
   if (typeof isNew !== 'boolean') {
     return {
       valid: false,
@@ -615,33 +630,27 @@ export function validateProduct(product, existingProducts = [], isNew = false) {
     errors.category = 'Category is required';
   }
   
-  // Validate discount
+  // Validate discount (optional)
   if (product.discount !== undefined) {
     const discountValidation = validateProductDiscount(product.discount);
     if (!discountValidation.valid) {
       errors.discount = discountValidation.error;
     }
-  } else {
-    errors.discount = 'Discount flag is required';
   }
   
-  // Validate discountedPrice
-  if (product.discountedPrice !== undefined) {
-    const discountedPriceValidation = validateProductDiscountedPrice(
-      product.discountedPrice,
-      product.price,
-      product.discount
-    );
-    if (!discountedPriceValidation.valid) {
-      errors.discountedPrice = discountedPriceValidation.error;
-    }
-  } else {
-    // DiscountedPrice is required when discount is true
-    if (product.discount === true) {
-      errors.discountedPrice = 'Discounted price is required when discount is true';
+  // Validate discountedPrice (only required when discount is true)
+  if (product.discount === true) {
+    if (product.discountedPrice !== undefined) {
+      const discountedPriceValidation = validateProductDiscountedPrice(
+        product.discountedPrice,
+        product.price,
+        product.discount
+      );
+      if (!discountedPriceValidation.valid) {
+        errors.discountedPrice = discountedPriceValidation.error;
+      }
     } else {
-      // When discount is false, discountedPrice should equal price (can be auto-set)
-      errors.discountedPrice = 'Discounted price is required';
+      errors.discountedPrice = 'Discounted price is required when discount is enabled';
     }
   }
   
@@ -665,14 +674,12 @@ export function validateProduct(product, existingProducts = [], isNew = false) {
     errors.images = 'Images object is required';
   }
   
-  // Validate isNew
+  // Validate isNew (optional)
   if (product.isNew !== undefined) {
     const isNewValidation = validateProductIsNew(product.isNew);
     if (!isNewValidation.valid) {
       errors.isNew = isNewValidation.error;
     }
-  } else {
-    errors.isNew = 'isNew flag is required';
   }
   
   return {
@@ -748,11 +755,12 @@ export const productValidationSchema = {
   
   discount: {
     type: 'boolean',
-    required: true,
+    required: false,
+    default: false,
     constraints: {
       values: [true, false]
     },
-    description: 'Flag to indicate if product is on sale'
+    description: 'Flag to indicate if product is on sale (optional)'
   },
   
   discountedPrice: {
@@ -796,10 +804,10 @@ export const productValidationSchema = {
         required: false,
         default: [],
         constraints: {
-          maxLength: 10,
+          maxLength: 100,
           elementType: 'string'
         },
-        description: 'Additional product images (array of file paths)'
+        description: 'Additional product images (optional, up to 100 images)'
       }
     },
     description: 'Modern image management system'
@@ -817,12 +825,12 @@ export const productValidationSchema = {
   
   isNew: {
     type: 'boolean',
-    required: true,
+    required: false,
     default: true, // New products are marked as "New" by default
     constraints: {
       values: [true, false]
     },
-    description: 'Flag to mark product as new/featured'
+    description: 'Flag to mark product as new/featured (optional)'
   }
 };
 
