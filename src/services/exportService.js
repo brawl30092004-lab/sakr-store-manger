@@ -3,8 +3,6 @@
  * Creates organized structure with product name-based folders
  */
 
-import path from 'path-browserify';
-
 /**
  * Generate a URL-safe slug from product name
  * Handles English, Arabic, special characters, and ensures uniqueness
