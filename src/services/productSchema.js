@@ -103,9 +103,9 @@ export const productSchema = yup.object().shape({
     .shape({
       primary: yup
         .string()
-        .required('Primary image is required')
-        .test('no-empty-whitespace', 'Primary image cannot be empty', value => {
-          if (!value) return false;
+        .test('no-empty-whitespace', 'Primary image cannot be only whitespace', value => {
+          // Allow empty string or valid non-whitespace string
+          if (!value || value === '') return true;
           return value.trim().length > 0;
         }),
       
