@@ -24,10 +24,9 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
   const autoSaveTimerRef = useRef(null);
   const productIdRef = useRef(product?.id || 'new');
 
-  // Store temporary file uploads separately (not in form data)
+  // Store temporary primary image upload (not in form data)
   const [pendingImages, setPendingImages] = useState({
-    primary: null, // Will store File object
-    gallery: [] // Will store array of File objects
+    primary: null // Will store File object for primary image
   });
 
   const {
@@ -113,20 +112,15 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
     }
   };
 
-  // Handle gallery image uploads (store File objects temporarily)
+  // Handle gallery image uploads (keep mixed array of paths and Files)
   const handleGalleryImagesChange = (filesOrPaths) => {
-    const files = filesOrPaths.filter(item => item instanceof File);
-    const paths = filesOrPaths.filter(item => typeof item === 'string');
+    console.log('Gallery changed, new value:', filesOrPaths);
+    console.log('Files in gallery:', filesOrPaths.filter(item => item instanceof File).length);
+    console.log('Paths in gallery:', filesOrPaths.filter(item => typeof item === 'string').length);
     
-    if (files.length > 0) {
-      // New file uploads - store for processing on save
-      setPendingImages(prev => ({ ...prev, gallery: files }));
-    }
-    
-    // Update form with existing paths
-    if (paths.length > 0) {
-      setValue('images.gallery', paths, { shouldValidate: true });
-    }
+    // Keep the complete array (both File objects and paths) in the form
+    // We'll separate them during save processing
+    setValue('images.gallery', filesOrPaths, { shouldValidate: true });
   };
 
   // Process images and save product
@@ -151,31 +145,54 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
         productData.image = primaryPath; // Also set legacy image field
       }
 
-      // Process gallery images if there are new uploads
-      if (pendingImages.gallery && pendingImages.gallery.length > 0) {
-        console.log(`Processing ${pendingImages.gallery.length} gallery images...`);
-        const galleryPaths = await Promise.all(
-          pendingImages.gallery.map((file, index) =>
-            processProductImage(
-              file,
-              projectPath,
-              formData.id,
-              'gallery',
-              index
-            )
-          )
-        );
+      // Process gallery images if there are any
+      if (productData.images.gallery && productData.images.gallery.length > 0) {
+        console.log('Processing gallery images...');
+        console.log('Gallery array:', productData.images.gallery);
         
-        // Combine existing paths with new paths
-        const existingPaths = productData.images.gallery || [];
-        productData.images.gallery = [...existingPaths, ...galleryPaths];
+        // Separate File objects from existing paths
+        const galleryFiles = productData.images.gallery.filter(item => item instanceof File);
+        const existingPaths = productData.images.gallery.filter(item => typeof item === 'string');
+        
+        console.log('Gallery files to process:', galleryFiles.length);
+        console.log('Existing gallery paths:', existingPaths);
+        console.log('Project path:', projectPath);
+        console.log('Product ID:', formData.id);
+        
+        if (galleryFiles.length > 0) {
+          // Calculate correct indices for new images based on existing count
+          const startIndex = existingPaths.length;
+          
+          // Process new File objects
+          const newGalleryPaths = await Promise.all(
+            galleryFiles.map((file, index) =>
+              processProductImage(
+                file,
+                projectPath,
+                formData.id,
+                'gallery',
+                startIndex + index  // Use correct index based on existing images
+              )
+            )
+          );
+          
+          console.log('Newly processed gallery paths:', newGalleryPaths);
+          
+          // Combine existing paths with new paths
+          productData.images.gallery = [...existingPaths, ...newGalleryPaths];
+        } else {
+          // No new files, just keep existing paths
+          productData.images.gallery = existingPaths;
+        }
+        
+        console.log('Final gallery paths:', productData.images.gallery);
       }
 
       // Save the product with processed image paths
       await onSave(productData);
 
       // Clear pending images and draft
-      setPendingImages({ primary: null, gallery: [] });
+      setPendingImages({ primary: null });
       clearDraft(productIdRef.current);
       
       // Show success message

@@ -111,7 +111,12 @@ export const productSchema = yup.object().shape({
       
       gallery: yup
         .array()
-        .of(yup.string())
+        .of(
+          yup.mixed().test('is-string-or-file', 'Gallery items must be strings or File objects', value => {
+            // Allow strings (existing image paths) or File objects (new uploads)
+            return typeof value === 'string' || value instanceof File;
+          })
+        )
         .max(10, 'Gallery cannot exceed 10 images')
         .default([])
     })

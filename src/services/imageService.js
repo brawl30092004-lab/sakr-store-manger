@@ -195,7 +195,21 @@ export async function processProductImage(file, projectPath, productId, imageTyp
     throw new Error('No file provided for processing');
   }
 
+  if (!projectPath) {
+    throw new Error('Project path is required for image processing');
+  }
+
+  if (!productId) {
+    throw new Error('Product ID is required for image processing');
+  }
+
+  if (!window.electron?.image?.processImage) {
+    throw new Error('Electron image processing API is not available');
+  }
+
   try {
+    console.log(`Processing ${imageType} image${index !== null ? ` (index ${index})` : ''} for product ${productId}`);
+    
     // Convert File to data URL for transfer to main process
     const imageData = await fileToDataURL(file);
 
@@ -212,9 +226,11 @@ export async function processProductImage(file, projectPath, productId, imageTyp
       throw new Error(result.error || 'Failed to process image');
     }
 
+    console.log(`Successfully processed image: ${result.path}`);
     return result.path;
   } catch (error) {
     console.error('Error processing product image:', error);
+    console.error('Context:', { productId, imageType, index, projectPath });
     throw new Error(`Image processing failed: ${error.message}`);
   }
 }
