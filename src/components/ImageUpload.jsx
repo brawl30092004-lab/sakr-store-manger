@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { validateUploadedImage, fileToDataURL, formatFileSize } from '../services/imageService';
+import { showWarning, ToastMessages } from '../services/toastService';
 import './ImageUpload.css';
 
 /**
@@ -37,6 +38,11 @@ function ImageUpload({ value, onChange, error }) {
         size: formatFileSize(file.size),
         dimensions: `${validation.dimensions.width}x${validation.dimensions.height}px`
       });
+      
+      // Check if image is square and warn if not
+      if (validation.dimensions.width !== validation.dimensions.height) {
+        showWarning(ToastMessages.IMAGE_NOT_SQUARE);
+      }
       
       // Pass the File object to parent (not dataURL)
       // The parent will process it through the backend when saving

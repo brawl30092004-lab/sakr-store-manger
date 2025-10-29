@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { Toaster } from 'react-hot-toast';
 import { loadProducts } from './store/slices/productsSlice';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
@@ -27,6 +28,7 @@ function App() {
 
   return (
     <div className="App">
+      <Toaster />
       <header className="app-header">
         <div className="app-title">
           <h1>Sakr Store Manager</h1>

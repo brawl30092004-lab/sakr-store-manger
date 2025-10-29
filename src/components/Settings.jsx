@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { showSuccess, showError, showInfo, ToastMessages } from '../services/toastService';
 import './Settings.css';
 
 /**
@@ -46,6 +47,7 @@ function Settings() {
           message: 'Settings loaded successfully',
           type: 'info'
         });
+        showInfo(ToastMessages.SETTINGS_LOADED);
       } else {
         setStatus({
           message: 'No existing settings found',
@@ -58,6 +60,7 @@ function Settings() {
         message: `Failed to load settings: ${error.message}`,
         type: 'error'
       });
+      showError(error);
     }
   };
 
@@ -104,18 +107,22 @@ function Settings() {
   const handleTestConnection = async () => {
     // Validate form data
     if (!formData.repoUrl || !formData.username || !formData.projectPath) {
+      const message = 'Please fill in all required fields before testing';
       setStatus({
-        message: 'Please fill in all required fields before testing',
+        message,
         type: 'error'
       });
+      showError(message);
       return;
     }
 
     if (!formData.token && !hasExistingToken) {
+      const message = 'Please provide a Personal Access Token';
       setStatus({
-        message: 'Please provide a Personal Access Token',
+        message,
         type: 'error'
       });
+      showError(message);
       return;
     }
 
@@ -137,12 +144,19 @@ function Settings() {
         message: result.message,
         type: result.success ? 'success' : 'error'
       });
+      
+      if (result.success) {
+        showSuccess(ToastMessages.GITHUB_CONNECTED);
+      } else {
+        showError(result.message);
+      }
     } catch (error) {
       console.error('Connection test failed:', error);
       setStatus({
         message: `Connection test failed: ${error.message}`,
         type: 'error'
       });
+      showError(error);
     } finally {
       setIsTesting(false);
     }
@@ -154,19 +168,23 @@ function Settings() {
   const handleSave = async () => {
     // Validate form data
     if (!formData.repoUrl || !formData.username || !formData.projectPath) {
+      const message = 'Please fill in all required fields';
       setStatus({
-        message: 'Please fill in all required fields',
+        message,
         type: 'error'
       });
+      showError(message);
       return;
     }
 
     // Check if token is provided or exists
     if (!formData.token && !hasExistingToken) {
+      const message = 'Please provide a Personal Access Token';
       setStatus({
-        message: 'Please provide a Personal Access Token',
+        message,
         type: 'error'
       });
+      showError(message);
       return;
     }
 
@@ -190,6 +208,7 @@ function Settings() {
           message: 'Settings saved successfully!',
           type: 'success'
         });
+        showSuccess(ToastMessages.SETTINGS_SAVED);
         
         // If we saved a new token, update the indicator
         if (formData.token !== '••••••••') {
@@ -204,6 +223,7 @@ function Settings() {
           message: result.message || 'Failed to save settings',
           type: 'error'
         });
+        showError(result.message || 'Failed to save settings');
       }
     } catch (error) {
       console.error('Failed to save settings:', error);
@@ -211,6 +231,7 @@ function Settings() {
         message: `Failed to save settings: ${error.message}`,
         type: 'error'
       });
+      showError(error);
     } finally {
       setIsLoading(false);
     }

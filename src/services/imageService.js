@@ -3,6 +3,8 @@
  * Validates uploaded images for type, size, and dimensions
  */
 
+import { createError } from '../utils/errorHandler.js';
+
 /**
  * Supported image formats
  */
@@ -41,20 +43,14 @@ export async function validateUploadedImage(file) {
 
   // Step 2: Check file type
   if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
-    return {
-      valid: false,
-      error: `Invalid file type. Supported formats: JPEG, PNG, WebP, AVIF`
-    };
+    throw createError('INVALID_FILE_TYPE', `Invalid file type. Supported formats: JPEG, PNG, WebP, AVIF`);
   }
 
   // Step 3: Check file size
   if (file.size > IMAGE_CONSTRAINTS.maxSizeBytes) {
     const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
     const maxMB = IMAGE_CONSTRAINTS.maxSizeBytes / (1024 * 1024);
-    return {
-      valid: false,
-      error: `File too large (${sizeMB} MB). Maximum size is ${maxMB} MB`
-    };
+    throw createError('FILE_TOO_LARGE', `File too large (${sizeMB} MB). Maximum size is ${maxMB} MB`);
   }
 
   // Step 4: Check image dimensions

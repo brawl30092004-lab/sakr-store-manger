@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { showSuccess, showError, showLoading, dismissToast, ToastMessages } from '../services/toastService';
 import './StatusBar.css';
 
 function StatusBar() {
@@ -85,37 +86,36 @@ function StatusBar() {
     setIsPublishing(true);
     setPublishError(null);
     
+    // Show loading toast
+    const toastId = showLoading(ToastMessages.GITHUB_PUSHING);
+    
     try {
       console.log('Publishing changes to GitHub...');
       
       // Call the publish API
       const result = await window.electron.publishToGitHub();
       
+      // Dismiss loading toast
+      dismissToast(toastId);
+      
       if (result.success) {
         // Success - show notification
-        alert(`✓ ${result.message}\n\nCommit: ${result.commitMessage || 'Changes published'}\nBranch: ${result.branch || 'main'}`);
+        showSuccess(ToastMessages.GITHUB_PUBLISHED);
         
         // Refresh git status to update the UI
         await checkGitStatus();
       } else {
         // Failed - show error
         setPublishError(result.message || 'Failed to publish changes');
-        
-        // Provide more detailed error information
-        let errorDetails = result.message;
-        if (result.step) {
-          errorDetails += `\n\nFailed at step: ${result.step}`;
-        }
-        if (result.error && result.error !== result.message) {
-          errorDetails += `\n\nDetails: ${result.error}`;
-        }
-        
-        alert(`✗ Publish Failed\n\n${errorDetails}`);
+        showError(result.message || 'Failed to publish changes to GitHub');
       }
     } catch (error) {
       console.error('Failed to publish:', error);
       setPublishError(error.message || 'An unexpected error occurred');
-      alert(`✗ Publish Failed\n\n${error.message}`);
+      
+      // Dismiss loading toast and show error
+      dismissToast(toastId);
+      showError(error);
     } finally {
       setIsPublishing(false);
     }

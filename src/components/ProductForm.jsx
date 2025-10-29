@@ -4,6 +4,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useSelector } from 'react-redux';
 import { productSchema } from '../services/productSchema';
 import { processProductImage } from '../services/imageService';
+import { showSuccess, showError, showWarning, ToastMessages } from '../services/toastService';
 import ImageUpload from './ImageUpload';
 import GalleryUpload from './GalleryUpload';
 import './ProductForm.css';
@@ -127,9 +128,14 @@ function ProductForm({ product, onClose, onSave }) {
 
       // Clear pending images
       setPendingImages({ primary: null, gallery: [] });
+      
+      // Show success message
+      showSuccess(ToastMessages.PRODUCT_SAVED);
     } catch (error) {
       console.error('Error processing images or saving product:', error);
-      setSaveError(error.message || 'Failed to save product. Please try again.');
+      const errorMessage = error.message || 'Failed to save product. Please try again.';
+      setSaveError(errorMessage);
+      showError(error);
     } finally {
       setIsSaving(false);
     }
