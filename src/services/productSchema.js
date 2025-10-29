@@ -70,6 +70,10 @@ export const productSchema = yup.object().shape({
   // Discounted Price - Conditionally required when discount is true
   discountedPrice: yup
     .number()
+    .transform((value, originalValue) => {
+      // If discount is false, allow 0 or any value without strict validation
+      return originalValue === '' || originalValue === null ? undefined : value;
+    })
     .when('discount', {
       is: true,
       then: (schema) => schema
@@ -83,7 +87,7 @@ export const productSchema = yup.object().shape({
           yup.ref('price'),
           'Discounted price must be less than regular price'
         ),
-      otherwise: (schema) => schema.notRequired()
+      otherwise: (schema) => schema.notRequired().nullable()
     }),
 
   // Stock - Required non-negative integer, max 9999
@@ -104,11 +108,13 @@ export const productSchema = yup.object().shape({
     .object()
     .shape({
       primary: yup
-        .string()
-        .test('no-empty-whitespace', 'Primary image cannot be only whitespace', value => {
-          // Allow empty string or valid non-whitespace string
-          if (!value || value === '') return true;
-          return value.trim().length > 0;
+        .mixed()
+        .required('Primary image is required')
+        .test('valid-image', 'Primary image cannot be empty', value => {
+          // Allow File objects (new uploads) or non-empty strings (existing paths)
+          if (value instanceof File) return true;
+          if (typeof value === 'string' && value.trim().length > 0) return true;
+          return false;
         }),
       
       gallery: yup

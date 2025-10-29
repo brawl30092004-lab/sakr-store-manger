@@ -104,8 +104,9 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
   // Handle primary image upload (store File object temporarily)
   const handlePrimaryImageChange = (fileOrPath) => {
     if (fileOrPath instanceof File) {
-      // New file upload - store for processing on save
+      // New file upload - store for processing on save AND update form value for validation
       setPendingImages(prev => ({ ...prev, primary: fileOrPath }));
+      setValue('images.primary', fileOrPath, { shouldValidate: true });
     } else {
       // Existing path or dataURL - update form value directly
       setValue('images.primary', fileOrPath, { shouldValidate: true });
@@ -138,11 +139,11 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
       if (formData.id === 0 && hasNewImages) {
         console.log('New product with images - saving in two steps');
         
-        // Step 1: Save product without images to get an ID
+        // Step 1: Save product with placeholder images to get an ID
         const tempProductData = {
           ...productData,
           images: {
-            primary: '',
+            primary: 'placeholder-will-be-replaced',
             gallery: []
           }
         };
