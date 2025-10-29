@@ -32,4 +32,5 @@ contextBridge.exposeInMainWorld('electron', {
   loadSettings: () => ipcRenderer.invoke('settings:load'),
   browseDirectory: () => ipcRenderer.invoke('settings:browseDirectory'),
   testConnection: (config) => ipcRenderer.invoke('settings:testConnection', config),
+  getGitStatus: () => ipcRenderer.invoke('git:getStatus'),
 });

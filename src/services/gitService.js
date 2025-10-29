@@ -49,19 +49,11 @@ class GitService {
 
   /**
    * Tests the connection to the GitHub repository
+   * Makes an authenticated API request to verify credentials and repository access
    * @returns {Promise<Object>} - Result object with success status and message
    */
   async testConnection() {
     try {
-      // First check if it's a valid git repository
-      const isRepo = await this.isRepository();
-      if (!isRepo) {
-        return {
-          success: false,
-          message: 'Not a valid Git repository. Please select a valid Git project folder.'
-        };
-      }
-
       // Validate config
       if (!this.config.username || !this.config.token || !this.config.repoUrl) {
         return {
@@ -70,55 +62,118 @@ class GitService {
         };
       }
 
-      // Check remote configuration
-      const remotes = await this.git.getRemotes(true);
-      
-      if (remotes.length === 0) {
+      // Parse repository URL to extract owner and repo name
+      const repoMatch = this.config.repoUrl.match(/github\.com[/:]([\w-]+)\/([\w-]+)/);
+      if (!repoMatch) {
         return {
           success: false,
-          message: 'No remote repository configured. Please add a remote first.'
+          message: 'Invalid repository URL format. Expected: https://github.com/owner/repo'
         };
       }
 
-      // Try to fetch from remote (lightweight test)
-      // This will verify credentials without pulling data
-      await this.git.fetch(['--dry-run']);
+      const owner = repoMatch[1];
+      const repo = repoMatch[2].replace(/\.git$/, ''); // Remove .git if present
 
-      return {
-        success: true,
-        message: 'Successfully connected to GitHub repository!'
-      };
+      // Make authenticated API request to GitHub
+      const apiUrl = `https://api.github.com/repos/${owner}/${repo}`;
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Authorization': `token ${this.config.token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Sakr-Store-Manager'
+        }
+      });
+
+      // Handle different response statuses
+      if (response.status === 200) {
+        const repoData = await response.json();
+        return {
+          success: true,
+          message: `Connection successful! Repository: ${repoData.full_name}`,
+          data: {
+            name: repoData.name,
+            fullName: repoData.full_name,
+            private: repoData.private,
+            defaultBranch: repoData.default_branch
+          }
+        };
+      } else if (response.status === 401) {
+        return {
+          success: false,
+          message: 'Invalid token. Please check your Personal Access Token.'
+        };
+      } else if (response.status === 404) {
+        return {
+          success: false,
+          message: 'Repository not found. Please check the repository URL or ensure you have access.'
+        };
+      } else if (response.status === 403) {
+        const data = await response.json();
+        return {
+          success: false,
+          message: `Access forbidden: ${data.message || 'You may not have permission to access this repository.'}`
+        };
+      } else {
+        const data = await response.json();
+        return {
+          success: false,
+          message: `GitHub API error (${response.status}): ${data.message || 'Unknown error'}`
+        };
+      }
     } catch (error) {
       console.error('GitHub connection test failed:', error);
       
-      // Parse error message for user-friendly feedback
-      if (error.message.includes('Authentication failed')) {
+      // Handle network errors
+      if (error.message.includes('fetch')) {
         return {
           success: false,
-          message: 'Authentication failed. Please check your Personal Access Token.'
-        };
-      } else if (error.message.includes('Repository not found')) {
-        return {
-          success: false,
-          message: 'Repository not found. Please check the repository URL.'
-        };
-      } else {
-        return {
-          success: false,
-          message: `Connection failed: ${error.message}`
+          message: 'Network error. Please check your internet connection.'
         };
       }
+      
+      return {
+        success: false,
+        message: `Connection failed: ${error.message}`
+      };
     }
   }
 
   /**
-   * Gets the current repository status
-   * @returns {Promise<Object>} - Git status object
+   * Gets the current repository status with detailed change information
+   * @returns {Promise<Object>} - Git status object with hasChanges flag and file counts
    */
   async getStatus() {
     try {
-      return await this.git.status();
+      const status = await this.git.status();
+      
+      // Calculate change counts
+      const modified = status.modified.length;
+      const created = status.created.length;
+      const deleted = status.deleted.length;
+      const renamed = status.renamed.length;
+      const totalChanges = modified + created + deleted + renamed;
+      
+      return {
+        hasChanges: !status.isClean(),
+        isClean: status.isClean(),
+        modified,
+        created,
+        deleted,
+        renamed,
+        totalChanges,
+        files: {
+          modified: status.modified,
+          created: status.created,
+          deleted: status.deleted,
+          renamed: status.renamed
+        },
+        current: status.current,
+        tracking: status.tracking,
+        ahead: status.ahead,
+        behind: status.behind
+      };
     } catch (error) {
+      console.error('Failed to get repository status:', error);
       throw new Error(`Failed to get repository status: ${error.message}`);
     }
   }

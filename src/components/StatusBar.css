@@ -16,6 +16,12 @@
   gap: 8px;
 }
 
+.status-details {
+  color: #999;
+  font-size: 12px;
+  margin-left: 4px;
+}
+
 .status-indicator {
   width: 10px;
   height: 10px;
@@ -27,12 +33,26 @@
   background-color: #4CAF50;
 }
 
+.status-indicator.changes {
+  background-color: #FFC107;
+  animation: pulse 2s infinite;
+}
+
 .status-indicator.warning {
   background-color: #FFC107;
 }
 
 .status-indicator.error {
   background-color: #F44336;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .publish-btn {

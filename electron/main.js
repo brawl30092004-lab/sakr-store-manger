@@ -375,6 +375,50 @@ ipcMain.handle('settings:testConnection', async (event, config) => {
   }
 });
 
+/**
+ * IPC Handler for getting Git repository status
+ */
+ipcMain.handle('git:getStatus', async (event) => {
+  try {
+    // Dynamically import the ES modules
+    const { getConfigService } = await import('../src/services/configService.js');
+    const GitService = (await import('../src/services/gitService.js')).default;
+    
+    const configService = getConfigService();
+    const config = configService.getConfigWithToken();
+    
+    // Validate we have a project path
+    if (!config.projectPath) {
+      return {
+        success: false,
+        message: 'No project path configured',
+        hasChanges: false
+      };
+    }
+    
+    // Create GitService instance
+    const gitService = new GitService(config.projectPath, {
+      username: config.username,
+      token: config.token,
+      repoUrl: config.repoUrl
+    });
+    
+    // Get the status
+    const status = await gitService.getStatus();
+    return {
+      success: true,
+      ...status
+    };
+  } catch (error) {
+    console.error('Error getting git status:', error);
+    return {
+      success: false,
+      message: `Failed to get status: ${error.message}`,
+      hasChanges: false
+    };
+  }
+});
+
 // Create window when app is ready
 app.whenReady().then(() => {
   createWindow();
