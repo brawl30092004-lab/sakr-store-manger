@@ -67,21 +67,23 @@ export const productSchema = yup.object().shape({
     .boolean()
     .required('Discount flag is required'),
 
-  // Discounted Price - Required positive number, must be less than price when discount is true
+  // Discounted Price - Conditionally required when discount is true
   discountedPrice: yup
     .number()
-    .required('Discounted price is required')
-    .positive('Discounted price must be greater than 0')
-    .test('decimal-places', 'Discounted price must have exactly 2 decimal places', value => {
-      if (value === undefined || value === null) return false;
-      return (value * 100) % 1 === 0;
-    })
     .when('discount', {
       is: true,
-      then: (schema) => schema.lessThan(
-        yup.ref('price'),
-        'Discounted price must be less than regular price'
-      )
+      then: (schema) => schema
+        .required('Discounted price is required when discount is enabled')
+        .positive('Discounted price must be greater than 0')
+        .test('decimal-places', 'Discounted price must have exactly 2 decimal places', value => {
+          if (value === undefined || value === null) return false;
+          return (value * 100) % 1 === 0;
+        })
+        .lessThan(
+          yup.ref('price'),
+          'Discounted price must be less than regular price'
+        ),
+      otherwise: (schema) => schema.notRequired()
     }),
 
   // Stock - Required non-negative integer, max 9999
