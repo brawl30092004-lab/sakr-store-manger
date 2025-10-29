@@ -142,6 +142,34 @@ class ProductService {
     await this.saveProducts(filteredProducts);
     return filteredProducts;
   }
+
+  /**
+   * Duplicate a product
+   * Creates a copy of an existing product with a new ID and "(Copy)" appended to the name
+   * @param {string} id - Product ID to duplicate
+   * @returns {Promise<Array>} Updated products array with the duplicated product
+   * @throws {Error} If product not found
+   */
+  async duplicateProduct(id) {
+    const products = await this.loadProducts();
+    const productToDuplicate = products.find(p => p.id === id);
+    
+    if (!productToDuplicate) {
+      throw new Error(`Product with ID ${id} not found`);
+    }
+    
+    // Create a copy of the product without the ID
+    const { id: _removedId, ...productCopy } = productToDuplicate;
+    
+    // Append "(Copy)" to the name
+    const duplicatedProduct = {
+      ...productCopy,
+      name: `${productToDuplicate.name} (Copy)`
+    };
+    
+    // Use addProduct to generate a new ID and save
+    return await this.addProduct(duplicatedProduct);
+  }
 }
 
 export default ProductService;

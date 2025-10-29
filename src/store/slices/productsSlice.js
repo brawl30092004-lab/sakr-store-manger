@@ -69,6 +69,98 @@ export const saveProducts = createAsyncThunk(
 );
 
 /**
+ * Async thunk to add a new product
+ */
+export const addProduct = createAsyncThunk(
+  'products/addProduct',
+  async (product, { getState, rejectWithValue }) => {
+    try {
+      const state = getState();
+      const projectPath = state.settings.projectPath;
+      
+      if (!projectPath) {
+        throw new Error('Project path is not set');
+      }
+
+      const productService = new ProductService(projectPath);
+      const updatedProducts = await productService.addProduct(product);
+      return updatedProducts;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
+ * Async thunk to update an existing product
+ */
+export const updateProduct = createAsyncThunk(
+  'products/updateProduct',
+  async ({ id, updates }, { getState, rejectWithValue }) => {
+    try {
+      const state = getState();
+      const projectPath = state.settings.projectPath;
+      
+      if (!projectPath) {
+        throw new Error('Project path is not set');
+      }
+
+      const productService = new ProductService(projectPath);
+      const updatedProducts = await productService.updateProduct(id, updates);
+      return updatedProducts;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
+ * Async thunk to delete a product
+ */
+export const deleteProduct = createAsyncThunk(
+  'products/deleteProduct',
+  async (id, { getState, rejectWithValue }) => {
+    try {
+      const state = getState();
+      const projectPath = state.settings.projectPath;
+      
+      if (!projectPath) {
+        throw new Error('Project path is not set');
+      }
+
+      const productService = new ProductService(projectPath);
+      const updatedProducts = await productService.deleteProduct(id);
+      return updatedProducts;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
+ * Async thunk to duplicate a product
+ */
+export const duplicateProduct = createAsyncThunk(
+  'products/duplicateProduct',
+  async (id, { getState, rejectWithValue }) => {
+    try {
+      const state = getState();
+      const projectPath = state.settings.projectPath;
+      
+      if (!projectPath) {
+        throw new Error('Project path is not set');
+      }
+
+      const productService = new ProductService(projectPath);
+      const updatedProducts = await productService.duplicateProduct(id);
+      return updatedProducts;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
  * Products Slice - Manages product data state
  */
 const productsSlice = createSlice({
@@ -134,6 +226,70 @@ const productsSlice = createSlice({
       .addCase(saveProducts.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to save products';
+      });
+
+    // Handle addProduct
+    builder
+      .addCase(addProduct.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(addProduct.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload;
+        state.hasUnsavedChanges = true;
+      })
+      .addCase(addProduct.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to add product';
+      });
+
+    // Handle updateProduct
+    builder
+      .addCase(updateProduct.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProduct.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload;
+        state.hasUnsavedChanges = true;
+      })
+      .addCase(updateProduct.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to update product';
+      });
+
+    // Handle deleteProduct
+    builder
+      .addCase(deleteProduct.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteProduct.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload;
+        state.hasUnsavedChanges = true;
+      })
+      .addCase(deleteProduct.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to delete product';
+      });
+
+    // Handle duplicateProduct
+    builder
+      .addCase(duplicateProduct.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(duplicateProduct.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload;
+        state.hasUnsavedChanges = true;
+      })
+      .addCase(duplicateProduct.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to duplicate product';
       });
   },
 });

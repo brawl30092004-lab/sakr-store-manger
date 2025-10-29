@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { addProductLocal, updateProductLocal } from '../store/slices/productsSlice';
+import { addProduct, updateProduct, deleteProduct, duplicateProduct } from '../store/slices/productsSlice';
 import { defaultProduct } from '../store/slices/productsSlice';
 import ProductForm from './ProductForm';
 import './MainContent.css';
@@ -9,6 +9,7 @@ function MainContent({ selectedCategory }) {
   const [searchText, setSearchText] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const { items: products, loading, error } = useSelector((state) => state.products);
   const dispatch = useDispatch();
 
@@ -62,19 +63,35 @@ function MainContent({ selectedCategory }) {
   const handleSaveProduct = (productData) => {
     if (editingProduct) {
       // Update existing product
-      dispatch(updateProductLocal({
+      dispatch(updateProduct({
         id: editingProduct.id,
-        data: productData
+        updates: productData
       }));
     } else {
       // Add new product
-      const newProduct = {
-        ...productData,
-        id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1,
-        image: productData.images?.primary || ''
-      };
-      dispatch(addProductLocal(newProduct));
+      dispatch(addProduct(productData));
     }
+  };
+
+  // Handle deleting product
+  const handleDeleteClick = (id) => {
+    setDeleteConfirmId(id);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteConfirmId) {
+      dispatch(deleteProduct(deleteConfirmId));
+      setDeleteConfirmId(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmId(null);
+  };
+
+  // Handle duplicating product
+  const handleDuplicateProduct = (id) => {
+    dispatch(duplicateProduct(id));
   };
 
   if (loading) {
@@ -171,8 +188,20 @@ function MainContent({ selectedCategory }) {
                 >
                   ✏️ Edit
                 </button>
-                <button className="btn-action btn-duplicate" title="Duplicate">📋 Duplicate</button>
-                <button className="btn-action btn-delete" title="Delete">🗑️ Delete</button>
+                <button 
+                  className="btn-action btn-duplicate" 
+                  title="Duplicate"
+                  onClick={() => handleDuplicateProduct(product.id)}
+                >
+                  📋 Duplicate
+                </button>
+                <button 
+                  className="btn-action btn-delete" 
+                  title="Delete"
+                  onClick={() => handleDeleteClick(product.id)}
+                >
+                  🗑️ Delete
+                </button>
               </div>
             </div>
           ))
@@ -186,6 +215,31 @@ function MainContent({ selectedCategory }) {
           onClose={handleCloseForm}
           onSave={handleSaveProduct}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="confirmation-overlay">
+          <div className="confirmation-modal">
+            <h3>Confirm Delete</h3>
+            <p>Are you sure you want to delete this product?</p>
+            <p className="confirmation-warning">This action cannot be undone.</p>
+            <div className="confirmation-actions">
+              <button 
+                className="btn btn-secondary"
+                onClick={handleDeleteCancel}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-danger"
+                onClick={handleDeleteConfirm}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
