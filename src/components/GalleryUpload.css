@@ -19,14 +19,14 @@
   height: 120px;
   border-radius: 8px;
   overflow: hidden;
-  border: 2px solid #e0e0e0;
-  background-color: #f5f5f5;
+  border: 2px solid #30363d;
+  background-color: #0d1117;
   cursor: move;
   transition: all 0.2s ease;
 }
 
 .gallery-item:hover {
-  border-color: #007bff;
+  border-color: #58a6ff;
   transform: scale(1.05);
   z-index: 10;
 }
@@ -51,7 +51,7 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background-color: rgba(220, 53, 69, 0.9);
+  background-color: rgba(218, 54, 51, 0.9);
   color: white;
   border: none;
   font-size: 14px;
@@ -82,8 +82,8 @@
   width: 24px;
   height: 24px;
   border-radius: 4px;
-  background-color: rgba(0, 0, 0, 0.6);
-  color: white;
+  background-color: rgba(22, 27, 34, 0.9);
+  color: #e6edf3;
   font-size: 12px;
   display: flex;
   align-items: center;
@@ -103,32 +103,32 @@
 .gallery-add-button {
   width: 120px;
   height: 120px;
-  border: 2px dashed #cbd5e0;
+  border: 2px dashed #30363d;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  background-color: #f8f9fa;
+  background-color: #0d1117;
   transition: all 0.2s ease;
 }
 
 .gallery-add-button:hover {
-  border-color: #007bff;
-  background-color: #e7f3ff;
+  border-color: #58a6ff;
+  background-color: rgba(88, 166, 255, 0.1);
 }
 
 .add-icon {
   font-size: 32px;
-  color: #007bff;
+  color: #58a6ff;
   margin-bottom: 4px;
   font-weight: 300;
 }
 
 .add-text {
   font-size: 12px;
-  color: #666;
+  color: #8b949e;
   margin: 0;
   font-weight: 500;
 }
@@ -143,14 +143,14 @@
 
 .gallery-count {
   font-size: 12px;
-  color: #666;
+  color: #8b949e;
   margin: 0;
   font-weight: 500;
 }
 
 .gallery-hint {
   font-size: 12px;
-  color: #007bff;
+  color: #58a6ff;
   margin: 0;
   font-style: italic;
 }
@@ -158,13 +158,13 @@
 /* Error Message */
 .gallery-error-message {
   display: block;
-  color: #dc3545;
+  color: #f85149;
   font-size: 12px;
   margin-top: 8px;
   font-weight: 500;
   padding: 8px 12px;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
+  background-color: rgba(248, 81, 73, 0.15);
+  border: 1px solid #da3633;
   border-radius: 4px;
 }
 

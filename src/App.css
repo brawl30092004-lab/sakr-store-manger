@@ -4,12 +4,13 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background-color: #0d1117;
 }
 
 .app-header {
   height: 50px;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
+  background-color: #161b22;
+  border-bottom: 1px solid #30363d;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -19,7 +20,7 @@
 .app-title h1 {
   margin: 0;
   font-size: 18px;
-  color: #333;
+  color: #e6edf3;
   font-weight: 600;
 }
 
@@ -31,12 +32,13 @@
 .window-control {
   font-size: 12px;
   cursor: pointer;
+  color: #8b949e;
 }
 
 .app-menu {
   height: 35px;
-  background-color: #fafafa;
-  border-bottom: 1px solid #e0e0e0;
+  background-color: #161b22;
+  border-bottom: 1px solid #30363d;
   display: flex;
   align-items: center;
   padding: 0 20px;
@@ -45,7 +47,7 @@
 
 .menu-item {
   font-size: 13px;
-  color: #333;
+  color: #e6edf3;
   cursor: pointer;
   padding: 8px 12px;
   border-radius: 4px;
@@ -53,7 +55,7 @@
 }
 
 .menu-item:hover {
-  background-color: #e8e8e8;
+  background-color: #21262d;
 }
 
 .app-body {
@@ -61,4 +63,5 @@
   display: flex;
   overflow: hidden;
 }
+
 

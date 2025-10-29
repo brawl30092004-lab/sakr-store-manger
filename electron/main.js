@@ -1,9 +1,14 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
-const { autoUpdater } = require('electron-updater');
-const path = require('path');
-const fs = require('fs-extra');
-const sharp = require('sharp');
-const os = require('os');
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import pkg from 'electron-updater';
+const { autoUpdater } = pkg;
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs-extra';
+import sharp from 'sharp';
+import os from 'os';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let mainWindow;
 

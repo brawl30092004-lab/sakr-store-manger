@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A desktop application for managing product catalogs with Git integration",
   "main": "electron/main.js",
+  "type": "module",
   "author": "Sakr Store",
   "license": "MIT",
   "private": true,
