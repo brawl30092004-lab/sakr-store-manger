@@ -135,6 +135,12 @@
   margin-bottom: 6px;
 }
 
+.form-label-hint {
+  font-weight: 400;
+  color: #666;
+  font-size: 12px;
+}
+
 .required {
   color: #dc3545;
   margin-left: 2px;

@@ -15,5 +15,13 @@ contextBridge.exposeInMainWorld('electron', {
   fs: {
     loadProducts: (projectPath) => ipcRenderer.invoke('fs:loadProducts', projectPath),
     saveProducts: (projectPath, products) => ipcRenderer.invoke('fs:saveProducts', projectPath, products),
+  },
+
+  // Image Processing API
+  image: {
+    processImage: (imageData, projectPath, productId, imageType, index) => 
+      ipcRenderer.invoke('image:process', imageData, projectPath, productId, imageType, index),
+    deleteImage: (projectPath, imagePath) => 
+      ipcRenderer.invoke('image:delete', projectPath, imagePath),
   }
 });

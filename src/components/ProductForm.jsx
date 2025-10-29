@@ -1,7 +1,11 @@
-import React from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
+import { useSelector } from 'react-redux';
 import { productSchema } from '../services/productSchema';
+import { processProductImage } from '../services/imageService';
+import ImageUpload from './ImageUpload';
+import GalleryUpload from './GalleryUpload';
 import './ProductForm.css';
 
 /**
@@ -9,12 +13,23 @@ import './ProductForm.css';
  * Add/Edit Product form with validation using react-hook-form and Yup
  */
 function ProductForm({ product, onClose, onSave }) {
+  const projectPath = useSelector((state) => state.settings.projectPath);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+
+  // Store temporary file uploads separately (not in form data)
+  const [pendingImages, setPendingImages] = useState({
+    primary: null, // Will store File object
+    gallery: [] // Will store array of File objects
+  });
+
   const {
     register,
     handleSubmit,
     formState: { errors, isValid },
     watch,
-    control
+    control,
+    setValue
   } = useForm({
     resolver: yupResolver(productSchema),
     mode: 'onChange', // Validate on change for real-time feedback
@@ -38,15 +53,99 @@ function ProductForm({ product, onClose, onSave }) {
   // Watch the discount field to conditionally show discountedPrice
   const isDiscountActive = watch('discount');
 
+  // Handle primary image upload (store File object temporarily)
+  const handlePrimaryImageChange = (fileOrPath) => {
+    if (fileOrPath instanceof File) {
+      // New file upload - store for processing on save
+      setPendingImages(prev => ({ ...prev, primary: fileOrPath }));
+    } else {
+      // Existing path or dataURL - update form value directly
+      setValue('images.primary', fileOrPath, { shouldValidate: true });
+    }
+  };
+
+  // Handle gallery image uploads (store File objects temporarily)
+  const handleGalleryImagesChange = (filesOrPaths) => {
+    const files = filesOrPaths.filter(item => item instanceof File);
+    const paths = filesOrPaths.filter(item => typeof item === 'string');
+    
+    if (files.length > 0) {
+      // New file uploads - store for processing on save
+      setPendingImages(prev => ({ ...prev, gallery: files }));
+    }
+    
+    // Update form with existing paths
+    if (paths.length > 0) {
+      setValue('images.gallery', paths, { shouldValidate: true });
+    }
+  };
+
+  // Process images and save product
+  const processImagesAndSave = async (formData) => {
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      const productData = { ...formData };
+
+      // Process primary image if there's a new upload
+      if (pendingImages.primary instanceof File) {
+        console.log('Processing primary image...');
+        const primaryPath = await processProductImage(
+          pendingImages.primary,
+          projectPath,
+          formData.id,
+          'primary',
+          null
+        );
+        productData.images.primary = primaryPath;
+        productData.image = primaryPath; // Also set legacy image field
+      }
+
+      // Process gallery images if there are new uploads
+      if (pendingImages.gallery && pendingImages.gallery.length > 0) {
+        console.log(`Processing ${pendingImages.gallery.length} gallery images...`);
+        const galleryPaths = await Promise.all(
+          pendingImages.gallery.map((file, index) =>
+            processProductImage(
+              file,
+              projectPath,
+              formData.id,
+              'gallery',
+              index
+            )
+          )
+        );
+        
+        // Combine existing paths with new paths
+        const existingPaths = productData.images.gallery || [];
+        productData.images.gallery = [...existingPaths, ...galleryPaths];
+      }
+
+      // Save the product with processed image paths
+      await onSave(productData);
+
+      // Clear pending images
+      setPendingImages({ primary: null, gallery: [] });
+    } catch (error) {
+      console.error('Error processing images or saving product:', error);
+      setSaveError(error.message || 'Failed to save product. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // Handle form submission
-  const onSubmit = (data) => {
-    onSave(data);
+  const onSubmit = async (data) => {
+    await processImagesAndSave(data);
   };
 
   // Handle Save & Close
-  const handleSaveAndClose = handleSubmit((data) => {
-    onSave(data);
-    onClose();
+  const handleSaveAndClose = handleSubmit(async (data) => {
+    await processImagesAndSave(data);
+    if (!saveError) {
+      onClose();
+    }
   });
 
   return (
@@ -204,6 +303,48 @@ function ProductForm({ product, onClose, onSave }) {
             )}
           </section>
 
+          {/* Images Section */}
+          <section className="form-section">
+            <h3 className="section-title">Images</h3>
+            
+            {/* Primary Image */}
+            <div className="form-group">
+              <label className="form-label">
+                Primary Image
+              </label>
+              <Controller
+                name="images.primary"
+                control={control}
+                render={({ field }) => (
+                  <ImageUpload
+                    value={field.value}
+                    onChange={handlePrimaryImageChange}
+                    error={errors.images?.primary?.message}
+                  />
+                )}
+              />
+            </div>
+
+            {/* Gallery Images */}
+            <div className="form-group">
+              <label className="form-label">
+                Gallery Images
+                <span className="form-label-hint"> (Optional, up to 10)</span>
+              </label>
+              <Controller
+                name="images.gallery"
+                control={control}
+                render={({ field }) => (
+                  <GalleryUpload
+                    value={field.value || []}
+                    onChange={handleGalleryImagesChange}
+                    error={errors.images?.gallery?.message}
+                  />
+                )}
+              />
+            </div>
+          </section>
+
           {/* Product Flags Section */}
           <section className="form-section">
             <h3 className="section-title">Product Flags</h3>
@@ -223,27 +364,33 @@ function ProductForm({ product, onClose, onSave }) {
 
           {/* Action Buttons */}
           <div className="form-actions">
+            {saveError && (
+              <div className="error-message" style={{ marginBottom: '10px', textAlign: 'center' }}>
+                {saveError}
+              </div>
+            )}
             <button
               type="button"
               className="btn btn-secondary"
               onClick={onClose}
+              disabled={isSaving}
             >
               Cancel
             </button>
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={!isValid}
+              disabled={!isValid || isSaving}
             >
-              Save
+              {isSaving ? 'Processing...' : 'Save'}
             </button>
             <button
               type="button"
               className="btn btn-success"
               onClick={handleSaveAndClose}
-              disabled={!isValid}
+              disabled={!isValid || isSaving}
             >
-              Save & Close
+              {isSaving ? 'Processing...' : 'Save & Close'}
             </button>
           </div>
         </form>
