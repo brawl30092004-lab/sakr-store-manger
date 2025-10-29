@@ -4,6 +4,7 @@ import { loadProducts } from './store/slices/productsSlice';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import StatusBar from './components/StatusBar';
+import Settings from './components/Settings';
 import './App.css';
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
   const { items: products, loading, error } = useSelector((state) => state.products);
   const { projectPath } = useSelector((state) => state.settings);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [currentView, setCurrentView] = useState('main'); // 'main' or 'settings'
 
   useEffect(() => {
     // Load products on app startup
@@ -40,16 +42,28 @@ function App() {
         <span className="menu-item">File</span>
         <span className="menu-item">Edit</span>
         <span className="menu-item">View</span>
-        <span className="menu-item">Settings</span>
+        <span 
+          className="menu-item" 
+          onClick={() => setCurrentView(currentView === 'settings' ? 'main' : 'settings')}
+          style={{ cursor: 'pointer', fontWeight: currentView === 'settings' ? 'bold' : 'normal' }}
+        >
+          {currentView === 'settings' ? '← Back' : 'Settings'}
+        </span>
         <span className="menu-item">Help</span>
       </nav>
 
       <div className="app-body">
-        <Sidebar 
-          selectedCategory={selectedCategory}
-          onCategorySelect={setSelectedCategory}
-        />
-        <MainContent selectedCategory={selectedCategory} />
+        {currentView === 'settings' ? (
+          <Settings />
+        ) : (
+          <>
+            <Sidebar 
+              selectedCategory={selectedCategory}
+              onCategorySelect={setSelectedCategory}
+            />
+            <MainContent selectedCategory={selectedCategory} />
+          </>
+        )}
       </div>
 
       <StatusBar />

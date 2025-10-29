@@ -25,5 +25,11 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.invoke('image:delete', projectPath, imagePath),
     deleteProductImages: (projectPath, productId, imageType) =>
       ipcRenderer.invoke('image:deleteProductImages', projectPath, productId, imageType),
-  }
+  },
+
+  // Settings API for GitHub Integration
+  saveSettings: (config) => ipcRenderer.invoke('settings:save', config),
+  loadSettings: () => ipcRenderer.invoke('settings:load'),
+  browseDirectory: () => ipcRenderer.invoke('settings:browseDirectory'),
+  testConnection: (config) => ipcRenderer.invoke('settings:testConnection', config),
 });

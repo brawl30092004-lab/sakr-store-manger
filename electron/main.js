@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs-extra');
 const sharp = require('sharp');
@@ -253,6 +253,125 @@ ipcMain.handle('image:deleteProductImages', async (event, projectPath, productId
   } catch (error) {
     console.error('Error deleting product images:', error);
     return { success: false, deletedCount: 0, error: error.message };
+  }
+});
+
+// Settings and GitHub Integration Handlers
+
+/**
+ * IPC Handler for browsing directory
+ */
+ipcMain.handle('settings:browseDirectory', async (event) => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+      title: 'Select Local Git Repository Folder'
+    });
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+
+    return result.filePaths[0];
+  } catch (error) {
+    console.error('Error browsing directory:', error);
+    throw error;
+  }
+});
+
+/**
+ * IPC Handler for saving settings
+ */
+ipcMain.handle('settings:save', async (event, config) => {
+  try {
+    // Dynamically import the ES module
+    const { getConfigService } = await import('../src/services/configService.js');
+    const configService = getConfigService();
+    
+    const success = configService.saveConfig(config);
+    
+    if (success) {
+      console.log('Settings saved to:', configService.getConfigPath());
+      return { success: true, message: 'Settings saved successfully' };
+    } else {
+      return { success: false, message: 'Failed to save settings' };
+    }
+  } catch (error) {
+    console.error('Error saving settings:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+/**
+ * IPC Handler for loading settings
+ */
+ipcMain.handle('settings:load', async (event) => {
+  try {
+    // Dynamically import the ES module
+    const { getConfigService } = await import('../src/services/configService.js');
+    const configService = getConfigService();
+    
+    const config = configService.getConfigForDisplay();
+    return config;
+  } catch (error) {
+    console.error('Error loading settings:', error);
+    return null;
+  }
+});
+
+/**
+ * IPC Handler for testing GitHub connection
+ */
+ipcMain.handle('settings:testConnection', async (event, config) => {
+  try {
+    // Dynamically import the ES modules
+    const { getConfigService } = await import('../src/services/configService.js');
+    const GitService = (await import('../src/services/gitService.js')).default;
+    
+    const configService = getConfigService();
+    
+    // Get the full config with decrypted token
+    let fullConfig = configService.getConfigWithToken();
+    
+    // If a new token is provided, use it instead
+    if (config.token && config.token !== '••••••••') {
+      fullConfig = {
+        ...fullConfig,
+        ...config,
+        token: config.token
+      };
+    } else {
+      // Merge with provided config but keep existing token
+      fullConfig = {
+        ...fullConfig,
+        ...config
+      };
+    }
+    
+    // Validate we have all required fields
+    if (!fullConfig.projectPath) {
+      return {
+        success: false,
+        message: 'Please select a local project path'
+      };
+    }
+    
+    // Create GitService instance
+    const gitService = new GitService(fullConfig.projectPath, {
+      username: fullConfig.username,
+      token: fullConfig.token,
+      repoUrl: fullConfig.repoUrl
+    });
+    
+    // Test the connection
+    const result = await gitService.testConnection();
+    return result;
+  } catch (error) {
+    console.error('Error testing connection:', error);
+    return {
+      success: false,
+      message: `Connection test failed: ${error.message}`
+    };
   }
 });
 
