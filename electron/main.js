@@ -194,6 +194,68 @@ ipcMain.handle('image:delete', async (event, projectPath, imagePath) => {
   }
 });
 
+/**
+ * IPC Handler for bulk deleting product images
+ * @param {string} projectPath - Project root path
+ * @param {number} productId - Product ID
+ * @param {string} imageType - 'all', 'primary', or 'gallery'
+ * @returns {Promise<{success: boolean, deletedCount: number, error?: string}>}
+ */
+ipcMain.handle('image:deleteProductImages', async (event, projectPath, productId, imageType = 'all') => {
+  try {
+    const imagesDir = path.join(projectPath, 'images');
+    
+    // Check if images directory exists
+    const dirExists = await fs.pathExists(imagesDir);
+    if (!dirExists) {
+      return { success: true, deletedCount: 0 };
+    }
+
+    // Read all files in the images directory
+    const files = await fs.readdir(imagesDir);
+    
+    // Build pattern for matching files
+    let patterns = [];
+    if (imageType === 'all') {
+      // Match all files for this product
+      patterns.push(`product-${productId}-primary.`);
+      patterns.push(`product-${productId}-gallery-`);
+    } else if (imageType === 'primary') {
+      // Match only primary images
+      patterns.push(`product-${productId}-primary.`);
+    } else if (imageType === 'gallery') {
+      // Match only gallery images
+      patterns.push(`product-${productId}-gallery-`);
+    } else {
+      throw new Error(`Invalid imageType: ${imageType}`);
+    }
+
+    // Filter files that match the patterns
+    const matchingFiles = files.filter(file => {
+      return patterns.some(pattern => file.startsWith(pattern));
+    });
+
+    // Delete all matching files
+    let deletedCount = 0;
+    await Promise.all(
+      matchingFiles.map(async (file) => {
+        const filePath = path.join(imagesDir, file);
+        try {
+          await fs.remove(filePath);
+          deletedCount++;
+        } catch (err) {
+          console.warn(`Failed to delete file ${file}:`, err);
+        }
+      })
+    );
+
+    return { success: true, deletedCount };
+  } catch (error) {
+    console.error('Error deleting product images:', error);
+    return { success: false, deletedCount: 0, error: error.message };
+  }
+});
+
 // Create window when app is ready
 app.whenReady().then(() => {
   createWindow();

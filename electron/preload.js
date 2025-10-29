@@ -23,5 +23,7 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.invoke('image:process', imageData, projectPath, productId, imageType, index),
     deleteImage: (projectPath, imagePath) => 
       ipcRenderer.invoke('image:delete', projectPath, imagePath),
+    deleteProductImages: (projectPath, productId, imageType) =>
+      ipcRenderer.invoke('image:deleteProductImages', projectPath, productId, imageType),
   }
 });

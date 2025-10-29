@@ -249,3 +249,31 @@ export async function deleteProductImage(projectPath, imagePath) {
     return false;
   }
 }
+
+/**
+ * Delete all images associated with a product
+ * 
+ * @param {string} projectPath - Project root path
+ * @param {number} productId - Product ID
+ * @param {string} imageType - 'all', 'primary', or 'gallery' (default: 'all')
+ * @returns {Promise<{success: boolean, deletedCount: number}>} Result with deletion count
+ */
+export async function deleteProductImages(projectPath, productId, imageType = 'all') {
+  if (!productId) {
+    return { success: true, deletedCount: 0 };
+  }
+
+  try {
+    const result = await window.electron.image.deleteProductImages(projectPath, productId, imageType);
+    
+    if (!result.success) {
+      console.warn('Failed to delete product images:', result.error);
+      return { success: false, deletedCount: 0 };
+    }
+
+    return { success: true, deletedCount: result.deletedCount };
+  } catch (error) {
+    console.error('Error deleting product images:', error);
+    return { success: false, deletedCount: 0 };
+  }
+}

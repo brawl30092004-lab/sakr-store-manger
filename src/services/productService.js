@@ -1,4 +1,7 @@
 import { generateNextProductId, validateProduct } from './productValidation.js';
+import { deleteProductImages, deleteProductImage } from './imageService.js';
+
+
 
 /**
  * Ensure product.image is synced with images.primary for backward compatibility
@@ -110,11 +113,13 @@ class ProductService {
       throw new Error(`Product with ID ${id} not found`);
     }
     
+    const oldProduct = products[index];
+    
     // Ensure ID is not changed and sync image field
     const productToUpdate = syncLegacyImageField({
-      ...products[index],
+      ...oldProduct,
       ...updatedProduct,
-      id: products[index].id // Preserve original ID (immutable)
+      id: oldProduct.id // Preserve original ID (immutable)
     });
     
     // Validate the updated product
@@ -124,6 +129,27 @@ class ProductService {
         .map(([field, error]) => `${field}: ${error}`)
         .join(', ');
       throw new Error(`Product validation failed: ${errorMessages}`);
+    }
+    
+    // Handle image cleanup: Delete old images that are no longer referenced
+    const oldImages = oldProduct.images || {};
+    const newImages = productToUpdate.images || {};
+    
+    // Check if primary image changed
+    if (oldImages.primary && oldImages.primary !== newImages.primary) {
+      await deleteProductImage(this.projectPath, oldImages.primary);
+    }
+    
+    // Check if gallery images changed
+    const oldGallery = oldImages.gallery || [];
+    const newGallery = newImages.gallery || [];
+    
+    // Find gallery images that were removed
+    const removedGalleryImages = oldGallery.filter(oldPath => !newGallery.includes(oldPath));
+    
+    // Delete each removed gallery image
+    for (const imagePath of removedGalleryImages) {
+      await deleteProductImage(this.projectPath, imagePath);
     }
     
     products[index] = productToUpdate;
@@ -138,6 +164,10 @@ class ProductService {
    */
   async deleteProduct(id) {
     const products = await this.loadProducts();
+    
+    // Delete all associated images before removing from products.json
+    await deleteProductImages(this.projectPath, id, 'all');
+    
     const filteredProducts = products.filter(p => p.id !== id);
     await this.saveProducts(filteredProducts);
     return filteredProducts;
