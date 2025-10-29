@@ -328,3 +328,58 @@
   margin-left: 0;
   margin-right: 2px;
 }
+
+/* Draft Prompt Overlay */
+.draft-prompt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.2s ease-in;
+}
+
+/* Draft Prompt Modal */
+.draft-prompt-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  padding: 32px;
+  max-width: 450px;
+  width: 90%;
+  animation: slideUp 0.3s ease-out;
+}
+
+.draft-prompt-modal h3 {
+  margin: 0 0 16px 0;
+  color: #333;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.draft-prompt-modal p {
+  margin: 0 0 12px 0;
+  color: #666;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Draft Prompt Actions */
+.draft-prompt-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.draft-prompt-actions .btn {
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 100px;
+}

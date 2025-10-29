@@ -1,17 +1,22 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, forwardRef, useImperativeHandle } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { addProduct, updateProduct, deleteProduct, duplicateProduct } from '../store/slices/productsSlice';
 import { defaultProduct } from '../store/slices/productsSlice';
 import ProductForm from './ProductForm';
 import './MainContent.css';
 
-function MainContent({ selectedCategory }) {
+const MainContent = forwardRef(({ selectedCategory }, ref) => {
   const [searchText, setSearchText] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [selectedProductId, setSelectedProductId] = useState(null);
   const { items: products, loading, error } = useSelector((state) => state.products);
   const dispatch = useDispatch();
+  
+  // Refs for child components
+  const searchInputRef = useRef(null);
+  const productFormRef = useRef(null);
 
   // Filtering Pipeline
   const filteredProducts = useMemo(() => {
@@ -94,6 +99,38 @@ function MainContent({ selectedCategory }) {
     dispatch(duplicateProduct(id));
   };
 
+  // Expose methods to parent via ref
+  useImperativeHandle(ref, () => ({
+    handleNewProduct,
+    handleSave: () => {
+      if (productFormRef.current?.handleSave) {
+        productFormRef.current.handleSave();
+      }
+    },
+    focusSearch: () => {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+    },
+    handleDeleteShortcut: () => {
+      if (selectedProductId && !isFormOpen && !deleteConfirmId) {
+        handleDeleteClick(selectedProductId);
+      }
+    },
+    handleEscape: () => {
+      if (deleteConfirmId) {
+        handleDeleteCancel();
+      } else if (isFormOpen) {
+        handleCloseForm();
+      }
+    },
+    handleEnter: () => {
+      if (isFormOpen && productFormRef.current?.handleEnter) {
+        productFormRef.current.handleEnter();
+      }
+    }
+  }));
+
   if (loading) {
     return (
       <div className="main-content">
@@ -125,6 +162,7 @@ function MainContent({ selectedCategory }) {
       {/* Search Bar */}
       <div className="search-bar">
         <input
+          ref={searchInputRef}
           type="text"
           className="search-input"
           placeholder="Search products by name or description..."
@@ -180,7 +218,10 @@ function MainContent({ selectedCategory }) {
               </div>
 
               {/* Action Buttons */}
-              <div className="product-actions">
+              <div 
+                className="product-actions"
+                onClick={() => setSelectedProductId(product.id)}
+              >
                 <button 
                   className="btn-action btn-edit" 
                   title="Edit"
@@ -211,6 +252,7 @@ function MainContent({ selectedCategory }) {
       {/* Product Form Modal */}
       {isFormOpen && (
         <ProductForm
+          ref={productFormRef}
           product={editingProduct || defaultProduct}
           onClose={handleCloseForm}
           onSave={handleSaveProduct}
@@ -243,6 +285,8 @@ function MainContent({ selectedCategory }) {
       )}
     </div>
   );
-}
+});
+
+MainContent.displayName = 'MainContent';
 
 export default MainContent;

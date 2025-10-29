@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useSelector } from 'react-redux';
 import { productSchema } from '../services/productSchema';
 import { processProductImage } from '../services/imageService';
-import { showSuccess, showError, showWarning, ToastMessages } from '../services/toastService';
+import { showSuccess, showError, showWarning, showInfo, ToastMessages } from '../services/toastService';
+import { startAutoSave, stopAutoSave, loadDraft, clearDraft, formatDraftTimestamp } from '../services/autoSaveService';
 import ImageUpload from './ImageUpload';
 import GalleryUpload from './GalleryUpload';
 import './ProductForm.css';
@@ -13,10 +14,15 @@ import './ProductForm.css';
  * ProductForm Component
  * Add/Edit Product form with validation using react-hook-form and Yup
  */
-function ProductForm({ product, onClose, onSave }) {
+const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
   const projectPath = useSelector((state) => state.settings.projectPath);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [showDraftPrompt, setShowDraftPrompt] = useState(false);
+  const [draftData, setDraftData] = useState(null);
+  
+  const autoSaveTimerRef = useRef(null);
+  const productIdRef = useRef(product?.id || 'new');
 
   // Store temporary file uploads separately (not in form data)
   const [pendingImages, setPendingImages] = useState({
@@ -30,7 +36,9 @@ function ProductForm({ product, onClose, onSave }) {
     formState: { errors, isValid },
     watch,
     control,
-    setValue
+    setValue,
+    getValues,
+    reset
   } = useForm({
     resolver: yupResolver(productSchema),
     mode: 'onChange', // Validate on change for real-time feedback
@@ -53,6 +61,46 @@ function ProductForm({ product, onClose, onSave }) {
 
   // Watch the discount field to conditionally show discountedPrice
   const isDiscountActive = watch('discount');
+
+  // Check for draft on mount
+  useEffect(() => {
+    const draft = loadDraft(productIdRef.current);
+    if (draft) {
+      setDraftData(draft);
+      setShowDraftPrompt(true);
+    }
+  }, []);
+
+  // Start auto-save
+  useEffect(() => {
+    if (!showDraftPrompt) {
+      autoSaveTimerRef.current = startAutoSave(productIdRef.current, () => {
+        const formData = getValues();
+        return formData;
+      });
+
+      return () => {
+        if (autoSaveTimerRef.current) {
+          stopAutoSave(autoSaveTimerRef.current);
+        }
+      };
+    }
+  }, [showDraftPrompt, getValues]);
+
+  // Handle draft restoration
+  const handleRestoreDraft = () => {
+    if (draftData?.data) {
+      reset(draftData.data);
+      showInfo('Draft restored successfully');
+    }
+    setShowDraftPrompt(false);
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft(productIdRef.current);
+    setShowDraftPrompt(false);
+    showInfo('Draft discarded');
+  };
 
   // Handle primary image upload (store File object temporarily)
   const handlePrimaryImageChange = (fileOrPath) => {
@@ -126,8 +174,9 @@ function ProductForm({ product, onClose, onSave }) {
       // Save the product with processed image paths
       await onSave(productData);
 
-      // Clear pending images
+      // Clear pending images and draft
       setPendingImages({ primary: null, gallery: [] });
+      clearDraft(productIdRef.current);
       
       // Show success message
       showSuccess(ToastMessages.PRODUCT_SAVED);
@@ -154,8 +203,47 @@ function ProductForm({ product, onClose, onSave }) {
     }
   });
 
+  // Expose methods to parent via ref
+  useImperativeHandle(ref, () => ({
+    handleSave: () => {
+      handleSubmit(onSubmit)();
+    },
+    handleEnter: () => {
+      if (isValid) {
+        handleSubmit(onSubmit)();
+      }
+    }
+  }));
+
   return (
     <div className="product-form-overlay">
+      {/* Draft Restoration Prompt */}
+      {showDraftPrompt && draftData && (
+        <div className="draft-prompt-overlay">
+          <div className="draft-prompt-modal">
+            <h3>Unsaved Draft Found</h3>
+            <p>We found an unsaved draft from {formatDraftTimestamp(draftData.timestamp)}.</p>
+            <p>Would you like to restore it?</p>
+            <div className="draft-prompt-actions">
+              <button 
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleDiscardDraft}
+              >
+                Discard
+              </button>
+              <button 
+                type="button"
+                className="btn btn-primary"
+                onClick={handleRestoreDraft}
+              >
+                Restore Draft
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="product-form-container">
         <div className="product-form-header">
           <h2>{product?.id ? 'Edit Product' : 'Add New Product'}</h2>
@@ -403,6 +491,8 @@ function ProductForm({ product, onClose, onSave }) {
       </div>
     </div>
   );
-}
+});
+
+ProductForm.displayName = 'ProductForm';
 
 export default ProductForm;

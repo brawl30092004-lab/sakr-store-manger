@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 import { loadProducts } from './store/slices/productsSlice';
+import { attachKeyboardShortcuts } from './services/keyboardShortcuts';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import StatusBar from './components/StatusBar';
@@ -14,6 +15,9 @@ function App() {
   const { projectPath } = useSelector((state) => state.settings);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [currentView, setCurrentView] = useState('main'); // 'main' or 'settings'
+  
+  // Refs for keyboard shortcut handlers
+  const mainContentRef = useRef(null);
 
   useEffect(() => {
     // Load products on app startup
@@ -25,6 +29,52 @@ function App() {
   useEffect(() => {
     console.log('Redux State:', { products, loading, error, projectPath });
   }, [products, loading, error, projectPath]);
+
+  // Setup keyboard shortcuts
+  useEffect(() => {
+    const handlers = {
+      onNewProduct: () => {
+        if (currentView === 'main' && mainContentRef.current?.handleNewProduct) {
+          mainContentRef.current.handleNewProduct();
+        }
+      },
+      onSave: () => {
+        if (currentView === 'main' && mainContentRef.current?.handleSave) {
+          mainContentRef.current.handleSave();
+        }
+      },
+      onPublish: () => {
+        // TODO: Implement publish to GitHub functionality
+        console.log('Publish shortcut triggered (Ctrl+P)');
+      },
+      onFocusSearch: () => {
+        if (currentView === 'main' && mainContentRef.current?.focusSearch) {
+          mainContentRef.current.focusSearch();
+        }
+      },
+      onDelete: () => {
+        if (currentView === 'main' && mainContentRef.current?.handleDeleteShortcut) {
+          mainContentRef.current.handleDeleteShortcut();
+        }
+      },
+      onEscape: () => {
+        if (currentView === 'settings') {
+          setCurrentView('main');
+        } else if (mainContentRef.current?.handleEscape) {
+          mainContentRef.current.handleEscape();
+        }
+      },
+      onEnter: () => {
+        if (currentView === 'main' && mainContentRef.current?.handleEnter) {
+          mainContentRef.current.handleEnter();
+        }
+      }
+    };
+
+    const cleanup = attachKeyboardShortcuts(handlers);
+    return cleanup;
+  }, [currentView]);
+
 
   return (
     <div className="App">
@@ -63,7 +113,10 @@ function App() {
               selectedCategory={selectedCategory}
               onCategorySelect={setSelectedCategory}
             />
-            <MainContent selectedCategory={selectedCategory} />
+            <MainContent 
+              ref={mainContentRef}
+              selectedCategory={selectedCategory} 
+            />
           </>
         )}
       </div>
