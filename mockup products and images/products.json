@@ -4,17 +4,18 @@
     "name": "Classic Black T-Shirt",
     "price": 25,
     "description": "A high-quality, 100% cotton t-shirt.",
-    "image": "images/tshirt.jpg",
+    "image": "images/product-1-primary.jpg",
     "images": {
-      "primary": "images/tshirt.jpg",
+      "primary": "images/product-1-primary.jpg",
       "gallery": [
         "images/mockup.jpg",
-        "images/mockup.jpg"
+        "images/mockup.jpg",
+        "images/product-1-gallery-0.jpg"
       ]
     },
     "category": "Apparel",
     "discount": true,
-    "discountedPrice": 19.99,
+    "discountedPrice": 19.98,
     "stock": 5,
     "isNew": true
   },
