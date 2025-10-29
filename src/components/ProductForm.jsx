@@ -16,6 +16,7 @@ import './ProductForm.css';
  */
 const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
   const projectPath = useSelector((state) => state.settings.projectPath);
+  const products = useSelector((state) => state.products.items);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [showDraftPrompt, setShowDraftPrompt] = useState(false);
@@ -60,6 +61,21 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
 
   // Watch the discount field to conditionally show discountedPrice
   const isDiscountActive = watch('discount');
+
+  // Extract unique categories from existing products
+  const existingCategories = React.useMemo(() => {
+    if (!products || products.length === 0) {
+      return ['Apparel', 'Electronics', 'Home & Garden', 'Sports', 'Books', 'Toys', 'Other'];
+    }
+    
+    const categorySet = new Set(products.map(p => p.category).filter(Boolean));
+    const defaultCategories = ['Apparel', 'Electronics', 'Home & Garden', 'Sports', 'Books', 'Toys', 'Other'];
+    
+    // Merge default categories with existing ones
+    defaultCategories.forEach(cat => categorySet.add(cat));
+    
+    return Array.from(categorySet).sort();
+  }, [products]);
 
   // Check for draft on mount
   useEffect(() => {
@@ -349,19 +365,19 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
               <label htmlFor="category" className="form-label">
                 Category <span className="required">*</span>
               </label>
-              <select
+              <input
                 id="category"
-                className={`form-input form-select ${errors.category ? 'input-error' : ''}`}
+                type="text"
+                list="category-suggestions"
+                className={`form-input ${errors.category ? 'input-error' : ''}`}
+                placeholder="Select or enter a category"
                 {...register('category')}
-              >
-                <option value="Apparel">Apparel</option>
-                <option value="Electronics">Electronics</option>
-                <option value="Home & Garden">Home & Garden</option>
-                <option value="Sports">Sports</option>
-                <option value="Books">Books</option>
-                <option value="Toys">Toys</option>
-                <option value="Other">Other</option>
-              </select>
+              />
+              <datalist id="category-suggestions">
+                {existingCategories.map((cat) => (
+                  <option key={cat} value={cat} />
+                ))}
+              </datalist>
               {errors.category && (
                 <span className="error-message">{errors.category.message}</span>
               )}

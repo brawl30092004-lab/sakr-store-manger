@@ -1,0 +1,15 @@
+{
+  "name": "sakr-store-image-converter",
+  "version": "1.0.0",
+  "description": "Image conversion utility for Sakr Store - converts images to WebP and AVIF formats",
+  "main": "convert-images.js",
+  "scripts": {
+    "convert": "node convert-images.js"
+  },
+  "keywords": ["image", "webp", "avif", "optimization"],
+  "author": "Sakr Store",
+  "license": "MIT",
+  "dependencies": {
+    "sharp": "^0.33.0"
+  }
+}
