@@ -1,0 +1,3 @@
+@echo off
+echo Starting Sakr Store Manager in Dev Mode...
+npm run electron:dev
