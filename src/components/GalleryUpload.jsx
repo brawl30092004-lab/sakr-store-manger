@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { validateUploadedImage, fileToDataURL, validateGalleryCount } from '../services/imageService';
 import './GalleryUpload.css';
@@ -7,7 +7,7 @@ import './GalleryUpload.css';
  * GalleryUpload Component
  * Manages multiple gallery images with drag-to-reorder, add, and remove functionality
  */
-function GalleryUpload({ value = [], onChange, error }) {
+const GalleryUpload = React.memo(function GalleryUpload({ value = [], onChange, error }) {
   const [validationError, setValidationError] = useState(null);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [imagePreviews, setImagePreviews] = useState({});
@@ -56,8 +56,8 @@ function GalleryUpload({ value = [], onChange, error }) {
     processImages();
   }, [value, projectPath]);
 
-  // Get display URL for an item (either File object or string path)
-  const getDisplayUrl = (item, index) => {
+  // Get display URL for an item (either File object or string path) - MEMOIZED
+  const getDisplayUrl = useCallback((item, index) => {
     if (typeof item === 'string') {
       if (item.startsWith('data:') || item.startsWith('local-image://') || item.startsWith('file://')) {
         return item; // Data URL or already resolved path
@@ -67,10 +67,10 @@ function GalleryUpload({ value = [], onChange, error }) {
       return imagePreviews[index] || ''; // Preview from File object
     }
     return '';
-  };
+  }, [imagePreviews, resolvedPaths]);
 
-  // Handle file selection
-  const handleFilesSelect = async (files) => {
+  // Handle file selection - MEMOIZED
+  const handleFilesSelect = useCallback(async (files) => {
     if (!files || files.length === 0) return;
 
     setValidationError(null);
@@ -101,20 +101,20 @@ function GalleryUpload({ value = [], onChange, error }) {
     // Add new File objects to gallery
     const updatedGallery = [...value, ...newFiles];
     onChange(updatedGallery);
-  };
+  }, [value, onChange]);
 
-  // Handle file input change
-  const handleInputChange = (e) => {
+  // Handle file input change - MEMOIZED
+  const handleInputChange = useCallback((e) => {
     const files = Array.from(e.target.files);
     handleFilesSelect(files);
     // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  };
+  }, [handleFilesSelect]);
 
-  // Handle add button click
-  const handleAddClick = () => {
+  // Handle add button click - MEMOIZED
+  const handleAddClick = useCallback(() => {
     // Check if we can add more
     const countValidation = validateGalleryCount(value.length, 1);
     if (!countValidation.valid) {
@@ -123,22 +123,22 @@ function GalleryUpload({ value = [], onChange, error }) {
     }
     
     fileInputRef.current?.click();
-  };
+  }, [value.length]);
 
-  // Handle remove image
-  const handleRemove = (index) => {
+  // Handle remove image - MEMOIZED
+  const handleRemove = useCallback((index) => {
     const updatedGallery = value.filter((_, i) => i !== index);
     onChange(updatedGallery);
     setValidationError(null);
-  };
+  }, [value, onChange]);
 
-  // Drag and drop for reordering
-  const handleDragStart = (e, index) => {
+  // Drag and drop for reordering - MEMOIZED
+  const handleDragStart = useCallback((e, index) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
-  };
+  }, []);
 
-  const handleDragOver = (e, index) => {
+  const handleDragOver = useCallback((e, index) => {
     e.preventDefault();
     
     if (draggedIndex === null || draggedIndex === index) return;
@@ -153,11 +153,11 @@ function GalleryUpload({ value = [], onChange, error }) {
     
     onChange(items);
     setDraggedIndex(index);
-  };
+  }, [draggedIndex, value, onChange]);
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     setDraggedIndex(null);
-  };
+  }, []);
 
   return (
     <div className="gallery-upload">
@@ -228,6 +228,6 @@ function GalleryUpload({ value = [], onChange, error }) {
       )}
     </div>
   );
-}
+});
 
 export default GalleryUpload;

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useMemo, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Search, Package, Edit, Copy, Trash2 } from 'lucide-react';
 import { addProduct, updateProduct, deleteProduct, duplicateProduct } from '../store/slices/productsSlice';
@@ -68,26 +68,26 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters }, ref) => {
     return result;
   }, [products, selectedCategory, activeFilters, searchText]);
 
-  // Handle opening form for new product
-  const handleNewProduct = () => {
+  // Handle opening form for new product - MEMOIZED
+  const handleNewProduct = useCallback(() => {
     setEditingProduct(null);
     setIsFormOpen(true);
-  };
+  }, []);
 
-  // Handle opening form for editing product
-  const handleEditProduct = (product) => {
+  // Handle opening form for editing product - MEMOIZED
+  const handleEditProduct = useCallback((product) => {
     setEditingProduct(product);
     setIsFormOpen(true);
-  };
+  }, []);
 
-  // Handle closing form
-  const handleCloseForm = () => {
+  // Handle closing form - MEMOIZED
+  const handleCloseForm = useCallback(() => {
     setIsFormOpen(false);
     setEditingProduct(null);
-  };
+  }, []);
 
-  // Handle saving product
-  const handleSaveProduct = async (productData) => {
+  // Handle saving product - MEMOIZED
+  const handleSaveProduct = useCallback(async (productData) => {
     // Check if this is an update (productData.id > 0) or a new product (productData.id === 0)
     if (editingProduct || productData.id > 0) {
       // Update existing product
@@ -104,28 +104,28 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters }, ref) => {
       // Return the updated products array from the action
       return result;
     }
-  };
+  }, [editingProduct, products, dispatch]);
 
-  // Handle deleting product
-  const handleDeleteClick = (id) => {
+  // Handle deleting product - MEMOIZED
+  const handleDeleteClick = useCallback((id) => {
     setDeleteConfirmId(id);
-  };
+  }, []);
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = useCallback(() => {
     if (deleteConfirmId) {
       dispatch(deleteProduct(deleteConfirmId));
       setDeleteConfirmId(null);
     }
-  };
+  }, [deleteConfirmId, dispatch]);
 
-  const handleDeleteCancel = () => {
+  const handleDeleteCancel = useCallback(() => {
     setDeleteConfirmId(null);
-  };
+  }, []);
 
-  // Handle duplicating product
-  const handleDuplicateProduct = (id) => {
+  // Handle duplicating product - MEMOIZED
+  const handleDuplicateProduct = useCallback((id) => {
     dispatch(duplicateProduct(id));
-  };
+  }, [dispatch]);
 
   // Expose methods to parent via ref
   useImperativeHandle(ref, () => ({

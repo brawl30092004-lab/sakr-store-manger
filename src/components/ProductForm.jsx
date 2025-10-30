@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useSelector } from 'react-redux';
@@ -43,7 +43,7 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
     reset
   } = useForm({
     resolver: yupResolver(productSchema),
-    mode: 'onChange', // Validate on change for real-time feedback
+    mode: 'onBlur', // Changed from 'onChange' to reduce re-renders - validate on blur instead
     defaultValues: product || {
       id: 0,
       name: '',
@@ -78,8 +78,8 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
     previousDiscountRef.current = isDiscountActive;
   }, [isDiscountActive, currentPrice, setValue]);
 
-  // Extract unique categories from existing products
-  const existingCategories = React.useMemo(() => {
+  // Extract unique categories from existing products - MEMOIZED
+  const existingCategories = useMemo(() => {
     if (!products || products.length === 0) {
       return ['Apparel', 'Electronics', 'Home & Garden', 'Sports', 'Books', 'Toys', 'Other'];
     }
@@ -91,7 +91,7 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
     defaultCategories.forEach(cat => categorySet.add(cat));
     
     return Array.from(categorySet).sort();
-  }, [products]);
+  }, [products]); // Only recompute when products array changes
 
   // Check for draft on mount
   useEffect(() => {
@@ -102,13 +102,14 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
     }
   }, []);
 
-  // Start auto-save
+  // Start auto-save with debouncing
   useEffect(() => {
     if (!showDraftPrompt) {
+      // Debounce auto-save to 3 seconds to reduce frequent saves
       autoSaveTimerRef.current = startAutoSave(productIdRef.current, () => {
         const formData = getValues();
         return formData;
-      });
+      }, 3000); // Added 3 second debounce
 
       return () => {
         if (autoSaveTimerRef.current) {
@@ -133,8 +134,8 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
     showInfo('Draft discarded');
   };
 
-  // Handle primary image upload (store File object temporarily)
-  const handlePrimaryImageChange = (fileOrPath) => {
+  // Handle primary image upload (store File object temporarily) - MEMOIZED
+  const handlePrimaryImageChange = useCallback((fileOrPath) => {
     if (fileOrPath instanceof File) {
       // New file upload - store for processing on save AND update form value for validation
       setPendingImages(prev => ({ ...prev, primary: fileOrPath }));
@@ -143,21 +144,17 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
       // Existing path or dataURL - update form value directly
       setValue('images.primary', fileOrPath, { shouldValidate: true });
     }
-  };
+  }, [setValue]);
 
-  // Handle gallery image uploads (keep mixed array of paths and Files)
-  const handleGalleryImagesChange = (filesOrPaths) => {
-    console.log('Gallery changed, new value:', filesOrPaths);
-    console.log('Files in gallery:', filesOrPaths.filter(item => item instanceof File).length);
-    console.log('Paths in gallery:', filesOrPaths.filter(item => typeof item === 'string').length);
-    
+  // Handle gallery image uploads (keep mixed array of paths and Files) - MEMOIZED
+  const handleGalleryImagesChange = useCallback((filesOrPaths) => {
     // Keep the complete array (both File objects and paths) in the form
     // We'll separate them during save processing
     setValue('images.gallery', filesOrPaths, { shouldValidate: true });
-  };
+  }, [setValue]);
 
-  // Process images and save product
-  const processImagesAndSave = async (formData) => {
+  // Process images and save product - MEMOIZED
+  const processImagesAndSave = useCallback(async (formData) => {
     setIsSaving(true);
     setSaveError(null);
 
@@ -169,8 +166,6 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
 
       // If this is a new product (id === 0) and has new images, we need a two-step save
       if (formData.id === 0 && hasNewImages) {
-        console.log('New product with images - saving in two steps');
-        
         // Step 1: Save product with placeholder images to get an ID
         const tempProductData = {
           ...productData,
@@ -186,11 +181,9 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
         // Find the newly created product to get its ID
         const newProduct = savedProducts[savedProducts.length - 1];
         const newProductId = newProduct.id;
-        console.log('Product saved with ID:', newProductId);
         
         // Step 2: Process images with the new product ID
         if (hasPendingPrimaryImage) {
-          console.log('Processing primary image with ID:', newProductId);
           const primaryPath = await processProductImage(
             pendingImages.primary,
             projectPath,
@@ -203,7 +196,6 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
         }
 
         if (galleryFiles.length > 0) {
-          console.log('Processing gallery images with ID:', newProductId);
           const existingPaths = (productData.images.gallery || []).filter(item => typeof item === 'string');
           const startIndex = existingPaths.length;
           
@@ -230,7 +222,6 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
         
         // Process primary image if there's a new upload
         if (hasPendingPrimaryImage) {
-          console.log('Processing primary image...');
           const primaryPath = await processProductImage(
             pendingImages.primary,
             projectPath,
@@ -244,7 +235,6 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
 
         // Process gallery images if there are any
         if (galleryFiles.length > 0) {
-          console.log('Processing gallery images...');
           const existingPaths = (productData.images.gallery || []).filter(item => typeof item === 'string');
           const startIndex = existingPaths.length;
           
@@ -285,7 +275,7 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [pendingImages, projectPath, onSave]);
 
   // Handle form submission
   const onSubmit = async (data) => {

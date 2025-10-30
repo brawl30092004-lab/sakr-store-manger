@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useImagePath } from '../hooks/useImagePath';
 import { validateUploadedImage, fileToDataURL, formatFileSize } from '../services/imageService';
 import { showWarning, ToastMessages } from '../services/toastService';
@@ -9,7 +9,7 @@ import './ImageUpload.css';
  * Drag-and-drop or click-to-upload for primary product image
  * Shows preview, file info, and replace/remove buttons
  */
-function ImageUpload({ value, onChange, error }) {
+const ImageUpload = React.memo(function ImageUpload({ value, onChange, error }) {
   const [preview, setPreview] = useState(value || null);
   const [fileInfo, setFileInfo] = useState(null);
   const [validationError, setValidationError] = useState(null);
@@ -34,8 +34,8 @@ function ImageUpload({ value, onChange, error }) {
     }
   }, [value, resolvedPath]);
 
-  // Handle file selection
-  const handleFileSelect = async (file) => {
+  // Handle file selection - MEMOIZED
+  const handleFileSelect = useCallback(async (file) => {
     if (!file) return;
 
     setValidationError(null);
@@ -69,33 +69,33 @@ function ImageUpload({ value, onChange, error }) {
     } catch (error) {
       setValidationError('Failed to process image. Please try again.');
     }
-  };
+  }, [onChange]);
 
-  // Handle file input change
-  const handleInputChange = (e) => {
+  // Handle file input change - MEMOIZED
+  const handleInputChange = useCallback((e) => {
     const file = e.target.files[0];
     handleFileSelect(file);
-  };
+  }, [handleFileSelect]);
 
-  // Handle drag and drop
-  const handleDragEnter = (e) => {
+  // Handle drag and drop - MEMOIZED
+  const handleDragEnter = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
-  };
+  }, []);
 
-  const handleDragLeave = (e) => {
+  const handleDragLeave = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-  };
+  }, []);
 
-  const handleDragOver = (e) => {
+  const handleDragOver = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-  };
+  }, []);
 
-  const handleDrop = (e) => {
+  const handleDrop = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
@@ -106,20 +106,20 @@ function ImageUpload({ value, onChange, error }) {
     } else {
       setValidationError('Please drop an image file');
     }
-  };
+  }, [handleFileSelect]);
 
-  // Handle click to open file dialog
-  const handleClick = () => {
+  // Handle click to open file dialog - MEMOIZED
+  const handleClick = useCallback(() => {
     fileInputRef.current?.click();
-  };
+  }, []);
 
-  // Handle replace image
-  const handleReplace = () => {
+  // Handle replace image - MEMOIZED
+  const handleReplace = useCallback(() => {
     fileInputRef.current?.click();
-  };
+  }, []);
 
-  // Handle remove image
-  const handleRemove = () => {
+  // Handle remove image - MEMOIZED
+  const handleRemove = useCallback(() => {
     setPreview(null);
     setFileInfo(null);
     setValidationError(null);
@@ -127,7 +127,7 @@ function ImageUpload({ value, onChange, error }) {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  };
+  }, [onChange]);
 
   return (
     <div className="image-upload">
@@ -202,6 +202,6 @@ function ImageUpload({ value, onChange, error }) {
       )}
     </div>
   );
-}
+});
 
 export default ImageUpload;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback, lazy, Suspense } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 import { Minus, Maximize2, X } from 'lucide-react';
@@ -9,10 +9,12 @@ import { showSuccess, showError } from './services/toastService';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import StatusBar from './components/StatusBar';
-import Settings from './components/Settings';
 import DataSourceNotFoundDialog from './components/DataSourceNotFoundDialog';
-import BulkOperationsDialog from './components/BulkOperationsDialog';
 import './App.css';
+
+// Lazy load heavy components
+const Settings = lazy(() => import('./components/Settings'));
+const BulkOperationsDialog = lazy(() => import('./components/BulkOperationsDialog'));
 
 function App() {
   const dispatch = useDispatch();
@@ -32,12 +34,10 @@ function App() {
 
   useEffect(() => {
     // Load products on app startup
-    console.log('App mounted, dispatching loadProducts...');
     dispatch(loadProducts()).unwrap()
       .catch((err) => {
         // Check if error is due to missing products.json
         if (err.includes('PRODUCTS_NOT_FOUND') || err.includes('ENOENT')) {
-          console.log('Products file not found, showing dialog');
           setShowDataSourceDialog(true);
         }
       });
@@ -46,7 +46,6 @@ function App() {
   // Reload products when data source changes
   useEffect(() => {
     if (dataSource) {
-      console.log('Data source changed to:', dataSource);
       dispatch(loadProducts()).unwrap()
         .catch((err) => {
           if (err.includes('PRODUCTS_NOT_FOUND') || err.includes('ENOENT')) {
@@ -55,11 +54,6 @@ function App() {
         });
     }
   }, [dataSource, dispatch]);
-
-  // Debug logging
-  useEffect(() => {
-    console.log('Redux State:', { products, loading, error, projectPath, dataSource });
-  }, [products, loading, error, projectPath, dataSource]);
 
   // Setup keyboard shortcuts
   useEffect(() => {
@@ -124,8 +118,8 @@ function App() {
     return cleanup;
   }, [currentView, showAboutDialog, showShortcutsDialog]);
 
-  // Handle creating new products.json file
-  const handleCreateNewFile = async () => {
+  // Handle creating new products.json file - MEMOIZED
+  const handleCreateNewFile = useCallback(async () => {
     try {
       await window.electron.fs.createEmptyProducts(projectPath);
       showSuccess('Created empty products.json file');
@@ -133,13 +127,12 @@ function App() {
       // Reload products
       dispatch(loadProducts());
     } catch (error) {
-      console.error('Failed to create products.json:', error);
       showError('Failed to create products.json: ' + error.message);
     }
-  };
+  }, [projectPath, dispatch]);
 
-  // Handle browsing for existing file
-  const handleBrowseForExisting = async () => {
+  // Handle browsing for existing file - MEMOIZED
+  const handleBrowseForExisting = useCallback(async () => {
     try {
       const selectedPath = await window.electron.browseDirectory();
       if (selectedPath) {
@@ -157,54 +150,53 @@ function App() {
           });
       }
     } catch (error) {
-      console.error('Failed to browse directory:', error);
       showError('Failed to browse directory: ' + error.message);
     }
-  };
+  }, [dispatch]);
 
-  // Handle closing dialog
-  const handleCloseDialog = () => {
+  // Handle closing dialog - MEMOIZED
+  const handleCloseDialog = useCallback(() => {
     setShowDataSourceDialog(false);
-  };
+  }, []);
 
-  // Menu handlers
-  const handleNewProduct = () => {
+  // Menu handlers - MEMOIZED
+  const handleNewProduct = useCallback(() => {
     if (currentView === 'main' && mainContentRef.current?.handleNewProduct) {
       mainContentRef.current.handleNewProduct();
       setActiveMenu(null);
     }
-  };
+  }, [currentView]);
 
-  const handleSaveAll = async () => {
+  const handleSaveAll = useCallback(async () => {
     if (currentView === 'main' && mainContentRef.current?.handleSave) {
       await mainContentRef.current.handleSave();
       setActiveMenu(null);
     }
-  };
+  }, [currentView]);
 
-  const handleExport = () => {
+  const handleExport = useCallback(() => {
     if (currentView === 'main' && mainContentRef.current?.handleExport) {
       mainContentRef.current.handleExport();
       setActiveMenu(null);
     }
-  };
+  }, [currentView]);
 
-  const handleBrowseDataSource = () => {
+  const handleBrowseDataSource = useCallback(() => {
     setShowDataSourceDialog(true);
     setActiveMenu(null);
-  };
+  }, []);
 
-  const handleOpenSettings = () => {
+  const handleOpenSettings = useCallback(() => {
     setCurrentView('settings');
     setActiveMenu(null);
-  };
+  }, []);
 
-  const handleQuit = () => {
+  const handleQuit = useCallback(() => {
     if (window.confirm('Are you sure you want to quit?')) {
       window.close();
     }
     setActiveMenu(null);
-  };
+  }, []);
 
   const handleDeleteProduct = () => {
     if (currentView === 'main' && mainContentRef.current?.handleDeleteShortcut) {
@@ -408,14 +400,16 @@ function App() {
         />
       )}
       
-      {/* Bulk Operations Dialog */}
-      <BulkOperationsDialog
-        isOpen={bulkOperationDialog.isOpen}
-        onClose={() => setBulkOperationDialog({ isOpen: false, type: null })}
-        products={products}
-        operationType={bulkOperationDialog.type}
-        onConfirm={handleBulkOperationConfirm}
-      />
+      {/* Bulk Operations Dialog - Lazy Loaded */}
+      <Suspense fallback={<div />}>
+        <BulkOperationsDialog
+          isOpen={bulkOperationDialog.isOpen}
+          onClose={() => setBulkOperationDialog({ isOpen: false, type: null })}
+          products={products}
+          operationType={bulkOperationDialog.type}
+          onConfirm={handleBulkOperationConfirm}
+        />
+      </Suspense>
       
       <header className="app-header">
         <div className="app-title">
@@ -699,7 +693,9 @@ function App() {
 
       <div className="app-body">
         {currentView === 'settings' ? (
-          <Settings onBackToMain={() => setCurrentView('main')} />
+          <Suspense fallback={<div className="loading-message">Loading settings...</div>}>
+            <Settings onBackToMain={() => setCurrentView('main')} />
+          </Suspense>
         ) : (
           <>
             <Sidebar 
