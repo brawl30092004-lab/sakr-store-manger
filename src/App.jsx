@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
+import { Minus, Maximize2, X } from 'lucide-react';
 import { loadProducts } from './store/slices/productsSlice';
 import { setProjectPath } from './store/slices/settingsSlice';
 import { attachKeyboardShortcuts } from './services/keyboardShortcuts';
@@ -317,9 +318,9 @@ function App() {
           <h1>Sakr Store Manager</h1>
         </div>
         <div className="app-controls">
-          <span className="window-control blue">🔵</span>
-          <span className="window-control yellow">🟡</span>
-          <span className="window-control red">🔴</span>
+          <span className="window-control minimize"><Minus size={16} /></span>
+          <span className="window-control maximize"><Maximize2 size={16} /></span>
+          <span className="window-control close"><X size={16} /></span>
         </div>
       </header>
       

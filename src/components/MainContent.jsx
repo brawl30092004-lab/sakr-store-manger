@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, forwardRef, useImperativeHandle } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { Search, Package, Edit, Copy, Trash2 } from 'lucide-react';
 import { addProduct, updateProduct, deleteProduct, duplicateProduct } from '../store/slices/productsSlice';
 import { defaultProduct } from '../store/slices/productsSlice';
 import ProductForm from './ProductForm';
@@ -193,7 +194,7 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters }, ref) => {
           onClick={() => setIsExportDialogOpen(true)}
           title="Export products to organized folder structure"
         >
-          📦 Export Products
+          <Package size={18} /> Export Products
         </button>
       </div>
 
@@ -207,7 +208,7 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters }, ref) => {
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
         />
-        <span className="search-icon">🔍</span>
+        <span className="search-icon"><Search size={20} /></span>
       </div>
 
       {/* Product List */}
@@ -255,21 +256,21 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters }, ref) => {
                   title="Edit"
                   onClick={() => handleEditProduct(product)}
                 >
-                  ✏️ Edit
+                  <Edit size={16} /> Edit
                 </button>
                 <button 
                   className="btn-action btn-duplicate" 
                   title="Duplicate"
                   onClick={() => handleDuplicateProduct(product.id)}
                 >
-                  📋 Duplicate
+                  <Copy size={16} /> Duplicate
                 </button>
                 <button 
                   className="btn-action btn-delete" 
                   title="Delete"
                   onClick={() => handleDeleteClick(product.id)}
                 >
-                  🗑️ Delete
+                  <Trash2 size={16} /> Delete
                 </button>
               </div>
             </div>

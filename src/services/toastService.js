@@ -28,7 +28,6 @@ export function showSuccess(message, options = {}) {
   toast.success(message, {
     ...defaultOptions,
     ...options,
-    icon: '✅',
     style: {
       ...defaultOptions.style,
       background: '#10b981',
@@ -50,7 +49,6 @@ export function showError(error, options = {}) {
     ...defaultOptions,
     duration: 6000, // Errors show longer
     ...options,
-    icon: '❌',
     style: {
       ...defaultOptions.style,
       background: '#ef4444',
@@ -89,7 +87,6 @@ export function showInfo(message, options = {}) {
   toast(message, {
     ...defaultOptions,
     ...options,
-    icon: 'ℹ️',
     style: {
       ...defaultOptions.style,
       background: '#3b82f6',

@@ -152,10 +152,16 @@
   right: 18px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
   color: #8b949e;
   transition: color 0.3s ease;
+}
+
+.search-input:focus + .search-icon {
+  color: #58a6ff;
 }
 
 .search-input:focus ~ .search-icon {

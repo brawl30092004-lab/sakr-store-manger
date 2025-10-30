@@ -90,19 +90,24 @@
 }
 
 .sidebar-icon {
-  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-right: 12px;
   width: 20px;
-  text-align: center;
-  transition: transform 0.3s ease;
+  height: 20px;
+  color: #8b949e;
+  transition: all 0.3s ease;
 }
 
 .sidebar-item:hover .sidebar-icon {
-  transform: scale(1.2);
+  transform: scale(1.15);
+  color: #58a6ff;
 }
 
 .sidebar-item.active .sidebar-icon {
-  filter: drop-shadow(0 0 4px rgba(88, 166, 255, 0.8));
+  color: #58a6ff;
+  filter: drop-shadow(0 0 4px rgba(88, 166, 255, 0.6));
 }
 
 .sidebar-label {

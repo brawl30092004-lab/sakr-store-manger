@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } f
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useSelector } from 'react-redux';
+import { X } from 'lucide-react';
 import { productSchema } from '../services/productSchema';
 import { processProductImage } from '../services/imageService';
 import { showSuccess, showError, showWarning, showInfo, ToastMessages } from '../services/toastService';
@@ -349,7 +350,7 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
             onClick={onClose}
             aria-label="Close"
           >
-            ✕
+            <X size={20} />
           </button>
         </div>
 
