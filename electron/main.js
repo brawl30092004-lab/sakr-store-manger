@@ -96,7 +96,9 @@ ipcMain.handle('fs:loadProducts', async (event, projectPath) => {
     
     if (!exists) {
       // Don't auto-create, throw error so UI can prompt user
-      throw new Error('PRODUCTS_NOT_FOUND');
+      const error = new Error('PRODUCTS_NOT_FOUND');
+      error.code = 'ENOENT';
+      throw error;
     }
     
     // Read and parse products.json with UTF-8 encoding
@@ -104,6 +106,10 @@ ipcMain.handle('fs:loadProducts', async (event, projectPath) => {
     return products;
   } catch (error) {
     console.error('Error loading products:', error);
+    // Re-throw with consistent error message
+    if (error.message === 'PRODUCTS_NOT_FOUND' || error.code === 'ENOENT') {
+      throw new Error('PRODUCTS_NOT_FOUND: ' + productsFilePath);
+    }
     throw error;
   }
 });
