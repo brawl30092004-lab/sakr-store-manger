@@ -303,35 +303,8 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
   }));
 
   return (
-    <div className="product-form-overlay">
-      {/* Draft Restoration Prompt */}
-      {showDraftPrompt && draftData && (
-        <div className="draft-prompt-overlay">
-          <div className="draft-prompt-modal">
-            <h3>Unsaved Draft Found</h3>
-            <p>We found an unsaved draft from {formatDraftTimestamp(draftData.timestamp)}.</p>
-            <p>Would you like to restore it?</p>
-            <div className="draft-prompt-actions">
-              <button 
-                type="button"
-                className="btn btn-secondary"
-                onClick={handleDiscardDraft}
-              >
-                Discard
-              </button>
-              <button 
-                type="button"
-                className="btn btn-primary"
-                onClick={handleRestoreDraft}
-              >
-                Restore Draft
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="product-form-container">
+    <div className="product-form-overlay" onClick={onClose}>
+      <div className="product-form-container" onClick={(e) => e.stopPropagation()}>
         <div className="product-form-header">
           <h2>{product?.id ? 'Edit Product' : 'Add New Product'}</h2>
           <button 
