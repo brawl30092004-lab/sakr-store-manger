@@ -8,7 +8,7 @@ import './Settings.css';
  * Settings Component - GitHub Integration Configuration
  * Allows users to configure GitHub repository and Personal Access Token
  */
-function Settings() {
+function Settings({ onBackToMain }) {
   // Get current data source from Redux
   const dataSource = useSelector((state) => state.settings.dataSource);
   
@@ -285,10 +285,22 @@ function Settings() {
   return (
     <div className="settings-container">
       <div className="settings-header">
-        <h1>Settings</h1>
-        <p className="settings-description">
-          Configure your data source and GitHub integration for product data synchronization
-        </p>
+        <div className="settings-header-content">
+          <div>
+            <h1>Settings</h1>
+            <p className="settings-description">
+              Configure your data source and GitHub integration for product data synchronization
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onBackToMain}
+            className="btn btn-back"
+            title="Back to Main Window"
+          >
+            ← Back to Main
+          </button>
+        </div>
       </div>
 
       <div className="settings-content">

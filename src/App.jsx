@@ -576,7 +576,7 @@ function App() {
 
       <div className="app-body">
         {currentView === 'settings' ? (
-          <Settings />
+          <Settings onBackToMain={() => setCurrentView('main')} />
         ) : (
           <>
             <Sidebar 
