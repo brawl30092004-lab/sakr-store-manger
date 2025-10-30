@@ -1,0 +1,31 @@
+here are the optimal image sizes and resolutions for importing product images:
+
+Recommended Image Dimensions
+Product Images:
+
+Product Cards (thumbnails): 400×400px
+Product Detail Main Image: 800×800px
+Thumbnail Strip: 100×100px
+Current Display Sizes in Your Store
+Main product image: 550px height (desktop), 400px (mobile)
+Thumbnail buttons: 90×90px
+Product cards: 1:1 aspect ratio (square)
+Optimal Import Specifications
+For best results, import images at:
+
+Resolution: 800×800px to 1200×1200px
+Format: JPG or PNG (will be converted to WebP/AVIF)
+Aspect Ratio: 1:1 (square) for consistency
+Quality: High quality originals (will be compressed during conversion)
+Compression Settings (from your optimization guide)
+JPG: 80% quality
+WebP: 80% quality
+AVIF: 60% quality
+Why These Sizes?
+Your CSS uses object-fit: contain which prevents cropping, so images don't need to be exact dimensions. However, importing at 800×800px or 1200×1200px gives you:
+
+Sharp display on retina/high-DPI screens
+Room for zoom features (your images scale 1.05× on hover)
+Good balance between quality and file size
+Works well with the automated WebP/AVIF conversion
+Avoid importing very large images (e.g., 4000×4000px) as they'll slow down your site unnecessarily.
