@@ -132,7 +132,7 @@ export function validateProductPrice(price) {
     };
   }
   
-  // Must have exactly 2 decimal places
+  // Must have maximum 2 decimal places
   // Convert to string and check decimal places to avoid floating point issues
   const priceStr = price.toString();
   const decimalIndex = priceStr.indexOf('.');
@@ -146,7 +146,7 @@ export function validateProductPrice(price) {
   if (decimalPlaces > 2) {
     return {
       valid: false,
-      error: 'Price must have exactly 2 decimal places'
+      error: 'Price must have maximum 2 decimal places'
     };
   }
   
@@ -284,7 +284,7 @@ export function validateProductDiscountedPrice(discountedPrice, regularPrice, di
     if (decimalPlaces > 2) {
       return {
         valid: false,
-        error: 'Discounted price must have exactly 2 decimal places'
+        error: 'Discounted price must have maximum 2 decimal places'
       };
     }
   }

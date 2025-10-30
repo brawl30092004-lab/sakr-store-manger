@@ -24,6 +24,7 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
   
   const autoSaveTimerRef = useRef(null);
   const productIdRef = useRef(product?.id || 'new');
+  const previousDiscountRef = useRef(product?.discount || false);
 
   // Store temporary primary image upload (not in form data)
   const [pendingImages, setPendingImages] = useState({
@@ -61,6 +62,20 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
 
   // Watch the discount field to conditionally show discountedPrice
   const isDiscountActive = watch('discount');
+  const currentPrice = watch('price');
+
+  // When discount is toggled from true to false, set discountedPrice to match regular price
+  useEffect(() => {
+    const wasDiscountActive = previousDiscountRef.current;
+    
+    // Only auto-set when discount is TOGGLED OFF (was true, now false)
+    if (wasDiscountActive && !isDiscountActive && currentPrice) {
+      setValue('discountedPrice', currentPrice, { shouldValidate: false });
+    }
+    
+    // Update the ref for next comparison
+    previousDiscountRef.current = isDiscountActive;
+  }, [isDiscountActive, currentPrice, setValue]);
 
   // Extract unique categories from existing products
   const existingCategories = React.useMemo(() => {

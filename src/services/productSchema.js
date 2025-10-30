@@ -27,17 +27,18 @@ export const productSchema = yup.object().shape({
       return value.trim().length >= 3;
     }),
 
-  // Price - Required positive number with exactly 2 decimal places
+  // Price - Required positive number with maximum 2 decimal places
   price: yup
     .number()
     .required('Price is required')
     .positive('Price must be greater than 0')
     .min(0.01, 'Price must be at least 0.01 EGP')
     .max(999999.99, 'Price must not exceed 999,999.99 EGP')
-    .test('decimal-places', 'Price must have exactly 2 decimal places', value => {
+    .test('decimal-places', 'Price must have maximum 2 decimal places', value => {
       if (value === undefined || value === null) return false;
-      // Check if value has at most 2 decimal places
-      return (value * 100) % 1 === 0;
+      // Allow 1 or 2 decimal places (or whole numbers)
+      const decimalPlaces = (value.toString().split('.')[1] || '').length;
+      return decimalPlaces <= 2;
     }),
 
   // Description - Required string, 10-1000 characters, multiline, supports English/Arabic
@@ -80,9 +81,11 @@ export const productSchema = yup.object().shape({
       then: (schema) => schema
         .required('Discounted price is required when discount is enabled')
         .positive('Discounted price must be greater than 0')
-        .test('decimal-places', 'Discounted price must have exactly 2 decimal places', value => {
+        .test('decimal-places', 'Discounted price must have maximum 2 decimal places', value => {
           if (value === undefined || value === null) return false;
-          return (value * 100) % 1 === 0;
+          // Allow 1 or 2 decimal places (or whole numbers)
+          const decimalPlaces = (value.toString().split('.')[1] || '').length;
+          return decimalPlaces <= 2;
         })
         .lessThan(
           yup.ref('price'),
