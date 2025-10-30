@@ -56,5 +56,24 @@
     "discountedPrice": 14.99,
     "stock": 10,
     "isNew": true
+  },
+  {
+    "name": "Modern Coffee Mug (Copy)",
+    "price": 15.50,
+    "description": "A stylish ceramic mug with a matte finish.",
+    "image": "images/mug.jpg",
+    "images": {
+      "primary": "images/mug.jpg",
+      "gallery": [
+        "images/mockup.jpg",
+        "images/mockup.jpg"
+      ]
+    },
+    "category": "Home Goodss",
+    "discount": true,
+    "discountedPrice": 15.33,
+    "stock": 5,
+    "isNew": false,
+    "id": 4
   }
 ]
