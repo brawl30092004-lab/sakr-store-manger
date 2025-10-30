@@ -231,6 +231,40 @@ const productsSlice = createSlice({
       state.items = state.items.filter(product => !productIds.includes(product.id));
       state.hasUnsavedChanges = true;
     },
+    bulkApplyDiscount: (state, action) => {
+      const { productIds, percentage } = action.payload; // { productIds: [], percentage: number }
+      if (!state.items || !Array.isArray(state.items)) {
+        console.error('state.items is not an array:', state.items);
+        return;
+      }
+      state.items = state.items.map(product => {
+        if (productIds.includes(product.id)) {
+          const discountAmount = product.price * (percentage / 100);
+          const discountedPrice = product.price - discountAmount;
+          return { 
+            ...product, 
+            discount: true, 
+            discountedPrice: parseFloat(discountedPrice.toFixed(2))
+          };
+        }
+        return product;
+      });
+      state.hasUnsavedChanges = true;
+    },
+    bulkMakeNew: (state, action) => {
+      const productIds = action.payload; // Array of product IDs
+      if (!state.items || !Array.isArray(state.items)) {
+        console.error('state.items is not an array:', state.items);
+        return;
+      }
+      state.items = state.items.map(product => {
+        if (productIds.includes(product.id)) {
+          return { ...product, isNew: true };
+        }
+        return product;
+      });
+      state.hasUnsavedChanges = true;
+    },
     clearError: (state) => {
       state.error = null;
     },
@@ -344,6 +378,8 @@ export const {
   bulkRemoveNewBadge,
   bulkRemoveDiscount,
   bulkDeleteProducts,
+  bulkApplyDiscount,
+  bulkMakeNew,
   clearError,
   resetUnsavedChanges,
 } = productsSlice.actions;

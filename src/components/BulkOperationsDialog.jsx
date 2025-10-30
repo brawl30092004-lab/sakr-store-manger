@@ -5,6 +5,7 @@ import './BulkOperationsDialog.css';
 
 const BulkOperationsDialog = ({ isOpen, onClose, products, operationType, onConfirm }) => {
   const [selectedIds, setSelectedIds] = useState([]);
+  const [discountPercentage, setDiscountPercentage] = useState('10');
 
   // Smart filtering based on operation type
   const filteredProducts = useMemo(() => {
@@ -13,6 +14,10 @@ const BulkOperationsDialog = ({ isOpen, onClose, products, operationType, onConf
         return products.filter(p => p.isNew === true);
       case 'removeDiscount':
         return products.filter(p => p.discount === true || p.discount > 0);
+      case 'applyDiscount':
+        return products.filter(p => !p.discount); // Show only products without discount
+      case 'makeNew':
+        return products.filter(p => !p.isNew); // Show only products that are not new
       case 'deleteProducts':
         return products; // Show all products for deletion
       default:
@@ -36,6 +41,20 @@ const BulkOperationsDialog = ({ isOpen, onClose, products, operationType, onConf
           description: 'Select discounted products to remove discount from:',
           confirmText: 'Remove Discount',
           emptyMessage: 'No products have discounts.'
+        };
+      case 'applyDiscount':
+        return {
+          title: 'Bulk Apply Discount',
+          description: 'Select products to apply discount to:',
+          confirmText: 'Apply Discount',
+          emptyMessage: 'All products already have discounts.'
+        };
+      case 'makeNew':
+        return {
+          title: 'Bulk Make New',
+          description: 'Select products to mark as "New":',
+          confirmText: 'Mark as New',
+          emptyMessage: 'All products are already marked as new.'
         };
       case 'deleteProducts':
         return {
@@ -79,8 +98,19 @@ const BulkOperationsDialog = ({ isOpen, onClose, products, operationType, onConf
   // Handle confirm
   const handleConfirm = () => {
     if (selectedIds.length > 0) {
-      onConfirm(selectedIds);
+      // For apply discount, pass both selectedIds and percentage
+      if (operationType === 'applyDiscount') {
+        const percentage = parseFloat(discountPercentage);
+        if (isNaN(percentage) || percentage <= 0 || percentage >= 100) {
+          alert('Please enter a valid discount percentage between 1 and 99');
+          return;
+        }
+        onConfirm(selectedIds, percentage);
+      } else {
+        onConfirm(selectedIds);
+      }
       setSelectedIds([]);
+      setDiscountPercentage('10');
       onClose();
     }
   };
@@ -88,6 +118,7 @@ const BulkOperationsDialog = ({ isOpen, onClose, products, operationType, onConf
   // Handle cancel
   const handleCancel = () => {
     setSelectedIds([]);
+    setDiscountPercentage('10');
     onClose();
   };
 
@@ -108,6 +139,28 @@ const BulkOperationsDialog = ({ isOpen, onClose, products, operationType, onConf
         <div className="bulk-dialog-description">
           {operationInfo.description}
         </div>
+
+        {/* Discount Percentage Input (only for applyDiscount) */}
+        {operationType === 'applyDiscount' && (
+          <div className="bulk-discount-input">
+            <label htmlFor="discount-percentage">Discount Percentage:</label>
+            <div className="discount-input-wrapper">
+              <input
+                id="discount-percentage"
+                type="number"
+                min="1"
+                max="99"
+                value={discountPercentage}
+                onChange={(e) => setDiscountPercentage(e.target.value)}
+                placeholder="Enter discount %"
+              />
+              <span className="percentage-symbol">%</span>
+            </div>
+            <div className="discount-help-text">
+              Enter a value between 1 and 99
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div className="bulk-dialog-content">

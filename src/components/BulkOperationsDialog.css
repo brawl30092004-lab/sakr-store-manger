@@ -64,6 +64,58 @@
   border-bottom: 1px solid #404040;
 }
 
+.bulk-discount-input {
+  padding: 16px 24px;
+  background: #252525;
+  border-bottom: 1px solid #404040;
+}
+
+.bulk-discount-input label {
+  display: block;
+  color: #fff;
+  font-weight: 500;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.discount-input-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 120px;
+}
+
+.bulk-discount-input input[type="number"] {
+  width: 100%;
+  padding: 8px 30px 8px 12px;
+  background: #1e1e1e;
+  border: 1px solid #404040;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.bulk-discount-input input[type="number"]:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+.percentage-symbol {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.discount-help-text {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: #999;
+}
+
 .bulk-dialog-content {
   flex: 1;
   overflow-y: auto;

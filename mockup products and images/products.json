@@ -33,8 +33,8 @@
       ]
     },
     "category": "Home Goods",
-    "discount": false,
-    "discountedPrice": 15.50,
+    "discount": true,
+    "discountedPrice": 13.18,
     "stock": 5,
     "isNew": false
   },

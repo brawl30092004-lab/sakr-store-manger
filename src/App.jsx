@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 import { Minus, Maximize2, X } from 'lucide-react';
-import { loadProducts, bulkRemoveNewBadge, bulkRemoveDiscount, bulkDeleteProducts, saveProducts } from './store/slices/productsSlice';
+import { loadProducts, bulkRemoveNewBadge, bulkRemoveDiscount, bulkDeleteProducts, bulkApplyDiscount, bulkMakeNew, saveProducts } from './store/slices/productsSlice';
 import { setProjectPath } from './store/slices/settingsSlice';
 import { attachKeyboardShortcuts } from './services/keyboardShortcuts';
 import { showSuccess, showError } from './services/toastService';
@@ -223,12 +223,22 @@ function App() {
     setActiveMenu(null);
   };
 
+  const handleBulkApplyDiscount = () => {
+    setBulkOperationDialog({ isOpen: true, type: 'applyDiscount' });
+    setActiveMenu(null);
+  };
+
+  const handleBulkMakeNew = () => {
+    setBulkOperationDialog({ isOpen: true, type: 'makeNew' });
+    setActiveMenu(null);
+  };
+
   const handleBulkDeleteProducts = () => {
     setBulkOperationDialog({ isOpen: true, type: 'deleteProducts' });
     setActiveMenu(null);
   };
 
-  const handleBulkOperationConfirm = async (selectedProductIds) => {
+  const handleBulkOperationConfirm = async (selectedProductIds, discountPercentage) => {
     try {
       const { type } = bulkOperationDialog;
       
@@ -256,10 +266,38 @@ function App() {
           await dispatch(saveProducts(updatedProducts2)).unwrap();
           showSuccess(`Successfully removed discount from ${selectedProductIds.length} product(s)`);
           break;
+        case 'applyDiscount':
+          dispatch(bulkApplyDiscount({ productIds: selectedProductIds, percentage: discountPercentage }));
+          const updatedProducts3 = products.map(product => {
+            if (selectedProductIds.includes(product.id)) {
+              const discountAmount = product.price * (discountPercentage / 100);
+              const discountedPrice = product.price - discountAmount;
+              return { 
+                ...product, 
+                discount: true, 
+                discountedPrice: parseFloat(discountedPrice.toFixed(2))
+              };
+            }
+            return product;
+          });
+          await dispatch(saveProducts(updatedProducts3)).unwrap();
+          showSuccess(`Successfully applied ${discountPercentage}% discount to ${selectedProductIds.length} product(s)`);
+          break;
+        case 'makeNew':
+          dispatch(bulkMakeNew(selectedProductIds));
+          const updatedProducts4 = products.map(product => {
+            if (selectedProductIds.includes(product.id)) {
+              return { ...product, isNew: true };
+            }
+            return product;
+          });
+          await dispatch(saveProducts(updatedProducts4)).unwrap();
+          showSuccess(`Successfully marked ${selectedProductIds.length} product(s) as "New"`);
+          break;
         case 'deleteProducts':
           dispatch(bulkDeleteProducts(selectedProductIds));
-          const updatedProducts3 = products.filter(product => !selectedProductIds.includes(product.id));
-          await dispatch(saveProducts(updatedProducts3)).unwrap();
+          const updatedProducts5 = products.filter(product => !selectedProductIds.includes(product.id));
+          await dispatch(saveProducts(updatedProducts5)).unwrap();
           showSuccess(`Successfully deleted ${selectedProductIds.length} product(s)`);
           break;
       }
@@ -449,12 +487,20 @@ function App() {
                 <span className="shortcut">Delete</span>
               </div>
               <div className="menu-divider"></div>
-              <div className="menu-option" onClick={handleBulkRemoveNewBadge}>
-                <span>Bulk Remove New Badge</span>
+              <div className="menu-option" onClick={handleBulkApplyDiscount}>
+                <span>Bulk Apply Discount</span>
               </div>
               <div className="menu-option" onClick={handleBulkRemoveDiscount}>
                 <span>Bulk Remove Discount</span>
               </div>
+              <div className="menu-divider"></div>
+              <div className="menu-option" onClick={handleBulkMakeNew}>
+                <span>Bulk Make New</span>
+              </div>
+              <div className="menu-option" onClick={handleBulkRemoveNewBadge}>
+                <span>Bulk Remove New Badge</span>
+              </div>
+              <div className="menu-divider"></div>
               <div className="menu-option" onClick={handleBulkDeleteProducts}>
                 <span>Bulk Delete Products</span>
               </div>
