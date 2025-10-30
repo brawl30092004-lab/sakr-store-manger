@@ -55,10 +55,13 @@
   align-items: center;
   padding: 0 10px;
   gap: 5px;
+  position: relative;
+  z-index: 10000;
 }
 
 .menu-item-wrapper {
   position: relative;
+  z-index: 10001;
 }
 
 .menu-item {
@@ -91,7 +94,7 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   min-width: 220px;
   padding: 6px 0;
-  z-index: 1000;
+  z-index: 10002;
   animation: slideDown 0.15s ease;
 }
 
