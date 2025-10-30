@@ -7,7 +7,7 @@ import ProductImage from './ProductImage';
 import ExportDialog from './ExportDialog';
 import './MainContent.css';
 
-const MainContent = forwardRef(({ selectedCategory }, ref) => {
+const MainContent = forwardRef(({ selectedCategory, selectedFilter }, ref) => {
   const [searchText, setSearchText] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -37,6 +37,13 @@ const MainContent = forwardRef(({ selectedCategory }, ref) => {
       });
     }
 
+    // Special Filters
+    if (selectedFilter === 'featured') {
+      result = result.filter(product => product.isNew || product.tags?.includes('featured'));
+    } else if (selectedFilter === 'discounts') {
+      result = result.filter(product => product.discount > 0);
+    }
+
     // Search Filter
     if (searchText.trim()) {
       const searchLower = searchText.toLowerCase();
@@ -47,7 +54,7 @@ const MainContent = forwardRef(({ selectedCategory }, ref) => {
     }
 
     return result;
-  }, [products, selectedCategory, searchText]);
+  }, [products, selectedCategory, selectedFilter, searchText]);
 
   // Handle opening form for new product
   const handleNewProduct = () => {
