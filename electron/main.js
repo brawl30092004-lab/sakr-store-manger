@@ -118,8 +118,30 @@ ipcMain.handle('fs:saveProducts', async (event, projectPath, products) => {
   try {
     const productsFilePath = path.join(projectPath, 'products.json');
     
-    // Write products.json with 2-space indentation and UTF-8 encoding
-    await fs.writeJSON(productsFilePath, products, { spaces: 2, encoding: 'utf8' });
+    // Custom replacer to preserve .00 format for price and discountedPrice
+    const replacer = (key, value) => {
+      // If the key is 'price' or 'discountedPrice' and the value is a number
+      if ((key === 'price' || key === 'discountedPrice') && typeof value === 'number') {
+        // Return the number as-is (will be handled by JSON.stringify with proper formatting)
+        return parseFloat(value.toFixed(2));
+      }
+      return value;
+    };
+    
+    // Convert to JSON string with custom formatting to preserve .00
+    const jsonString = JSON.stringify(products, replacer, 2);
+    
+    // Use regex to ensure price and discountedPrice always have 2 decimal places
+    const formattedJsonString = jsonString.replace(
+      /"(price|discountedPrice)":\s*(\d+(?:\.\d{1,2})?)/g,
+      (match, fieldName, number) => {
+        const num = parseFloat(number);
+        return `"${fieldName}": ${num.toFixed(2)}`;
+      }
+    );
+    
+    // Write the formatted JSON to file
+    await fs.writeFile(productsFilePath, formattedJsonString, 'utf8');
     return true;
   } catch (error) {
     console.error('Error saving products:', error);
