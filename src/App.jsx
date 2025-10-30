@@ -235,17 +235,31 @@ function App() {
       switch (type) {
         case 'removeNewBadge':
           dispatch(bulkRemoveNewBadge(selectedProductIds));
-          await dispatch(saveProducts()).unwrap();
+          // Get the current products from state after the update
+          const updatedProducts1 = products.map(product => {
+            if (selectedProductIds.includes(product.id)) {
+              return { ...product, isNew: false };
+            }
+            return product;
+          });
+          await dispatch(saveProducts(updatedProducts1)).unwrap();
           showSuccess(`Successfully removed "New" badge from ${selectedProductIds.length} product(s)`);
           break;
         case 'removeDiscount':
           dispatch(bulkRemoveDiscount(selectedProductIds));
-          await dispatch(saveProducts()).unwrap();
+          const updatedProducts2 = products.map(product => {
+            if (selectedProductIds.includes(product.id)) {
+              return { ...product, discount: false, discountedPrice: 0.00 };
+            }
+            return product;
+          });
+          await dispatch(saveProducts(updatedProducts2)).unwrap();
           showSuccess(`Successfully removed discount from ${selectedProductIds.length} product(s)`);
           break;
         case 'deleteProducts':
           dispatch(bulkDeleteProducts(selectedProductIds));
-          await dispatch(saveProducts()).unwrap();
+          const updatedProducts3 = products.filter(product => !selectedProductIds.includes(product.id));
+          await dispatch(saveProducts(updatedProducts3)).unwrap();
           showSuccess(`Successfully deleted ${selectedProductIds.length} product(s)`);
           break;
       }

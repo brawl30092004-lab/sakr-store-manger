@@ -196,6 +196,10 @@ const productsSlice = createSlice({
     },
     bulkRemoveNewBadge: (state, action) => {
       const productIds = action.payload; // Array of product IDs
+      if (!state.items || !Array.isArray(state.items)) {
+        console.error('state.items is not an array:', state.items);
+        return;
+      }
       state.items = state.items.map(product => {
         if (productIds.includes(product.id)) {
           return { ...product, isNew: false };
@@ -206,6 +210,10 @@ const productsSlice = createSlice({
     },
     bulkRemoveDiscount: (state, action) => {
       const productIds = action.payload; // Array of product IDs
+      if (!state.items || !Array.isArray(state.items)) {
+        console.error('state.items is not an array:', state.items);
+        return;
+      }
       state.items = state.items.map(product => {
         if (productIds.includes(product.id)) {
           return { ...product, discount: false, discountedPrice: 0.00 };
@@ -216,6 +224,10 @@ const productsSlice = createSlice({
     },
     bulkDeleteProducts: (state, action) => {
       const productIds = action.payload; // Array of product IDs
+      if (!state.items || !Array.isArray(state.items)) {
+        console.error('state.items is not an array:', state.items);
+        return;
+      }
       state.items = state.items.filter(product => !productIds.includes(product.id));
       state.hasUnsavedChanges = true;
     },
