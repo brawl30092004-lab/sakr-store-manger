@@ -153,6 +153,15 @@
   color: #58a6ff;
   margin: 0;
   font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gallery-hint svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 /* Error Message */

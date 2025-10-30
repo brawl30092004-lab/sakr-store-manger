@@ -212,14 +212,26 @@ const ImageUpload = React.memo(function ImageUpload({ value, onChange, error }) 
           onDrop={handleDrop}
           onClick={handleClick}
         >
-          <div className="upload-icon">📸</div>
+          <div className="upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+          </div>
           <p className="upload-text">Drag & drop an image here</p>
           <p className="upload-subtext">or click to browse</p>
           <p className="upload-requirements">
             JPEG, PNG, WebP, AVIF • Max 10 MB
           </p>
           <div className="upload-recommendations">
-            <p className="recommendation-title">📐 Recommended:</p>
+            <p className="recommendation-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M9 11l3 3L22 4"/>
+              </svg>
+              Recommended:
+            </p>
             <p className="recommendation-details">800×800px to 1200×1200px • Square (1:1 ratio)</p>
           </div>
         </div>
@@ -240,7 +252,11 @@ const ImageUpload = React.memo(function ImageUpload({ value, onChange, error }) 
           {fileInfo && (
             <div className="file-info">
               <p className="file-name" title={fileInfo.name}>
-                📄 {fileInfo.name}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                {fileInfo.name}
               </p>
               <p className="file-details">
                 {fileInfo.size} • {fileInfo.dimensions}
@@ -251,7 +267,12 @@ const ImageUpload = React.memo(function ImageUpload({ value, onChange, error }) 
                 <div className="file-recommendations">
                   {recommendations.suggestions.map((suggestion, index) => (
                     <p key={index} className="recommendation-text">
-                      💡 {suggestion}
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 16v-4"/>
+                        <path d="M12 8h.01"/>
+                      </svg>
+                      {suggestion}
                     </p>
                   ))}
                 </div>
@@ -276,7 +297,11 @@ const ImageUpload = React.memo(function ImageUpload({ value, onChange, error }) 
                 onClick={handleCropClick}
                 title="Crop to recommended 1:1 ratio"
               >
-                ✂️ Crop
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"/>
+                  <path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"/>
+                </svg>
+                Crop
               </button>
             )}
             

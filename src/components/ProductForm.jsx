@@ -320,7 +320,16 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
         <form onSubmit={handleSubmit(onSubmit)} className="product-form">
           {/* Basic Information Section */}
           <section className="form-section">
-            <h3 className="section-title">Basic Information</h3>
+            <h3 className="section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+              Basic Information
+            </h3>
             
             {/* Product Name */}
             <div className="form-group">
@@ -382,45 +391,53 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
 
           {/* Pricing & Stock Section */}
           <section className="form-section">
-            <h3 className="section-title">Pricing & Stock</h3>
+            <h3 className="section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+              Pricing & Stock
+            </h3>
             
-            {/* Regular Price */}
-            <div className="form-group">
-              <label htmlFor="price" className="form-label">
-                Regular Price (EGP) <span className="required">*</span>
-              </label>
-              <input
-                id="price"
-                type="number"
-                step="0.01"
-                min="0.01"
-                className={`form-input ${errors.price ? 'input-error' : ''}`}
-                placeholder="0.00"
-                {...register('price', { valueAsNumber: true })}
-              />
-              {errors.price && (
-                <span className="error-message">{errors.price.message}</span>
-              )}
-            </div>
+            <div className="pricing-grid">
+              {/* Regular Price */}
+              <div className="form-group">
+                <label htmlFor="price" className="form-label">
+                  Regular Price (EGP) <span className="required">*</span>
+                </label>
+                <input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  className={`form-input ${errors.price ? 'input-error' : ''}`}
+                  placeholder="0.00"
+                  {...register('price', { valueAsNumber: true })}
+                />
+                {errors.price && (
+                  <span className="error-message">{errors.price.message}</span>
+                )}
+              </div>
 
-            {/* Stock Level */}
-            <div className="form-group">
-              <label htmlFor="stock" className="form-label">
-                Stock Level <span className="required">*</span>
-              </label>
-              <input
-                id="stock"
-                type="number"
-                step="1"
-                min="0"
-                max="9999"
-                className={`form-input ${errors.stock ? 'input-error' : ''}`}
-                placeholder="0"
-                {...register('stock', { valueAsNumber: true })}
-              />
-              {errors.stock && (
-                <span className="error-message">{errors.stock.message}</span>
-              )}
+              {/* Stock Level */}
+              <div className="form-group">
+                <label htmlFor="stock" className="form-label">
+                  Stock Level <span className="required">*</span>
+                </label>
+                <input
+                  id="stock"
+                  type="number"
+                  step="1"
+                  min="0"
+                  max="9999"
+                  className={`form-input ${errors.stock ? 'input-error' : ''}`}
+                  placeholder="0"
+                  {...register('stock', { valueAsNumber: true })}
+                />
+                {errors.stock && (
+                  <span className="error-message">{errors.stock.message}</span>
+                )}
+              </div>
             </div>
 
             {/* Discount Toggle */}
@@ -459,7 +476,14 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
 
           {/* Images Section */}
           <section className="form-section">
-            <h3 className="section-title">Images</h3>
+            <h3 className="section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              Images
+            </h3>
             
             {/* Primary Image */}
             <div className="form-group">
@@ -501,7 +525,13 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
 
           {/* Product Flags Section */}
           <section className="form-section">
-            <h3 className="section-title">Product Flags</h3>
+            <h3 className="section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                <line x1="4" y1="22" x2="4" y2="15"/>
+              </svg>
+              Product Flags
+            </h3>
             
             {/* Mark as New */}
             <div className="form-group form-group-checkbox">

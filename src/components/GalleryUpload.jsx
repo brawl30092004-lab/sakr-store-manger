@@ -215,7 +215,12 @@ const GalleryUpload = React.memo(function GalleryUpload({ value = [], onChange, 
           {value.length} / 10 images
         </p>
         {value.length > 1 && (
-          <p className="gallery-hint">💡 Drag images to reorder</p>
+          <p className="gallery-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12M17 20l4-4M17 20l-4-4"/>
+            </svg>
+            Drag images to reorder
+          </p>
         )}
       </div>
 

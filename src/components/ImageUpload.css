@@ -32,9 +32,15 @@
 }
 
 .upload-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  color: #8b949e;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  color: #6b7280;
+}
+
+.upload-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .upload-text {
@@ -70,6 +76,15 @@
   font-weight: 600;
   color: #58a6ff;
   margin: 0 0 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.recommendation-title svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .recommendation-details {
@@ -151,6 +166,16 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.file-name svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: #6b7280;
 }
 
 .file-details {
@@ -173,6 +198,17 @@
   color: #8b949e;
   margin: 4px 0;
   line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.recommendation-text svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #58a6ff;
 }
 
 /* Preview Actions */
@@ -193,6 +229,11 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.btn-sm svg {
+  width: 14px;
+  height: 14px;
 }
 
 .btn-sm:hover {
