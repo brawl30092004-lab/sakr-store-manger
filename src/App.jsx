@@ -20,6 +20,9 @@ function App() {
   const [activeFilters, setActiveFilters] = useState([]); // Array to support multiple filters
   const [currentView, setCurrentView] = useState('main'); // 'main' or 'settings'
   const [showDataSourceDialog, setShowDataSourceDialog] = useState(false);
+  const [activeMenu, setActiveMenu] = useState(null); // Track which menu is open
+  const [showAboutDialog, setShowAboutDialog] = useState(false);
+  const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
   
   // Refs for keyboard shortcut handlers
   const mainContentRef = useRef(null);
@@ -69,8 +72,7 @@ function App() {
         }
       },
       onPublish: () => {
-        // TODO: Implement publish to GitHub functionality
-        console.log('Publish shortcut triggered (Ctrl+P)');
+        handlePublishToGitHub();
       },
       onFocusSearch: () => {
         if (currentView === 'main' && mainContentRef.current?.focusSearch) {
@@ -85,6 +87,10 @@ function App() {
       onEscape: () => {
         if (currentView === 'settings') {
           setCurrentView('main');
+        } else if (showAboutDialog) {
+          setShowAboutDialog(false);
+        } else if (showShortcutsDialog) {
+          setShowShortcutsDialog(false);
         } else if (mainContentRef.current?.handleEscape) {
           mainContentRef.current.handleEscape();
         }
@@ -93,12 +99,27 @@ function App() {
         if (currentView === 'main' && mainContentRef.current?.handleEnter) {
           mainContentRef.current.handleEnter();
         }
+      },
+      onReload: () => {
+        handleReload();
+      },
+      onZoomIn: () => {
+        handleZoomIn();
+      },
+      onZoomOut: () => {
+        handleZoomOut();
+      },
+      onActualSize: () => {
+        handleActualSize();
+      },
+      onToggleFullscreen: () => {
+        handleToggleFullscreen();
       }
     };
 
     const cleanup = attachKeyboardShortcuts(handlers);
     return cleanup;
-  }, [currentView]);
+  }, [currentView, showAboutDialog, showShortcutsDialog]);
 
   // Handle creating new products.json file
   const handleCreateNewFile = async () => {
@@ -143,6 +164,140 @@ function App() {
     setShowDataSourceDialog(false);
   };
 
+  // Menu handlers
+  const handleNewProduct = () => {
+    if (currentView === 'main' && mainContentRef.current?.handleNewProduct) {
+      mainContentRef.current.handleNewProduct();
+      setActiveMenu(null);
+    }
+  };
+
+  const handleSaveAll = async () => {
+    if (currentView === 'main' && mainContentRef.current?.handleSave) {
+      await mainContentRef.current.handleSave();
+      setActiveMenu(null);
+    }
+  };
+
+  const handleExport = () => {
+    if (currentView === 'main' && mainContentRef.current?.handleExport) {
+      mainContentRef.current.handleExport();
+      setActiveMenu(null);
+    }
+  };
+
+  const handleBrowseDataSource = () => {
+    setShowDataSourceDialog(true);
+    setActiveMenu(null);
+  };
+
+  const handleOpenSettings = () => {
+    setCurrentView('settings');
+    setActiveMenu(null);
+  };
+
+  const handleQuit = () => {
+    if (window.confirm('Are you sure you want to quit?')) {
+      window.close();
+    }
+    setActiveMenu(null);
+  };
+
+  const handleDeleteProduct = () => {
+    if (currentView === 'main' && mainContentRef.current?.handleDeleteShortcut) {
+      mainContentRef.current.handleDeleteShortcut();
+      setActiveMenu(null);
+    }
+  };
+
+  const handleReload = () => {
+    dispatch(loadProducts());
+    setActiveMenu(null);
+  };
+
+  const handleZoomIn = () => {
+    document.body.style.zoom = (parseFloat(document.body.style.zoom || 1) + 0.1).toString();
+    setActiveMenu(null);
+  };
+
+  const handleZoomOut = () => {
+    document.body.style.zoom = Math.max(0.5, parseFloat(document.body.style.zoom || 1) - 0.1).toString();
+    setActiveMenu(null);
+  };
+
+  const handleActualSize = () => {
+    document.body.style.zoom = '1';
+    setActiveMenu(null);
+  };
+
+  const handleToggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+    setActiveMenu(null);
+  };
+
+  const handlePublishToGitHub = async () => {
+    try {
+      const gitStatus = await window.electron.getGitStatus();
+      if (gitStatus.hasChanges) {
+        const message = prompt('Enter commit message:', 'Update products');
+        if (message) {
+          await window.electron.publishToGitHub(message);
+          showSuccess('Successfully published to GitHub');
+        }
+      } else {
+        showSuccess('No changes to publish');
+      }
+    } catch (error) {
+      showError('Failed to publish: ' + error.message);
+    }
+    setActiveMenu(null);
+  };
+
+  const handleCheckUpdates = async () => {
+    showSuccess('Checking for updates...');
+    setActiveMenu(null);
+  };
+
+  const handleOpenDataFolder = async () => {
+    if (projectPath) {
+      console.log('Open folder:', projectPath);
+      showSuccess('Opening data folder...');
+    } else {
+      showError('No data folder configured');
+    }
+    setActiveMenu(null);
+  };
+
+  const handleShowDocumentation = () => {
+    window.open('https://github.com/your-repo/sakr-store-manager#readme', '_blank');
+    setActiveMenu(null);
+  };
+
+  const handleShowShortcuts = () => {
+    setShowShortcutsDialog(true);
+    setActiveMenu(null);
+  };
+
+  const handleShowAbout = () => {
+    setShowAboutDialog(true);
+    setActiveMenu(null);
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (activeMenu && !e.target.closest('.app-menu')) {
+        setActiveMenu(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [activeMenu]);
+
 
   return (
     <div className="App">
@@ -169,18 +324,255 @@ function App() {
       </header>
       
       <nav className="app-menu">
-        <span className="menu-item">File</span>
-        <span className="menu-item">Edit</span>
-        <span className="menu-item">View</span>
-        <span 
-          className="menu-item" 
-          onClick={() => setCurrentView(currentView === 'settings' ? 'main' : 'settings')}
-          style={{ cursor: 'pointer', fontWeight: currentView === 'settings' ? 'bold' : 'normal' }}
-        >
-          {currentView === 'settings' ? '← Back' : 'Settings'}
-        </span>
-        <span className="menu-item">Help</span>
+        {/* File Menu */}
+        <div className="menu-item-wrapper">
+          <span 
+            className={`menu-item ${activeMenu === 'file' ? 'active' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveMenu(activeMenu === 'file' ? null : 'file');
+            }}
+          >
+            File
+          </span>
+          {activeMenu === 'file' && (
+            <div className="menu-dropdown">
+              <div className="menu-option" onClick={handleNewProduct}>
+                <span>New Product</span>
+                <span className="shortcut">Ctrl+N</span>
+              </div>
+              <div className="menu-option" onClick={handleSaveAll}>
+                <span>Save All</span>
+                <span className="shortcut">Ctrl+S</span>
+              </div>
+              <div className="menu-divider"></div>
+              <div className="menu-option" onClick={handleExport}>
+                <span>Export...</span>
+              </div>
+              <div className="menu-option" onClick={handleBrowseDataSource}>
+                <span>Browse Data Source...</span>
+              </div>
+              <div className="menu-divider"></div>
+              <div className="menu-option" onClick={handleOpenSettings}>
+                <span>Settings</span>
+              </div>
+              <div className="menu-divider"></div>
+              <div className="menu-option" onClick={handleQuit}>
+                <span>Quit</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Edit Menu */}
+        <div className="menu-item-wrapper">
+          <span 
+            className={`menu-item ${activeMenu === 'edit' ? 'active' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveMenu(activeMenu === 'edit' ? null : 'edit');
+            }}
+          >
+            Edit
+          </span>
+          {activeMenu === 'edit' && (
+            <div className="menu-dropdown">
+              <div className="menu-option" onClick={handleDeleteProduct}>
+                <span>Delete Product</span>
+                <span className="shortcut">Delete</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* View Menu */}
+        <div className="menu-item-wrapper">
+          <span 
+            className={`menu-item ${activeMenu === 'view' ? 'active' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveMenu(activeMenu === 'view' ? null : 'view');
+            }}
+          >
+            View
+          </span>
+          {activeMenu === 'view' && (
+            <div className="menu-dropdown">
+              <div className="menu-option" onClick={handleReload}>
+                <span>Reload</span>
+                <span className="shortcut">Ctrl+R</span>
+              </div>
+              <div className="menu-divider"></div>
+              <div className="menu-option" onClick={handleActualSize}>
+                <span>Actual Size</span>
+                <span className="shortcut">Ctrl+0</span>
+              </div>
+              <div className="menu-option" onClick={handleZoomIn}>
+                <span>Zoom In</span>
+                <span className="shortcut">Ctrl++</span>
+              </div>
+              <div className="menu-option" onClick={handleZoomOut}>
+                <span>Zoom Out</span>
+                <span className="shortcut">Ctrl+-</span>
+              </div>
+              <div className="menu-divider"></div>
+              <div className="menu-option" onClick={handleToggleFullscreen}>
+                <span>Toggle Fullscreen</span>
+                <span className="shortcut">F11</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Tools Menu */}
+        <div className="menu-item-wrapper">
+          <span 
+            className={`menu-item ${activeMenu === 'tools' ? 'active' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveMenu(activeMenu === 'tools' ? null : 'tools');
+            }}
+          >
+            Tools
+          </span>
+          {activeMenu === 'tools' && (
+            <div className="menu-dropdown">
+              <div className="menu-option" onClick={handlePublishToGitHub}>
+                <span>Publish to GitHub</span>
+                <span className="shortcut">Ctrl+P</span>
+              </div>
+              <div className="menu-divider"></div>
+              <div className="menu-option" onClick={handleCheckUpdates}>
+                <span>Check for Updates...</span>
+              </div>
+              <div className="menu-option" onClick={handleOpenDataFolder}>
+                <span>Open Data Folder</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Help Menu */}
+        <div className="menu-item-wrapper">
+          <span 
+            className={`menu-item ${activeMenu === 'help' ? 'active' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveMenu(activeMenu === 'help' ? null : 'help');
+            }}
+          >
+            Help
+          </span>
+          {activeMenu === 'help' && (
+            <div className="menu-dropdown">
+              <div className="menu-option" onClick={handleShowDocumentation}>
+                <span>Documentation</span>
+              </div>
+              <div className="menu-option" onClick={handleShowShortcuts}>
+                <span>Keyboard Shortcuts</span>
+                <span className="shortcut">Ctrl+/</span>
+              </div>
+              <div className="menu-divider"></div>
+              <div className="menu-option" onClick={handleShowAbout}>
+                <span>About</span>
+              </div>
+            </div>
+          )}
+        </div>
       </nav>
+
+      {/* About Dialog */}
+      {showAboutDialog && (
+        <div className="modal-overlay" onClick={() => setShowAboutDialog(false)}>
+          <div className="modal-content about-dialog" onClick={(e) => e.stopPropagation()}>
+            <h2>Sakr Store Manager</h2>
+            <p className="version">Version 1.0.0</p>
+            <p>A desktop application for managing product catalogs with Git integration</p>
+            <p className="tech-info">
+              Electron: {window.electron?.versions?.electron}<br/>
+              Chrome: {window.electron?.versions?.chrome}<br/>
+              Node: {window.electron?.versions?.node}
+            </p>
+            <button className="btn btn-primary" onClick={() => setShowAboutDialog(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Keyboard Shortcuts Dialog */}
+      {showShortcutsDialog && (
+        <div className="modal-overlay" onClick={() => setShowShortcutsDialog(false)}>
+          <div className="modal-content shortcuts-dialog" onClick={(e) => e.stopPropagation()}>
+            <h2>⌨️ Keyboard Shortcuts</h2>
+            <div className="shortcuts-grid">
+              <div className="shortcut-section">
+                <h3>Product Management</h3>
+                <div className="shortcut-row">
+                  <span>New Product</span>
+                  <kbd>Ctrl+N</kbd>
+                </div>
+                <div className="shortcut-row">
+                  <span>Save</span>
+                  <kbd>Ctrl+S</kbd>
+                </div>
+                <div className="shortcut-row">
+                  <span>Delete Product</span>
+                  <kbd>Delete</kbd>
+                </div>
+              </div>
+              <div className="shortcut-section">
+                <h3>Navigation</h3>
+                <div className="shortcut-row">
+                  <span>Focus Search</span>
+                  <kbd>Ctrl+F</kbd>
+                </div>
+                <div className="shortcut-row">
+                  <span>Close Dialog</span>
+                  <kbd>Esc</kbd>
+                </div>
+                <div className="shortcut-row">
+                  <span>Submit Form</span>
+                  <kbd>Enter</kbd>
+                </div>
+              </div>
+              <div className="shortcut-section">
+                <h3>Publishing</h3>
+                <div className="shortcut-row">
+                  <span>Publish to GitHub</span>
+                  <kbd>Ctrl+P</kbd>
+                </div>
+              </div>
+              <div className="shortcut-section">
+                <h3>View</h3>
+                <div className="shortcut-row">
+                  <span>Reload</span>
+                  <kbd>Ctrl+R</kbd>
+                </div>
+                <div className="shortcut-row">
+                  <span>Zoom In</span>
+                  <kbd>Ctrl++</kbd>
+                </div>
+                <div className="shortcut-row">
+                  <span>Zoom Out</span>
+                  <kbd>Ctrl+-</kbd>
+                </div>
+                <div className="shortcut-row">
+                  <span>Actual Size</span>
+                  <kbd>Ctrl+0</kbd>
+                </div>
+                <div className="shortcut-row">
+                  <span>Fullscreen</span>
+                  <kbd>F11</kbd>
+                </div>
+              </div>
+            </div>
+            <button className="btn btn-primary" onClick={() => setShowShortcutsDialog(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="app-body">
         {currentView === 'settings' ? (

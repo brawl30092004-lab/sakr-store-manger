@@ -13,6 +13,11 @@
  * @param {Function} handlers.onDelete - Delete handler
  * @param {Function} handlers.onEscape - Escape handler
  * @param {Function} handlers.onEnter - Enter handler
+ * @param {Function} handlers.onReload - Ctrl+R handler
+ * @param {Function} handlers.onZoomIn - Ctrl++ handler
+ * @param {Function} handlers.onZoomOut - Ctrl+- handler
+ * @param {Function} handlers.onActualSize - Ctrl+0 handler
+ * @param {Function} handlers.onToggleFullscreen - F11 handler
  */
 export const attachKeyboardShortcuts = (handlers) => {
   const handleKeyDown = (e) => {
@@ -56,6 +61,51 @@ export const attachKeyboardShortcuts = (handlers) => {
       e.preventDefault();
       if (handlers.onFocusSearch) {
         handlers.onFocusSearch();
+      }
+      return;
+    }
+
+    // Ctrl+R - Reload
+    if (e.ctrlKey && e.key === 'r') {
+      e.preventDefault();
+      if (handlers.onReload) {
+        handlers.onReload();
+      }
+      return;
+    }
+
+    // Ctrl+0 - Actual Size
+    if (e.ctrlKey && e.key === '0') {
+      e.preventDefault();
+      if (handlers.onActualSize) {
+        handlers.onActualSize();
+      }
+      return;
+    }
+
+    // Ctrl++ - Zoom In (handles both + and =)
+    if (e.ctrlKey && (e.key === '+' || e.key === '=')) {
+      e.preventDefault();
+      if (handlers.onZoomIn) {
+        handlers.onZoomIn();
+      }
+      return;
+    }
+
+    // Ctrl+- - Zoom Out
+    if (e.ctrlKey && e.key === '-') {
+      e.preventDefault();
+      if (handlers.onZoomOut) {
+        handlers.onZoomOut();
+      }
+      return;
+    }
+
+    // F11 - Toggle Fullscreen
+    if (e.key === 'F11') {
+      e.preventDefault();
+      if (handlers.onToggleFullscreen) {
+        handlers.onToggleFullscreen();
       }
       return;
     }

@@ -134,6 +134,9 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters }, ref) => {
         productFormRef.current.handleSave();
       }
     },
+    handleExport: () => {
+      setIsExportDialogOpen(true);
+    },
     focusSearch: () => {
       if (searchInputRef.current) {
         searchInputRef.current.focus();
