@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { getCategoriesFromProducts } from '../services/productValidation';
 import './Sidebar.css';
 
-function Sidebar({ selectedCategory, onCategorySelect, selectedFilter, onFilterSelect }) {
+function Sidebar({ selectedCategory, onCategorySelect, activeFilters, onFilterToggle }) {
   const { items: products } = useSelector((state) => state.products);
 
   // Generate dynamic categories from products
@@ -64,8 +64,8 @@ function Sidebar({ selectedCategory, onCategorySelect, selectedFilter, onFilterS
           {filters.map((filter) => (
             <li 
               key={filter.id} 
-              className={`sidebar-item ${selectedFilter === filter.id ? 'active' : ''}`}
-              onClick={() => onFilterSelect && onFilterSelect(filter.id)}
+              className={`sidebar-item ${activeFilters.includes(filter.id) ? 'active' : ''}`}
+              onClick={() => onFilterToggle && onFilterToggle(filter.id)}
             >
               <span className="sidebar-icon">{filter.icon}</span>
               <span className="sidebar-label">{filter.name}</span>

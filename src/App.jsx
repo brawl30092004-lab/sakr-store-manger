@@ -17,7 +17,7 @@ function App() {
   const { items: products, loading, error } = useSelector((state) => state.products);
   const { projectPath, dataSource } = useSelector((state) => state.settings);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedFilter, setSelectedFilter] = useState(null);
+  const [activeFilters, setActiveFilters] = useState([]); // Array to support multiple filters
   const [currentView, setCurrentView] = useState('main'); // 'main' or 'settings'
   const [showDataSourceDialog, setShowDataSourceDialog] = useState(false);
   
@@ -190,13 +190,19 @@ function App() {
             <Sidebar 
               selectedCategory={selectedCategory}
               onCategorySelect={setSelectedCategory}
-              selectedFilter={selectedFilter}
-              onFilterSelect={setSelectedFilter}
+              activeFilters={activeFilters}
+              onFilterToggle={(filterId) => {
+                setActiveFilters(prev => 
+                  prev.includes(filterId) 
+                    ? prev.filter(id => id !== filterId)
+                    : [...prev, filterId]
+                );
+              }}
             />
             <MainContent 
               ref={mainContentRef}
               selectedCategory={selectedCategory}
-              selectedFilter={selectedFilter}
+              activeFilters={activeFilters}
             />
           </>
         )}
