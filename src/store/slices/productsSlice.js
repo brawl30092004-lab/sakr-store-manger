@@ -194,6 +194,31 @@ const productsSlice = createSlice({
       state.items = state.items.filter(p => p.id !== action.payload);
       state.hasUnsavedChanges = true;
     },
+    bulkRemoveNewBadge: (state, action) => {
+      const productIds = action.payload; // Array of product IDs
+      state.items = state.items.map(product => {
+        if (productIds.includes(product.id)) {
+          return { ...product, isNew: false };
+        }
+        return product;
+      });
+      state.hasUnsavedChanges = true;
+    },
+    bulkRemoveDiscount: (state, action) => {
+      const productIds = action.payload; // Array of product IDs
+      state.items = state.items.map(product => {
+        if (productIds.includes(product.id)) {
+          return { ...product, discount: false, discountedPrice: 0.00 };
+        }
+        return product;
+      });
+      state.hasUnsavedChanges = true;
+    },
+    bulkDeleteProducts: (state, action) => {
+      const productIds = action.payload; // Array of product IDs
+      state.items = state.items.filter(product => !productIds.includes(product.id));
+      state.hasUnsavedChanges = true;
+    },
     clearError: (state) => {
       state.error = null;
     },
@@ -304,6 +329,9 @@ export const {
   addProductLocal,
   updateProductLocal,
   deleteProductLocal,
+  bulkRemoveNewBadge,
+  bulkRemoveDiscount,
+  bulkDeleteProducts,
   clearError,
   resetUnsavedChanges,
 } = productsSlice.actions;

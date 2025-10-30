@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 import { Minus, Maximize2, X } from 'lucide-react';
-import { loadProducts } from './store/slices/productsSlice';
+import { loadProducts, bulkRemoveNewBadge, bulkRemoveDiscount, bulkDeleteProducts, saveProducts } from './store/slices/productsSlice';
 import { setProjectPath } from './store/slices/settingsSlice';
 import { attachKeyboardShortcuts } from './services/keyboardShortcuts';
 import { showSuccess, showError } from './services/toastService';
@@ -11,6 +11,7 @@ import MainContent from './components/MainContent';
 import StatusBar from './components/StatusBar';
 import Settings from './components/Settings';
 import DataSourceNotFoundDialog from './components/DataSourceNotFoundDialog';
+import BulkOperationsDialog from './components/BulkOperationsDialog';
 import './App.css';
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
   const [activeMenu, setActiveMenu] = useState(null); // Track which menu is open
   const [showAboutDialog, setShowAboutDialog] = useState(false);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
+  const [bulkOperationDialog, setBulkOperationDialog] = useState({ isOpen: false, type: null });
   
   // Refs for keyboard shortcut handlers
   const mainContentRef = useRef(null);
@@ -211,6 +213,47 @@ function App() {
     }
   };
 
+  const handleBulkRemoveNewBadge = () => {
+    setBulkOperationDialog({ isOpen: true, type: 'removeNewBadge' });
+    setActiveMenu(null);
+  };
+
+  const handleBulkRemoveDiscount = () => {
+    setBulkOperationDialog({ isOpen: true, type: 'removeDiscount' });
+    setActiveMenu(null);
+  };
+
+  const handleBulkDeleteProducts = () => {
+    setBulkOperationDialog({ isOpen: true, type: 'deleteProducts' });
+    setActiveMenu(null);
+  };
+
+  const handleBulkOperationConfirm = async (selectedProductIds) => {
+    try {
+      const { type } = bulkOperationDialog;
+      
+      switch (type) {
+        case 'removeNewBadge':
+          dispatch(bulkRemoveNewBadge(selectedProductIds));
+          await dispatch(saveProducts()).unwrap();
+          showSuccess(`Successfully removed "New" badge from ${selectedProductIds.length} product(s)`);
+          break;
+        case 'removeDiscount':
+          dispatch(bulkRemoveDiscount(selectedProductIds));
+          await dispatch(saveProducts()).unwrap();
+          showSuccess(`Successfully removed discount from ${selectedProductIds.length} product(s)`);
+          break;
+        case 'deleteProducts':
+          dispatch(bulkDeleteProducts(selectedProductIds));
+          await dispatch(saveProducts()).unwrap();
+          showSuccess(`Successfully deleted ${selectedProductIds.length} product(s)`);
+          break;
+      }
+    } catch (error) {
+      showError('Failed to complete bulk operation: ' + error);
+    }
+  };
+
   const handleReload = () => {
     dispatch(loadProducts());
     setActiveMenu(null);
@@ -313,6 +356,15 @@ function App() {
         />
       )}
       
+      {/* Bulk Operations Dialog */}
+      <BulkOperationsDialog
+        isOpen={bulkOperationDialog.isOpen}
+        onClose={() => setBulkOperationDialog({ isOpen: false, type: null })}
+        products={products}
+        operationType={bulkOperationDialog.type}
+        onConfirm={handleBulkOperationConfirm}
+      />
+      
       <header className="app-header">
         <div className="app-title">
           <h1>Sakr Store Manager</h1>
@@ -381,6 +433,16 @@ function App() {
               <div className="menu-option" onClick={handleDeleteProduct}>
                 <span>Delete Product</span>
                 <span className="shortcut">Delete</span>
+              </div>
+              <div className="menu-divider"></div>
+              <div className="menu-option" onClick={handleBulkRemoveNewBadge}>
+                <span>Bulk Remove New Badge</span>
+              </div>
+              <div className="menu-option" onClick={handleBulkRemoveDiscount}>
+                <span>Bulk Remove Discount</span>
+              </div>
+              <div className="menu-option" onClick={handleBulkDeleteProducts}>
+                <span>Bulk Delete Products</span>
               </div>
             </div>
           )}
