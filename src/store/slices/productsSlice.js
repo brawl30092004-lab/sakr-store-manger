@@ -15,7 +15,7 @@ export const defaultProduct = {
     primary: "",
     gallery: []
   },
-  category: "Apparel",      // Or the first category in the list
+  category: "",             // Empty to allow user to select or create category
   discount: false,
   discountedPrice: 0.00,
   stock: 0,

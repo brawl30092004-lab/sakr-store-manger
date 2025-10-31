@@ -28,7 +28,7 @@
   border-left: 1px solid #2d3139;
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.5);
   width: 100%;
-  max-width: 700px;
+  max-width: 1000px;
   height: 100vh;
   overflow: hidden;
   display: flex;
@@ -121,6 +121,29 @@
   margin-bottom: 0;
   border-bottom: none;
   padding-bottom: 0;
+}
+
+/* Two Column Grid Layout for Form Fields */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  column-gap: 16px; /* Extra spacing between columns */
+}
+
+.form-grid .form-group {
+  margin-bottom: 0;
+}
+
+/* Full width fields in grid */
+.form-grid .form-group-full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .section-title {
@@ -262,26 +285,112 @@
   margin-top: 10px;
 }
 
+/* Extra padding for last checkbox in section */
+.form-group-checkbox.form-group-last {
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+}
+
 .form-checkbox-label {
   display: flex;
   align-items: center;
   cursor: pointer;
   user-select: none;
+  position: relative;
 }
 
+/* Hide default checkbox */
 .form-checkbox {
-  width: 15px;
-  height: 15px;
-  margin: 0;
-  margin-right: 7px;
-  cursor: pointer;
-  accent-color: #3b82f6;
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Modern Toggle Switch */
+.form-checkbox-label::before {
+  content: '';
+  width: 44px;
+  height: 24px;
+  background: #2d3139;
+  border: 2px solid #3d4149;
+  border-radius: 12px;
+  margin-right: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.form-checkbox-label::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: #6b7280;
+  border-radius: 50%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Checked state */
+.form-checkbox:checked + .checkbox-text::before {
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.form-checkbox:checked ~ .checkbox-text::after {
+  transform: translateX(20px);
+  background: #ffffff;
+}
+
+/* Alternative: Using sibling selectors */
+.form-checkbox-label:has(.form-checkbox:checked)::before {
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.form-checkbox-label:has(.form-checkbox:checked)::after {
+  transform: translateX(20px);
+  background: #ffffff;
+}
+
+/* Hover effect */
+.form-checkbox-label:hover::before {
+  border-color: #4d5159;
+}
+
+.form-checkbox:checked + .checkbox-text ~ .form-checkbox-label:hover::before,
+.form-checkbox-label:has(.form-checkbox:checked):hover::before {
+  background: #2563eb;
+}
+
+/* Focus state for accessibility */
+.form-checkbox:focus-visible ~ .checkbox-text::before,
+.form-checkbox-label:has(.form-checkbox:focus-visible)::before {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 .checkbox-text {
   font-size: 13px;
   color: #d1d5db;
   font-weight: 500;
+  margin-left: 0;
+}
+
+/* RTL Support for checkboxes */
+[dir="rtl"] .form-checkbox-label::before {
+  margin-right: 0;
+  margin-left: 10px;
+}
+
+[dir="rtl"] .form-checkbox-label::after {
+  left: auto;
+  right: 3px;
+}
+
+[dir="rtl"] .form-checkbox-label:has(.form-checkbox:checked)::after {
+  transform: translateX(-20px);
 }
 
 /* Error Messages */
@@ -424,11 +533,6 @@
   background-position: left 12px center;
   padding-right: 12px;
   padding-left: 36px;
-}
-
-[dir="rtl"] .form-checkbox {
-  margin-right: 0;
-  margin-left: 8px;
 }
 
 [dir="rtl"] .required {

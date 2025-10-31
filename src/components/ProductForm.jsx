@@ -49,7 +49,7 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
       name: '',
       price: 0.00,
       description: '',
-      category: 'Apparel',
+      category: '',
       discount: false,
       discountedPrice: 0.00,
       stock: 0,
@@ -81,14 +81,10 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
   // Extract unique categories from existing products - MEMOIZED
   const existingCategories = useMemo(() => {
     if (!products || products.length === 0) {
-      return ['Apparel', 'Electronics', 'Home & Garden', 'Sports', 'Books', 'Toys', 'Other'];
+      return []; // No suggestions if no products exist
     }
     
     const categorySet = new Set(products.map(p => p.category).filter(Boolean));
-    const defaultCategories = ['Apparel', 'Electronics', 'Home & Garden', 'Sports', 'Books', 'Toys', 'Other'];
-    
-    // Merge default categories with existing ones
-    defaultCategories.forEach(cat => categorySet.add(cat));
     
     return Array.from(categorySet).sort();
   }, [products]); // Only recompute when products array changes
@@ -331,61 +327,66 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
               Basic Information
             </h3>
             
-            {/* Product Name */}
-            <div className="form-group">
-              <label htmlFor="name" className="form-label">
-                Product Name <span className="required">*</span>
-              </label>
-              <input
-                id="name"
-                type="text"
-                className={`form-input ${errors.name ? 'input-error' : ''}`}
-                placeholder="Enter product name (min 3 characters)"
-                {...register('name')}
-              />
-              {errors.name && (
-                <span className="error-message">{errors.name.message}</span>
-              )}
-            </div>
+            <div className="form-grid">
+              {/* Product Name */}
+              <div className="form-group form-group-full">
+                <label htmlFor="name" className="form-label">
+                  Product Name <span className="required">*</span>
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  className={`form-input ${errors.name ? 'input-error' : ''}`}
+                  placeholder="Enter product name (min 3 characters)"
+                  {...register('name')}
+                />
+                {errors.name && (
+                  <span className="error-message">{errors.name.message}</span>
+                )}
+              </div>
 
-            {/* Category */}
-            <div className="form-group">
-              <label htmlFor="category" className="form-label">
-                Category <span className="required">*</span>
-              </label>
-              <input
-                id="category"
-                type="text"
-                list="category-suggestions"
-                className={`form-input ${errors.category ? 'input-error' : ''}`}
-                placeholder="Select or enter a category"
-                {...register('category')}
-              />
-              <datalist id="category-suggestions">
-                {existingCategories.map((cat) => (
-                  <option key={cat} value={cat} />
-                ))}
-              </datalist>
-              {errors.category && (
-                <span className="error-message">{errors.category.message}</span>
-              )}
-            </div>
+              {/* Category */}
+              <div className="form-group">
+                <label htmlFor="category" className="form-label">
+                  Category <span className="required">*</span>
+                </label>
+                <input
+                  id="category"
+                  type="text"
+                  list="category-suggestions"
+                  className={`form-input ${errors.category ? 'input-error' : ''}`}
+                  placeholder="Select existing or type new category"
+                  {...register('category')}
+                />
+                <datalist id="category-suggestions">
+                  {existingCategories.map((cat) => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
+                {errors.category && (
+                  <span className="error-message">{errors.category.message}</span>
+                )}
+              </div>
 
-            {/* Description */}
-            <div className="form-group">
-              <label htmlFor="description" className="form-label">
-                Description <span className="required">*</span>
-              </label>
-              <textarea
-                id="description"
-                className={`form-input form-textarea ${errors.description ? 'input-error' : ''}`}
-                placeholder="Enter product description (min 10 characters)"
-                rows="4"
-                {...register('description')}
-              />
-              {errors.description && (
-                <span className="error-message">{errors.description.message}</span>
-              )}
+              {/* Empty space for grid alignment */}
+              <div className="form-group"></div>
+
+              {/* Description */}
+              <div className="form-group form-group-full">
+                <label htmlFor="description" className="form-label">
+                  Description <span className="required">*</span>
+                </label>
+                <textarea
+                  id="description"
+                  className={`form-input form-textarea ${errors.description ? 'input-error' : ''}`}
+                  placeholder="Enter product description (min 10 characters)"
+                  rows="4"
+                  {...register('description')}
+                />
+                {errors.description && (
+                  <span className="error-message">{errors.description.message}</span>
+                )}
+              </div>
             </div>
           </section>
 
@@ -399,7 +400,7 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
               Pricing & Stock
             </h3>
             
-            <div className="pricing-grid">
+            <div className="form-grid">
               {/* Regular Price */}
               <div className="form-group">
                 <label htmlFor="price" className="form-label">
@@ -438,40 +439,40 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
                   <span className="error-message">{errors.stock.message}</span>
                 )}
               </div>
-            </div>
 
-            {/* Discount Toggle */}
-            <div className="form-group form-group-checkbox">
-              <label className="form-checkbox-label">
-                <input
-                  type="checkbox"
-                  className="form-checkbox"
-                  {...register('discount')}
-                />
-                <span className="checkbox-text">Product is on discount</span>
-              </label>
-            </div>
-
-            {/* Discounted Price - Conditionally Visible */}
-            {isDiscountActive && (
-              <div className="form-group form-group-animated">
-                <label htmlFor="discountedPrice" className="form-label">
-                  Discounted Price (EGP) <span className="required">*</span>
+              {/* Discount Toggle */}
+              <div className="form-group form-group-checkbox form-group-full">
+                <label className="form-checkbox-label">
+                  <input
+                    type="checkbox"
+                    className="form-checkbox"
+                    {...register('discount')}
+                  />
+                  <span className="checkbox-text">Product is on discount</span>
                 </label>
-                <input
-                  id="discountedPrice"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  className={`form-input ${errors.discountedPrice ? 'input-error' : ''}`}
-                  placeholder="0.00"
-                  {...register('discountedPrice', { valueAsNumber: true })}
-                />
-                {errors.discountedPrice && (
-                  <span className="error-message">{errors.discountedPrice.message}</span>
-                )}
               </div>
-            )}
+
+              {/* Discounted Price - Conditionally Visible */}
+              {isDiscountActive && (
+                <div className="form-group form-group-animated">
+                  <label htmlFor="discountedPrice" className="form-label">
+                    Discounted Price (EGP) <span className="required">*</span>
+                  </label>
+                  <input
+                    id="discountedPrice"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    className={`form-input ${errors.discountedPrice ? 'input-error' : ''}`}
+                    placeholder="0.00"
+                    {...register('discountedPrice', { valueAsNumber: true })}
+                  />
+                  {errors.discountedPrice && (
+                    <span className="error-message">{errors.discountedPrice.message}</span>
+                  )}
+                </div>
+              )}
+            </div>
           </section>
 
           {/* Images Section */}
@@ -485,41 +486,43 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
               Images
             </h3>
             
-            {/* Primary Image */}
-            <div className="form-group">
-              <label className="form-label">
-                Primary Image
-              </label>
-              <Controller
-                name="images.primary"
-                control={control}
-                render={({ field }) => (
-                  <ImageUpload
-                    value={field.value}
-                    onChange={handlePrimaryImageChange}
-                    error={errors.images?.primary?.message}
-                  />
-                )}
-              />
-            </div>
+            <div className="form-grid">
+              {/* Primary Image */}
+              <div className="form-group">
+                <label className="form-label">
+                  Primary Image
+                </label>
+                <Controller
+                  name="images.primary"
+                  control={control}
+                  render={({ field }) => (
+                    <ImageUpload
+                      value={field.value}
+                      onChange={handlePrimaryImageChange}
+                      error={errors.images?.primary?.message}
+                    />
+                  )}
+                />
+              </div>
 
-            {/* Gallery Images */}
-            <div className="form-group">
-              <label className="form-label">
-                Gallery Images
-                <span className="form-label-hint"> (Optional, up to 10)</span>
-              </label>
-              <Controller
-                name="images.gallery"
-                control={control}
-                render={({ field }) => (
-                  <GalleryUpload
-                    value={field.value || []}
-                    onChange={handleGalleryImagesChange}
-                    error={errors.images?.gallery?.message}
-                  />
-                )}
-              />
+              {/* Gallery Images */}
+              <div className="form-group">
+                <label className="form-label">
+                  Gallery Images
+                  <span className="form-label-hint"> (Optional, up to 10)</span>
+                </label>
+                <Controller
+                  name="images.gallery"
+                  control={control}
+                  render={({ field }) => (
+                    <GalleryUpload
+                      value={field.value || []}
+                      onChange={handleGalleryImagesChange}
+                      error={errors.images?.gallery?.message}
+                    />
+                  )}
+                />
+              </div>
             </div>
           </section>
 
@@ -534,7 +537,7 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
             </h3>
             
             {/* Mark as New */}
-            <div className="form-group form-group-checkbox">
+            <div className="form-group form-group-checkbox form-group-last">
               <label className="form-checkbox-label">
                 <input
                   type="checkbox"
