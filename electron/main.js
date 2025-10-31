@@ -1,6 +1,38 @@
+// Global error handlers to ensure clean exit on fatal errors
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  // Optionally show a dialog if possible
+  try {
+    if (dialog && typeof dialog.showErrorBox === 'function') {
+      dialog.showErrorBox('Fatal Error', err.stack || err.message || String(err));
+    }
+  } catch (e) {}
+  app.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+  try {
+    if (dialog && typeof dialog.showErrorBox === 'function') {
+      dialog.showErrorBox('Fatal Error', reason && reason.stack ? reason.stack : String(reason));
+    }
+  } catch (e) {}
+  app.exit(1);
+});
 import { app, BrowserWindow, ipcMain, dialog, protocol } from 'electron';
-import pkg from 'electron-updater';
-const { autoUpdater } = pkg;
+let autoUpdater = null;
+let isPortable = false;
+try {
+  // Detect if running as a portable build (common pattern: executable name contains 'Portable')
+  isPortable = process.execPath && process.execPath.toLowerCase().includes('portable');
+  if (!isPortable) {
+    const pkg = await import('electron-updater');
+    autoUpdater = pkg.autoUpdater;
+  }
+} catch (e) {
+  // electron-updater not available or portable build, skip updates
+  autoUpdater = null;
+}
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs-extra';
@@ -33,10 +65,12 @@ function createWindow() {
     // Production mode - load from built files
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
     
-    // Check for updates after window loads
-    mainWindow.webContents.on('did-finish-load', () => {
-      checkForUpdates();
-    });
+    // Check for updates after window loads (skip for portable)
+    if (autoUpdater && !isPortable) {
+      mainWindow.webContents.on('did-finish-load', () => {
+        checkForUpdates();
+      });
+    }
   }
 
   mainWindow.on('closed', () => {
@@ -681,12 +715,11 @@ function setupAutoUpdater() {
  * Check for updates
  */
 function checkForUpdates() {
-  // Only check for updates in production
-  if (!app.isPackaged) {
-    console.log('Skipping update check in development mode');
+  // Only check for updates in production and if autoUpdater is available
+  if (!app.isPackaged || !autoUpdater || isPortable) {
+    console.log('Skipping update check (dev mode, portable, or updater unavailable)');
     return;
   }
-  
   try {
     autoUpdater.checkForUpdates();
   } catch (error) {
@@ -699,13 +732,12 @@ function checkForUpdates() {
  */
 ipcMain.handle('app:checkForUpdates', async () => {
   try {
-    if (!app.isPackaged) {
+    if (!app.isPackaged || !autoUpdater || isPortable) {
       return {
         success: false,
-        message: 'Update checking is only available in production builds'
+        message: 'Update checking is not available in this build.'
       };
     }
-    
     const result = await autoUpdater.checkForUpdates();
     return {
       success: true,
