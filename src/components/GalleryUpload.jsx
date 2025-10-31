@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { validateUploadedImage, fileToDataURL, validateGalleryCount } from '../services/imageService';
 import { getCroppedImg } from './ImageCropModal';
-import { showSuccess, showError } from '../services/toastService';
+import { showSuccess, showError, showInfo } from '../services/toastService';
 import './GalleryUpload.css';
 
 /**

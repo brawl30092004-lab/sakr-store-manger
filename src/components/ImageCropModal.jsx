@@ -69,13 +69,6 @@ const ImageCropModal = ({ isOpen, imageUrl, onCropComplete, onCancel, imageName 
       setAspectRatio(customAspectWidth / customAspectHeight);
     }
   }, [customAspectWidth, customAspectHeight]);
-  
-  // Update aspect ratio when custom values change
-  useEffect(() => {
-    if (aspectRatio === undefined && customAspectWidth > 0 && customAspectHeight > 0) {
-      handleCustomAspectChange();
-    }
-  }, [customAspectWidth, customAspectHeight, aspectRatio, handleCustomAspectChange]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
