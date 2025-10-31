@@ -21,8 +21,7 @@ const SUPPORTED_IMAGE_TYPES = [
 const IMAGE_CONSTRAINTS = {
   maxSizeBytes: 10 * 1024 * 1024, // 10 MB
   minWidth: 400,
-  minHeight: 400,
-  maxGalleryImages: 10
+  minHeight: 400
 };
 
 /**
@@ -57,18 +56,18 @@ export async function validateUploadedImage(file) {
   try {
     const dimensions = await getImageDimensions(file);
     
-    if (dimensions.width < IMAGE_CONSTRAINTS.minWidth || dimensions.height < IMAGE_CONSTRAINTS.minHeight) {
-      return {
-        valid: false,
-        error: `Image too small (${dimensions.width}x${dimensions.height}px). Minimum size is ${IMAGE_CONSTRAINTS.minWidth}x${IMAGE_CONSTRAINTS.minHeight}px`
-      };
-    }
-
-    // All checks passed
-    return {
+    // All checks passed - return dimensions with optional warning
+    const result = {
       valid: true,
       dimensions
     };
+    
+    // Add warning if image is smaller than recommended
+    if (dimensions.width < IMAGE_CONSTRAINTS.minWidth || dimensions.height < IMAGE_CONSTRAINTS.minHeight) {
+      result.warning = `Image is smaller than recommended (${dimensions.width}x${dimensions.height}px). Recommended minimum is ${IMAGE_CONSTRAINTS.minWidth}x${IMAGE_CONSTRAINTS.minHeight}px for best quality.`;
+    }
+    
+    return result;
   } catch (error) {
     return {
       valid: false,
@@ -154,22 +153,14 @@ export function getFileExtension(filename) {
 }
 
 /**
- * Validate gallery image count
+ * Validate gallery image count (no limit)
  * 
  * @param {number} currentCount - Current number of gallery images
  * @param {number} addingCount - Number of images being added
  * @returns {{valid: boolean, error?: string}}
  */
 export function validateGalleryCount(currentCount, addingCount = 1) {
-  const totalCount = currentCount + addingCount;
-  
-  if (totalCount > IMAGE_CONSTRAINTS.maxGalleryImages) {
-    return {
-      valid: false,
-      error: `Maximum ${IMAGE_CONSTRAINTS.maxGalleryImages} gallery images allowed. You currently have ${currentCount}.`
-    };
-  }
-  
+  // No limit on gallery images
   return { valid: true };
 }
 

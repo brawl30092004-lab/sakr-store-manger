@@ -297,6 +297,7 @@
   cursor: pointer;
   user-select: none;
   position: relative;
+  gap: 12px;
 }
 
 /* Hide default checkbox */
@@ -305,77 +306,77 @@
   opacity: 0;
   width: 0;
   height: 0;
+  pointer-events: none;
 }
 
-/* Modern Toggle Switch */
+/* Modern Toggle Switch - Background Track */
 .form-checkbox-label::before {
   content: '';
-  width: 44px;
-  height: 24px;
+  width: 48px;
+  height: 26px;
   background: #2d3139;
   border: 2px solid #3d4149;
-  border-radius: 12px;
-  margin-right: 10px;
+  border-radius: 13px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
+  order: -1;
 }
 
+/* Modern Toggle Switch - Handle/Thumb */
 .form-checkbox-label::after {
   content: '';
   position: absolute;
   left: 3px;
-  width: 18px;
-  height: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
   background: #6b7280;
   border-radius: 50%;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Checked state */
-.form-checkbox:checked + .checkbox-text::before {
-  background: #3b82f6;
-  border-color: #3b82f6;
-}
-
-.form-checkbox:checked ~ .checkbox-text::after {
-  transform: translateX(20px);
-  background: #ffffff;
-}
-
-/* Alternative: Using sibling selectors */
+/* Checked state using :has() selector */
 .form-checkbox-label:has(.form-checkbox:checked)::before {
-  background: #3b82f6;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
 .form-checkbox-label:has(.form-checkbox:checked)::after {
-  transform: translateX(20px);
+  left: 27px;
   background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
-/* Hover effect */
+/* Hover effect - Unchecked */
 .form-checkbox-label:hover::before {
   border-color: #4d5159;
+  background: #353a42;
 }
 
-.form-checkbox:checked + .checkbox-text ~ .form-checkbox-label:hover::before,
+/* Hover effect - Checked */
 .form-checkbox-label:has(.form-checkbox:checked):hover::before {
-  background: #2563eb;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
 }
 
 /* Focus state for accessibility */
-.form-checkbox:focus-visible ~ .checkbox-text::before,
 .form-checkbox-label:has(.form-checkbox:focus-visible)::before {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
 
+/* Active/Pressed state */
+.form-checkbox-label:active::after {
+  width: 24px;
+}
+
 .checkbox-text {
-  font-size: 13px;
+  font-size: 14px;
   color: #d1d5db;
   font-weight: 500;
-  margin-left: 0;
 }
 
 /* RTL Support for checkboxes */

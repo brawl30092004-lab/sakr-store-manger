@@ -31,6 +31,9 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
   const [pendingImages, setPendingImages] = useState({
     primary: null // Will store File object for primary image
   });
+  
+  // Store last crop parameters to apply to gallery images
+  const [lastCrop, setLastCrop] = useState(null);
 
   const {
     register,
@@ -148,6 +151,11 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
     // We'll separate them during save processing
     setValue('images.gallery', filesOrPaths, { shouldValidate: true });
   }, [setValue]);
+  
+  // Handle crop completion from primary image - MEMOIZED
+  const handlePrimaryCrop = useCallback((cropData) => {
+    setLastCrop(cropData);
+  }, []);
 
   // Process images and save product - MEMOIZED
   const processImagesAndSave = useCallback(async (formData) => {
@@ -499,6 +507,7 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
                     <ImageUpload
                       value={field.value}
                       onChange={handlePrimaryImageChange}
+                      onCrop={handlePrimaryCrop}
                       error={errors.images?.primary?.message}
                     />
                   )}
@@ -509,7 +518,7 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
               <div className="form-group">
                 <label className="form-label">
                   Gallery Images
-                  <span className="form-label-hint"> (Optional, up to 10)</span>
+                  <span className="form-label-hint"> (Optional)</span>
                 </label>
                 <Controller
                   name="images.gallery"
@@ -518,6 +527,7 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
                     <GalleryUpload
                       value={field.value || []}
                       onChange={handleGalleryImagesChange}
+                      lastCrop={lastCrop}
                       error={errors.images?.gallery?.message}
                     />
                   )}

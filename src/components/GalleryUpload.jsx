@@ -1,13 +1,20 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { validateUploadedImage, fileToDataURL, validateGalleryCount } from '../services/imageService';
+import { getCroppedImg } from './ImageCropModal';
+import { showSuccess, showError } from '../services/toastService';
 import './GalleryUpload.css';
 
 /**
  * GalleryUpload Component
- * Manages multiple gallery images with drag-to-reorder, add, and remove functionality
+ * Manages multiple gallery images with drag-to-reorder, add, remove, and crop functionality
+ * @param {Object} props
+ * @param {Array} props.value - Array of images (File objects or paths)
+ * @param {Function} props.onChange - Callback when images change
+ * @param {Object} props.error - Validation error
+ * @param {Object} props.lastCrop - Last crop parameters from primary image {croppedAreaPixels, rotation}
  */
-const GalleryUpload = React.memo(function GalleryUpload({ value = [], onChange, error }) {
+const GalleryUpload = React.memo(function GalleryUpload({ value = [], onChange, error, lastCrop = null }) {
   const [validationError, setValidationError] = useState(null);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [imagePreviews, setImagePreviews] = useState({});
@@ -159,6 +166,48 @@ const GalleryUpload = React.memo(function GalleryUpload({ value = [], onChange, 
     setDraggedIndex(null);
   }, []);
 
+  // Handle right-click context menu to apply crop - MEMOIZED
+  const handleContextMenu = useCallback(async (e, index) => {
+    e.preventDefault();
+    
+    if (!lastCrop || !lastCrop.croppedAreaPixels) {
+      showError('No crop data available. Please crop the primary image first.');
+      return;
+    }
+
+    try {
+      const item = value[index];
+      const displayUrl = getDisplayUrl(item, index);
+      
+      if (!displayUrl) {
+        showError('Unable to load image for cropping.');
+        return;
+      }
+
+      // Apply the same crop to this image
+      const croppedFile = await getCroppedImg(
+        displayUrl,
+        lastCrop.croppedAreaPixels,
+        item instanceof File ? item.name : `gallery-${index + 1}.jpg`,
+        lastCrop.rotation || 0
+      );
+
+      // Replace the image at this index with the cropped version
+      const updatedGallery = [...value];
+      updatedGallery[index] = croppedFile;
+      onChange(updatedGallery);
+      
+      // Update preview
+      const dataURL = await fileToDataURL(croppedFile);
+      setImagePreviews(prev => ({ ...prev, [index]: dataURL }));
+      
+      showSuccess(`Image ${index + 1} cropped successfully!`);
+    } catch (error) {
+      console.error('Crop error:', error);
+      showError('Failed to crop image. Please try again.');
+    }
+  }, [lastCrop, value, onChange, getDisplayUrl]);
+
   return (
     <div className="gallery-upload">
       <input
@@ -183,6 +232,8 @@ const GalleryUpload = React.memo(function GalleryUpload({ value = [], onChange, 
               onDragStart={(e) => handleDragStart(e, index)}
               onDragOver={(e) => handleDragOver(e, index)}
               onDragEnd={handleDragEnd}
+              onContextMenu={(e) => handleContextMenu(e, index)}
+              title="Right-click to apply last crop"
             >
               {displayUrl && (
                 <img src={displayUrl} alt={`Gallery ${index + 1}`} className="gallery-thumbnail" />
@@ -200,19 +251,17 @@ const GalleryUpload = React.memo(function GalleryUpload({ value = [], onChange, 
           );
         })}
 
-        {/* Add button */}
-        {value.length < 10 && (
-          <div className="gallery-add-button" onClick={handleAddClick}>
-            <div className="add-icon">+</div>
-            <p className="add-text">Add Image</p>
-          </div>
-        )}
+        {/* Add button - always visible */}
+        <div className="gallery-add-button" onClick={handleAddClick}>
+          <div className="add-icon">+</div>
+          <p className="add-text">Add Image</p>
+        </div>
       </div>
 
       {/* Gallery info */}
       <div className="gallery-info">
         <p className="gallery-count">
-          {value.length} / 10 images
+          {value.length} {value.length === 1 ? 'image' : 'images'}
         </p>
         {value.length > 1 && (
           <p className="gallery-hint">

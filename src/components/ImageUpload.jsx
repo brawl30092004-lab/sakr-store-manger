@@ -10,8 +10,13 @@ import './ImageUpload.css';
  * ImageUpload Component
  * Drag-and-drop or click-to-upload for primary product image
  * Shows preview, file info, replace/remove/crop buttons, and recommendation badges
+ * @param {Object} props
+ * @param {string|File} props.value - Current image value
+ * @param {Function} props.onChange - Callback when image changes
+ * @param {string} props.error - Validation error message
+ * @param {Function} props.onCrop - Callback when image is cropped, receives {croppedAreaPixels, rotation}
  */
-const ImageUpload = React.memo(function ImageUpload({ value, onChange, error }) {
+const ImageUpload = React.memo(function ImageUpload({ value, onChange, error, onCrop }) {
   const [preview, setPreview] = useState(value || null);
   const [fileInfo, setFileInfo] = useState(null);
   const [validationError, setValidationError] = useState(null);
@@ -78,6 +83,11 @@ const ImageUpload = React.memo(function ImageUpload({ value, onChange, error }) 
       // Show recommendation message
       if (!recs.isSquare) {
         showWarning('Image is not square. Consider cropping for best results.');
+      }
+      
+      // Show size warning if present
+      if (validation.warning) {
+        showWarning(validation.warning);
       }
       
       // Pass the File object to parent (not dataURL)
@@ -155,9 +165,9 @@ const ImageUpload = React.memo(function ImageUpload({ value, onChange, error }) 
   }, []);
 
   // Handle crop complete - MEMOIZED
-  const handleCropComplete = useCallback(async (croppedAreaPixels) => {
+  const handleCropComplete = useCallback(async (croppedAreaPixels, rotation = 0) => {
     try {
-      const croppedFile = await getCroppedImg(preview, croppedAreaPixels, currentFile?.name || 'cropped-image.jpg');
+      const croppedFile = await getCroppedImg(preview, croppedAreaPixels, currentFile?.name || 'cropped-image.jpg', rotation);
       
       // Process the cropped file
       const validation = await validateUploadedImage(croppedFile);
@@ -178,6 +188,12 @@ const ImageUpload = React.memo(function ImageUpload({ value, onChange, error }) 
       
       // Pass cropped file to parent
       onChange(croppedFile);
+      
+      // Call onCrop callback with crop parameters
+      if (onCrop) {
+        onCrop({ croppedAreaPixels, rotation });
+      }
+      
       setIsCropModalOpen(false);
       showSuccess('Image cropped successfully!');
     } catch (error) {
@@ -185,7 +201,7 @@ const ImageUpload = React.memo(function ImageUpload({ value, onChange, error }) 
       setValidationError('Failed to crop image. Please try again.');
       setIsCropModalOpen(false);
     }
-  }, [preview, currentFile, onChange]);
+  }, [preview, currentFile, onChange, onCrop]);
 
   // Handle crop cancel - MEMOIZED
   const handleCropCancel = useCallback(() => {
@@ -289,21 +305,19 @@ const ImageUpload = React.memo(function ImageUpload({ value, onChange, error }) 
               Replace
             </button>
             
-            {/* Show crop button if image is not square */}
-            {recommendations && !recommendations.isSquare && (
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                onClick={handleCropClick}
-                title="Crop to recommended 1:1 ratio"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"/>
-                  <path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"/>
-                </svg>
-                Crop
-              </button>
-            )}
+            {/* Crop button - always visible */}
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={handleCropClick}
+              title="Crop image"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"/>
+                <path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"/>
+              </svg>
+              Crop
+            </button>
             
             <button
               type="button"

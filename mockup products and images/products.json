@@ -14,8 +14,8 @@
       ]
     },
     "category": "Apparel",
-    "discount": false,
-    "discountedPrice": 25.00,
+    "discount": true,
+    "discountedPrice": 14.00,
     "stock": 6,
     "isNew": true
   },
