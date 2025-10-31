@@ -29,6 +29,7 @@
     "react-hook-form": "^7.49.0",
     "react-hot-toast": "^2.6.0",
     "react-redux": "^9.2.0",
+    "react-use": "^17.6.0",
     "sharp": "^0.33.1",
     "simple-git": "^3.28.0",
     "yup": "^1.7.1",

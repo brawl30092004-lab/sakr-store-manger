@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { validateUploadedImage, fileToDataURL, validateGalleryCount } from '../services/imageService';
-import { getCroppedImg } from './ImageCropModal';
-import { showSuccess, showError, showInfo } from '../services/toastService';
+import { showSuccess, showError } from '../services/toastService';
+import GalleryImageCropModal from './GalleryImageCropModal';
+import { useClickAway } from 'react-use';
 import './GalleryUpload.css';
 
 /**
@@ -166,48 +167,68 @@ const GalleryUpload = React.memo(function GalleryUpload({ value = [], onChange, 
     setDraggedIndex(null);
   }, []);
 
-  // Handle right-click context menu to apply crop - MEMOIZED
-  const handleContextMenu = useCallback(async (e, index) => {
+  // Gallery image crop modal state
+  const [cropModalIndex, setCropModalIndex] = useState(null);
+  const [cropModalUrl, setCropModalUrl] = useState('');
+  const [cropModalName, setCropModalName] = useState('');
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, index: null });
+  const contextMenuRef = useRef(null);
+  useClickAway(contextMenuRef, () => setContextMenu({ ...contextMenu, visible: false }));
+
+  // Open crop modal for a gallery image
+  const openCropModal = useCallback((index) => {
+    const item = value[index];
+    const displayUrl = getDisplayUrl(item, index);
+    setCropModalIndex(index);
+    setCropModalUrl(displayUrl);
+    setCropModalName(item instanceof File ? item.name : `gallery-${index + 1}.jpg`);
+    setContextMenu({ ...contextMenu, visible: false });
+  }, [value, getDisplayUrl, contextMenu]);
+
+  // Handle right-click on gallery image
+  const handleGalleryContextMenu = useCallback((e, index) => {
     e.preventDefault();
-    
-    // If there's crop data from primary image, use it
-    if (lastCrop && lastCrop.croppedAreaPixels) {
-      try {
-        const item = value[index];
-        const displayUrl = getDisplayUrl(item, index);
-        
-        if (!displayUrl) {
-          showError('Unable to load image for cropping.');
-          return;
-        }
+    setContextMenu({ visible: true, x: e.clientX, y: e.clientY, index });
+  }, []);
 
-        // Apply the same crop to this image
-        const croppedFile = await getCroppedImg(
-          displayUrl,
-          lastCrop.croppedAreaPixels,
-          item instanceof File ? item.name : `gallery-${index + 1}.jpg`,
-          lastCrop.rotation || 0
-        );
-
-        // Replace the image at this index with the cropped version
-        const updatedGallery = [...value];
-        updatedGallery[index] = croppedFile;
-        onChange(updatedGallery);
-        
-        // Update preview
-        const dataURL = await fileToDataURL(croppedFile);
-        setImagePreviews(prev => ({ ...prev, [index]: dataURL }));
-        
-        showSuccess(`Image ${index + 1} cropped successfully!`);
-      } catch (error) {
-        console.error('Crop error:', error);
-        showError('Failed to crop image. Please try again.');
+  // Handle crop complete for gallery image
+  const handleGalleryCropComplete = useCallback(async (croppedAreaPixels, rotation) => {
+    try {
+      const item = value[cropModalIndex];
+      const displayUrl = getDisplayUrl(item, cropModalIndex);
+      if (!displayUrl) {
+        showError('Unable to load image for cropping.');
+        setCropModalIndex(null);
+        return;
       }
-    } else {
-      // No crop data available - show info message suggesting to crop primary image first
-      showInfo('Tip: Crop the primary image first, then right-click gallery images to apply the same crop.');
+      // Dynamically import getCroppedImg to avoid circular dependency
+      const { getCroppedImg } = await import('./ImageCropModal');
+      const croppedFile = await getCroppedImg(
+        displayUrl,
+        croppedAreaPixels,
+        item instanceof File ? item.name : `gallery-${cropModalIndex + 1}.jpg`,
+        rotation || 0
+      );
+      const updatedGallery = [...value];
+      updatedGallery[cropModalIndex] = croppedFile;
+      onChange(updatedGallery);
+      // Update preview
+      const dataURL = await fileToDataURL(croppedFile);
+      setImagePreviews(prev => ({ ...prev, [cropModalIndex]: dataURL }));
+      showSuccess(`Image ${cropModalIndex + 1} cropped successfully!`);
+    } catch (error) {
+      console.error('Crop error:', error);
+      showError('Failed to crop image. Please try again.');
     }
-  }, [lastCrop, value, onChange, getDisplayUrl]);
+    setCropModalIndex(null);
+  }, [value, cropModalIndex, getDisplayUrl, onChange]);
+
+  // Handle crop modal cancel
+  const handleCropModalCancel = useCallback(() => {
+    setCropModalIndex(null);
+  }, []);
 
   return (
     <div className="gallery-upload">
@@ -233,8 +254,7 @@ const GalleryUpload = React.memo(function GalleryUpload({ value = [], onChange, 
               onDragStart={(e) => handleDragStart(e, index)}
               onDragOver={(e) => handleDragOver(e, index)}
               onDragEnd={handleDragEnd}
-              onContextMenu={(e) => handleContextMenu(e, index)}
-              title="Right-click to apply last crop"
+              onContextMenu={(e) => handleGalleryContextMenu(e, index)}
             >
               {displayUrl && (
                 <img src={displayUrl} alt={`Gallery ${index + 1}`} className="gallery-thumbnail" />
@@ -281,6 +301,29 @@ const GalleryUpload = React.memo(function GalleryUpload({ value = [], onChange, 
       {error && !validationError && (
         <div className="gallery-error-message">{error}</div>
       )}
+      {/* Context menu for gallery image */}
+      {contextMenu.visible && (
+        <div
+          ref={contextMenuRef}
+          className="gallery-context-menu"
+          style={{ position: 'fixed', top: contextMenu.y, left: contextMenu.x, zIndex: 10000 }}
+        >
+          <button
+            className="gallery-context-menu-item"
+            onClick={() => openCropModal(contextMenu.index)}
+          >
+            Crop
+          </button>
+        </div>
+      )}
+      {/* Gallery image crop modal */}
+      <GalleryImageCropModal
+        isOpen={cropModalIndex !== null}
+        imageUrl={cropModalUrl}
+        imageName={cropModalName}
+        onCropComplete={handleGalleryCropComplete}
+        onCancel={handleCropModalCancel}
+      />
     </div>
   );
 });

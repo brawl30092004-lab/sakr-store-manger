@@ -177,6 +177,32 @@
   border-radius: 4px;
 }
 
+/* Custom Right Click Context Menu */
+.gallery-context-menu {
+  background: #22272e;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+  min-width: 120px;
+  padding: 4px 0;
+  z-index: 10000;
+}
+.gallery-context-menu-item {
+  width: 100%;
+  background: none;
+  border: none;
+  color: #c9d1d9;
+  font-size: 15px;
+  padding: 8px 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.gallery-context-menu-item:hover {
+  background: #30363d;
+  color: #58a6ff;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .gallery-grid {
