@@ -1,0 +1,34 @@
+appId: com.sakrstore.manager
+productName: Sakr Store Manager
+copyright: Copyright © 2025 Sakr Store
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+  - "!node_modules/**/*"
+  - node_modules/sharp/**/*
+
+asarUnpack:
+  - node_modules/sharp/**/*
+
+win:
+  target:
+    - target: dir
+      arch:
+        - x64
+  icon: build/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Sakr Store Manager
+
+portable:
+  artifactName: ${productName} ${version} Portable.${ext}
