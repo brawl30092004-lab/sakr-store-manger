@@ -170,41 +170,42 @@ const GalleryUpload = React.memo(function GalleryUpload({ value = [], onChange, 
   const handleContextMenu = useCallback(async (e, index) => {
     e.preventDefault();
     
-    if (!lastCrop || !lastCrop.croppedAreaPixels) {
-      showError('No crop data available. Please crop the primary image first.');
-      return;
-    }
+    // If there's crop data from primary image, use it
+    if (lastCrop && lastCrop.croppedAreaPixels) {
+      try {
+        const item = value[index];
+        const displayUrl = getDisplayUrl(item, index);
+        
+        if (!displayUrl) {
+          showError('Unable to load image for cropping.');
+          return;
+        }
 
-    try {
-      const item = value[index];
-      const displayUrl = getDisplayUrl(item, index);
-      
-      if (!displayUrl) {
-        showError('Unable to load image for cropping.');
-        return;
+        // Apply the same crop to this image
+        const croppedFile = await getCroppedImg(
+          displayUrl,
+          lastCrop.croppedAreaPixels,
+          item instanceof File ? item.name : `gallery-${index + 1}.jpg`,
+          lastCrop.rotation || 0
+        );
+
+        // Replace the image at this index with the cropped version
+        const updatedGallery = [...value];
+        updatedGallery[index] = croppedFile;
+        onChange(updatedGallery);
+        
+        // Update preview
+        const dataURL = await fileToDataURL(croppedFile);
+        setImagePreviews(prev => ({ ...prev, [index]: dataURL }));
+        
+        showSuccess(`Image ${index + 1} cropped successfully!`);
+      } catch (error) {
+        console.error('Crop error:', error);
+        showError('Failed to crop image. Please try again.');
       }
-
-      // Apply the same crop to this image
-      const croppedFile = await getCroppedImg(
-        displayUrl,
-        lastCrop.croppedAreaPixels,
-        item instanceof File ? item.name : `gallery-${index + 1}.jpg`,
-        lastCrop.rotation || 0
-      );
-
-      // Replace the image at this index with the cropped version
-      const updatedGallery = [...value];
-      updatedGallery[index] = croppedFile;
-      onChange(updatedGallery);
-      
-      // Update preview
-      const dataURL = await fileToDataURL(croppedFile);
-      setImagePreviews(prev => ({ ...prev, [index]: dataURL }));
-      
-      showSuccess(`Image ${index + 1} cropped successfully!`);
-    } catch (error) {
-      console.error('Crop error:', error);
-      showError('Failed to crop image. Please try again.');
+    } else {
+      // No crop data available - show info message suggesting to crop primary image first
+      showInfo('Tip: Crop the primary image first, then right-click gallery images to apply the same crop.');
     }
   }, [lastCrop, value, onChange, getDisplayUrl]);
 

@@ -14,6 +14,8 @@ const ImageCropModal = ({ isOpen, imageUrl, onCropComplete, onCancel, imageName 
   const [aspectRatio, setAspectRatio] = useState(1); // 1:1 square by default
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [customAspectWidth, setCustomAspectWidth] = useState(1);
+  const [customAspectHeight, setCustomAspectHeight] = useState(1);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -24,6 +26,8 @@ const ImageCropModal = ({ isOpen, imageUrl, onCropComplete, onCancel, imageName 
       setAspectRatio(1);
       setCroppedAreaPixels(null);
       setIsSaving(false);
+      setCustomAspectWidth(1);
+      setCustomAspectHeight(1);
     }
   }, [isOpen]);
 
@@ -58,6 +62,20 @@ const ImageCropModal = ({ isOpen, imageUrl, onCropComplete, onCancel, imageName 
     setZoom(1);
     setRotation(0);
   }, []);
+  
+  // Handle custom aspect ratio change
+  const handleCustomAspectChange = useCallback(() => {
+    if (customAspectWidth > 0 && customAspectHeight > 0) {
+      setAspectRatio(customAspectWidth / customAspectHeight);
+    }
+  }, [customAspectWidth, customAspectHeight]);
+  
+  // Update aspect ratio when custom values change
+  useEffect(() => {
+    if (aspectRatio === undefined && customAspectWidth > 0 && customAspectHeight > 0) {
+      handleCustomAspectChange();
+    }
+  }, [customAspectWidth, customAspectHeight, aspectRatio, handleCustomAspectChange]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -123,25 +141,30 @@ const ImageCropModal = ({ isOpen, imageUrl, onCropComplete, onCancel, imageName 
         </div>
 
         <div className="crop-modal-body">
-          <div className="crop-area-container">
-            <Cropper
-              image={imageUrl}
-              crop={crop}
-              zoom={zoom}
-              rotation={rotation}
-              aspect={aspectRatio}
-              onCropChange={setCrop}
-              onZoomChange={setZoom}
-              onRotationChange={setRotation}
-              onCropComplete={onCropCompleteInternal}
-              objectFit="contain"
-              cropShape="rect"
-              showGrid={true}
-              restrictPosition={true}
-            />
+          {/* Left Column: Preview */}
+          <div className="crop-preview-column">
+            <div className="crop-area-container">
+              <Cropper
+                image={imageUrl}
+                crop={crop}
+                zoom={zoom}
+                rotation={rotation}
+                aspect={aspectRatio}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onRotationChange={setRotation}
+                onCropComplete={onCropCompleteInternal}
+                objectFit="contain"
+                cropShape="rect"
+                showGrid={true}
+                restrictPosition={true}
+              />
+            </div>
           </div>
 
-          <div className="crop-controls">
+          {/* Right Column: Controls */}
+          <div className="crop-controls-column">
+            <div className="crop-controls">
             {/* Aspect Ratio Presets */}
             <div className="crop-control-section">
               <label className="crop-section-label">Aspect Ratio</label>
@@ -174,15 +197,55 @@ const ImageCropModal = ({ isOpen, imageUrl, onCropComplete, onCancel, imageName 
                   <span className="aspect-label">Wide</span>
                 </button>
                 <button 
-                  className={`aspect-btn ${aspectRatio === null ? 'active' : ''}`}
+                  className={`aspect-btn ${aspectRatio === undefined ? 'active' : ''}`}
                   onClick={() => setAspectRatio(undefined)}
                   type="button"
                 >
                   <span className="aspect-icon">⊡</span>
                   <span>Free</span>
-                  <span className="aspect-label">Any</span>
+                  <span className="aspect-label">Custom</span>
                 </button>
               </div>
+              
+              {/* Custom Aspect Ratio Input - shown when Free is selected */}
+              {aspectRatio === undefined && (
+                <div className="custom-aspect-input">
+                  <label className="crop-section-label">Custom Aspect Ratio</label>
+                  <div className="aspect-input-group">
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={customAspectWidth}
+                      onChange={(e) => setCustomAspectWidth(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="aspect-input"
+                      placeholder="Width"
+                    />
+                    <span className="aspect-separator">:</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={customAspectHeight}
+                      onChange={(e) => setCustomAspectHeight(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="aspect-input"
+                      placeholder="Height"
+                    />
+                    <button
+                      type="button"
+                      className="aspect-apply-btn"
+                      onClick={handleCustomAspectChange}
+                    >
+                      Apply
+                    </button>
+                  </div>
+                  <p className="aspect-hint">
+                    Current: {customAspectWidth}:{customAspectHeight} 
+                    {customAspectWidth > 0 && customAspectHeight > 0 && 
+                      ` (${(customAspectWidth / customAspectHeight).toFixed(2)})`}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Zoom Control */}
@@ -267,7 +330,8 @@ const ImageCropModal = ({ isOpen, imageUrl, onCropComplete, onCancel, imageName 
               )}
             </div>
           </div>
-        </div>
+          </div> {/* End crop-controls-column */}
+        </div> {/* End crop-modal-body */}
 
         <div className="crop-modal-footer">
           <button 
