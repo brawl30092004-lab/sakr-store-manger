@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, protocol } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, protocol, Menu } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
@@ -112,6 +112,9 @@ if (!gotTheLock) {
 let mainWindow;
 
 function createWindow() {
+  // Remove the default menu bar completely
+  Menu.setApplicationMenu(null);
+  
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
