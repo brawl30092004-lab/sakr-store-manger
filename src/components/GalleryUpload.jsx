@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { validateUploadedImage, fileToDataURL, validateGalleryCount } from '../services/imageService';
 import { showSuccess, showError } from '../services/toastService';
 import GalleryImageCropModal from './GalleryImageCropModal';
+import { getCroppedImg } from './ImageCropModal';
 import { useClickAway } from 'react-use';
 import './GalleryUpload.css';
 
@@ -203,8 +204,7 @@ const GalleryUpload = React.memo(function GalleryUpload({ value = [], onChange, 
         setCropModalIndex(null);
         return;
       }
-      // Dynamically import getCroppedImg to avoid circular dependency
-      const { getCroppedImg } = await import('./ImageCropModal');
+      // Use getCroppedImg utility function
       const croppedFile = await getCroppedImg(
         displayUrl,
         croppedAreaPixels,
