@@ -52,7 +52,7 @@ function Sidebar({ selectedCategory, onCategorySelect, activeFilters, onFilterTo
               <span className="sidebar-icon"><category.icon size={18} /></span>
               <span className="sidebar-label">{category.name}</span>
               {category.count !== undefined && (
-                <span className="sidebar-count">({category.count})</span>
+                <span className="sidebar-count">{category.count}</span>
               )}
             </li>
           ))}
@@ -71,7 +71,7 @@ function Sidebar({ selectedCategory, onCategorySelect, activeFilters, onFilterTo
               <span className="sidebar-icon"><filter.icon size={18} /></span>
               <span className="sidebar-label">{filter.name}</span>
               {filter.count !== undefined && (
-                <span className="sidebar-count">({filter.count})</span>
+                <span className="sidebar-count">{filter.count}</span>
               )}
             </li>
           ))}
