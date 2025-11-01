@@ -3,6 +3,7 @@ productName: Sakr Store Manager
 copyright: Copyright © 2025 Sakr Store
 
 asar: false
+npmRebuild: true
 
 directories:
   output: release
@@ -13,12 +14,6 @@ files:
   - electron/**/*
   - package.json
   - node_modules/**/*
-  - "!node_modules/**/test/**"
-  - "!node_modules/**/*.md"
-  - "!node_modules/**/{CHANGELOG.md,README.md,README,readme.md,readme}"
-  - "!node_modules/**/{test,__tests__,tests,powered-test,example,examples}"
-  - "!node_modules/**/*.d.ts"
-  - "!node_modules/.bin"
 
 win:
   target:
