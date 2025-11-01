@@ -119,8 +119,9 @@ export async function exportProducts(products, projectPath, options = {}) {
           await window.electron.export.createDirectory(productImagePath);
         }
         
-        // Copy and rename primary image
-        const newProduct = { ...product };
+        // Deep clone the product to avoid "Cannot assign to read only property" errors
+        // Redux state is immutable, so we need to create a completely new object
+        const newProduct = JSON.parse(JSON.stringify(product));
         
         if (product.images?.primary) {
           const copied = await copyAndRenameImage(
