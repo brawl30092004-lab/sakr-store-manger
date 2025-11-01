@@ -200,6 +200,9 @@ class GitService {
    */
   static async cloneRepository(targetPath, repoUrl, username, token) {
     try {
+      const fs = await import('fs-extra');
+      const path = await import('path');
+      
       // Parse repository URL to extract owner and repo
       const repoMatch = repoUrl.match(/github\.com[/:]([\w-]+)\/([\w-]+)/);
       if (!repoMatch) {
@@ -217,8 +220,54 @@ class GitService {
 
       console.log(`Cloning repository to: ${targetPath}`);
 
-      // Clone the repository
-      await simpleGit().clone(authenticatedUrl, targetPath);
+      // Check if target path exists
+      const pathExists = await fs.pathExists(targetPath);
+      
+      if (pathExists) {
+        // Check if directory is empty
+        const files = await fs.readdir(targetPath);
+        if (files.length === 0) {
+          // Directory exists but is empty - use init + remote + pull approach
+          console.log('Directory exists but is empty, using init + pull approach');
+          
+          const git = simpleGit(targetPath);
+          
+          // Initialize repository
+          await git.init();
+          
+          // Add remote
+          await git.addRemote('origin', authenticatedUrl);
+          
+          // Fetch all branches
+          await git.fetch('origin');
+          
+          // Checkout main/master branch
+          try {
+            await git.checkout('main');
+          } catch (e) {
+            // Try master if main doesn't exist
+            try {
+              await git.checkout('master');
+            } catch (e2) {
+              // Try to checkout the default branch
+              await git.checkout('-b', 'main', 'origin/main');
+            }
+          }
+          
+          // Pull latest changes
+          await git.pull('origin', 'main').catch(() => git.pull('origin', 'master'));
+          
+        } else {
+          // Directory exists and has files
+          return {
+            success: false,
+            message: 'Directory is not empty. Please choose an empty directory.'
+          };
+        }
+      } else {
+        // Directory doesn't exist - use normal clone
+        await simpleGit().clone(authenticatedUrl, targetPath);
+      }
 
       console.log('Repository cloned successfully');
 

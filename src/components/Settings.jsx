@@ -191,10 +191,20 @@ function Settings({ onBackToMain }) {
       if (pathCheck.exists && pathCheck.hasGitRepo) {
         // Repository already exists, just verify it
         console.log('Repository already exists at:', configToSave.projectPath);
+        setStatus({ message: 'Using existing repository', type: 'success' });
         return { success: true, alreadyExists: true };
       }
 
-      // Repository doesn't exist or isn't a git repo - need to clone
+      if (pathCheck.exists && !pathCheck.hasGitRepo) {
+        // Directory exists but is not a git repository
+        const errorMsg = 'The selected directory already exists and is not empty.\n\n' +
+                        'Please either:\n' +
+                        '1. Choose a different empty directory for cloning, OR\n' +
+                        '2. If you already cloned the repository, select that folder instead';
+        throw new Error(errorMsg);
+      }
+
+      // Directory doesn't exist - need to clone
       setIsCloning(true);
       setStatus({ message: 'Cloning repository from GitHub...', type: 'info' });
       showInfo('Cloning repository. This may take a moment...');
@@ -488,7 +498,7 @@ function Settings({ onBackToMain }) {
             </div>
             <small className="form-hint">
               {dataSource === 'github' 
-                ? 'Select where to clone/store the GitHub repository locally (will be created if it doesn\'t exist)'
+                ? 'Select an empty folder or a folder that already contains your cloned repository. The repository will be cloned here on first setup.'
                 : 'Select the folder containing your products.json file'
               }
             </small>
