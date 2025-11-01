@@ -182,17 +182,18 @@ ipcMain.handle('fs:createEmptyProducts', async (event, projectPath) => {
 });
 
 ipcMain.handle('fs:loadProducts', async (event, projectPath) => {
+  const productsFilePath = path.join(projectPath, 'products.json');
+  
   try {
-    const productsFilePath = path.join(projectPath, 'products.json');
-    
     // Check if file exists
     const exists = await fs.pathExists(productsFilePath);
     
     if (!exists) {
-      // Don't auto-create, throw error so UI can prompt user
-      const error = new Error('PRODUCTS_NOT_FOUND');
-      error.code = 'ENOENT';
-      throw error;
+      // Auto-create empty products.json for first-time users
+      console.log('products.json not found, creating empty file...');
+      await fs.ensureDir(projectPath);
+      await fs.writeJSON(productsFilePath, [], { spaces: 2, encoding: 'utf8' });
+      return [];
     }
     
     // Read and parse products.json with UTF-8 encoding
@@ -200,9 +201,17 @@ ipcMain.handle('fs:loadProducts', async (event, projectPath) => {
     return products;
   } catch (error) {
     console.error('Error loading products:', error);
-    // Re-throw with consistent error message
-    if (error.message === 'PRODUCTS_NOT_FOUND' || error.code === 'ENOENT') {
-      throw new Error('PRODUCTS_NOT_FOUND: ' + productsFilePath);
+    // If it's a parse error or other issue, try to create empty file
+    if (error.code === 'ENOENT' || error.name === 'SyntaxError') {
+      console.log('Creating empty products.json due to error...');
+      try {
+        await fs.ensureDir(projectPath);
+        await fs.writeJSON(productsFilePath, [], { spaces: 2, encoding: 'utf8' });
+        return [];
+      } catch (createError) {
+        console.error('Failed to create products.json:', createError);
+        throw new Error('PRODUCTS_NOT_FOUND: ' + productsFilePath);
+      }
     }
     throw error;
   }
