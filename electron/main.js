@@ -1,29 +1,49 @@
-// Global error handlers to ensure clean exit on fatal errors
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
-  // Optionally show a dialog if possible
-  try {
-    if (dialog && typeof dialog.showErrorBox === 'function') {
-      dialog.showErrorBox('Fatal Error', err.stack || err.message || String(err));
-    }
-  } catch (e) {}
-  app.exit(1);
-});
-
-process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled Rejection:', reason);
-  try {
-    if (dialog && typeof dialog.showErrorBox === 'function') {
-      dialog.showErrorBox('Fatal Error', reason && reason.stack ? reason.stack : String(reason));
-    }
-  } catch (e) {}
-  app.exit(1);
-});
 import { app, BrowserWindow, ipcMain, dialog, protocol } from 'electron';
-let autoUpdater = null;
+import path from 'path';
+import { fileURLToPath } from 'url';
+import os from 'os';
+
+// Import dependencies with error handling
+let fs, sharp, autoUpdater;
 let isPortable = false;
+
 try {
-  // Detect if running as a portable build (common pattern: executable name contains 'Portable')
+  // Dynamic import of fs-extra
+  fs = await import('fs-extra');
+  // If fs-extra import fails, fall back to default export
+  if (fs.default) {
+    fs = fs.default;
+  }
+} catch (err) {
+  console.error('Failed to load fs-extra:', err);
+  dialog.showErrorBox('Dependency Error', 
+    'Failed to load required dependency: fs-extra\n\n' + 
+    'Error: ' + err.message + '\n\n' +
+    'Please reinstall the application.'
+  );
+  app.quit();
+  process.exit(1);
+}
+
+try {
+  // Dynamic import of sharp
+  sharp = await import('sharp');
+  if (sharp.default) {
+    sharp = sharp.default;
+  }
+} catch (err) {
+  console.error('Failed to load sharp:', err);
+  dialog.showErrorBox('Dependency Error',
+    'Failed to load image processing library: sharp\n\n' +
+    'Error: ' + err.message + '\n\n' +
+    'Please reinstall the application.'
+  );
+  app.quit();
+  process.exit(1);
+}
+
+// Detect portable mode and load auto-updater if needed
+try {
   isPortable = process.execPath && process.execPath.toLowerCase().includes('portable');
   if (!isPortable) {
     const pkg = await import('electron-updater');
@@ -33,14 +53,61 @@ try {
   // electron-updater not available or portable build, skip updates
   autoUpdater = null;
 }
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs-extra';
-import sharp from 'sharp';
-import os from 'os';
+
+// Global error handlers to ensure clean exit on fatal errors
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  try {
+    dialog.showErrorBox('Fatal Error', err.stack || err.message || String(err));
+  } catch (e) {
+    console.error('Failed to show error dialog:', e);
+  }
+  // Force kill all windows and quit
+  BrowserWindow.getAllWindows().forEach(win => {
+    try { win.destroy(); } catch (e) {}
+  });
+  setTimeout(() => {
+    app.quit();
+    process.exit(1);
+  }, 100);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+  try {
+    dialog.showErrorBox('Fatal Error', reason && reason.stack ? reason.stack : String(reason));
+  } catch (e) {
+    console.error('Failed to show error dialog:', e);
+  }
+  // Force kill all windows and quit
+  BrowserWindow.getAllWindows().forEach(win => {
+    try { win.destroy(); } catch (e) {}
+  });
+  setTimeout(() => {
+    app.quit();
+    process.exit(1);
+  }, 100);
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Prevent multiple instances - ensure only one instance runs at a time
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  console.log('Another instance is already running. Quitting...');
+  app.quit();
+  process.exit(0);
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // Someone tried to run a second instance, focus our window instead
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
 
 let mainWindow;
 
@@ -75,6 +142,41 @@ function createWindow() {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+  
+  // Handle crashes and unresponsiveness
+  mainWindow.webContents.on('crashed', (event, killed) => {
+    console.error('Window crashed!', { killed });
+    const options = {
+      type: 'error',
+      title: 'Application Crashed',
+      message: 'The application has crashed. Do you want to restart?',
+      buttons: ['Restart', 'Close']
+    };
+    dialog.showMessageBox(options).then((result) => {
+      if (result.response === 0) {
+        app.relaunch();
+        app.quit();
+      } else {
+        app.quit();
+      }
+    });
+  });
+  
+  mainWindow.on('unresponsive', () => {
+    console.warn('Window became unresponsive');
+    const options = {
+      type: 'warning',
+      title: 'Application Not Responding',
+      message: 'The application is not responding. Do you want to wait or close?',
+      buttons: ['Wait', 'Close']
+    };
+    dialog.showMessageBox(options).then((result) => {
+      if (result.response === 1) {
+        mainWindow.destroy();
+        app.quit();
+      }
+    });
   });
 }
 
@@ -865,4 +967,23 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// Handle app before quit - cleanup
+app.on('before-quit', () => {
+  console.log('Application is quitting...');
+  // Force close all windows
+  BrowserWindow.getAllWindows().forEach(win => {
+    try {
+      win.removeAllListeners();
+      win.destroy();
+    } catch (e) {
+      console.error('Error destroying window:', e);
+    }
+  });
+});
+
+// Handle app quit
+app.on('quit', () => {
+  console.log('Application quit successfully');
 });
