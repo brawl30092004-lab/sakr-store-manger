@@ -640,6 +640,12 @@ ipcMain.handle('git:getStatus', async (event) => {
  */
 ipcMain.handle('git:clone', async (event, targetPath, repoUrl, username, token) => {
   try {
+    console.log('=== CLONE HANDLER CALLED ===');
+    console.log('Target Path:', targetPath);
+    console.log('Repo URL:', repoUrl);
+    console.log('Username:', username);
+    console.log('Token provided:', token ? 'YES (length: ' + token.length + ')' : 'NO');
+    
     const simpleGit = (await import('simple-git')).default;
     
     // Parse repository URL to extract owner and repo
@@ -719,6 +725,13 @@ ipcMain.handle('git:clone', async (event, targetPath, repoUrl, username, token) 
     };
   } catch (error) {
     console.error('Error cloning repository:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      targetPath,
+      repoUrl
+    });
     return {
       success: false,
       message: `Failed to clone repository: ${error.message}`,

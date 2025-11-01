@@ -380,9 +380,11 @@ class GitService {
 
       // Pull changes from the specified branch
       const pullResult = await this.git.pull('origin', branch);
+      
+      console.log('Pull result:', JSON.stringify(pullResult, null, 2));
 
-      // Check for conflicts
-      if (pullResult.summary.conflicts.length > 0) {
+      // Check for conflicts (with null safety)
+      if (pullResult?.summary?.conflicts && pullResult.summary.conflicts.length > 0) {
         return {
           success: false,
           error: 'Merge conflicts detected',
@@ -393,12 +395,12 @@ class GitService {
 
       return {
         success: true,
-        message: pullResult.summary.changes > 0 
+        message: pullResult?.summary?.changes > 0 
           ? `Pulled ${pullResult.summary.changes} change(s) successfully` 
           : 'Already up to date',
-        changes: pullResult.summary.changes,
-        insertions: pullResult.summary.insertions,
-        deletions: pullResult.summary.deletions
+        changes: pullResult?.summary?.changes || 0,
+        insertions: pullResult?.summary?.insertions || 0,
+        deletions: pullResult?.summary?.deletions || 0
       };
     } catch (error) {
       console.error('Failed to pull latest changes:', error);

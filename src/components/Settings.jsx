@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { setProjectPath } from '../store/slices/settingsSlice';
 import { showSuccess, showError, showInfo, ToastMessages } from '../services/toastService';
 import DataSourceSelector from './DataSourceSelector';
 import './Settings.css';
@@ -9,6 +10,7 @@ import './Settings.css';
  * Allows users to configure GitHub repository and Personal Access Token
  */
 function Settings({ onBackToMain }) {
+  const dispatch = useDispatch();
   // Get current data source from Redux
   const dataSource = useSelector((state) => state.settings.dataSource);
   
@@ -195,16 +197,7 @@ function Settings({ onBackToMain }) {
         return { success: true, alreadyExists: true };
       }
 
-      if (pathCheck.exists && !pathCheck.hasGitRepo) {
-        // Directory exists but is not a git repository
-        const errorMsg = 'The selected directory already exists and is not empty.\n\n' +
-                        'Please either:\n' +
-                        '1. Choose a different empty directory for cloning, OR\n' +
-                        '2. If you already cloned the repository, select that folder instead';
-        throw new Error(errorMsg);
-      }
-
-      // Directory doesn't exist - need to clone
+      // Directory doesn't exist OR exists but is not a git repo - need to clone
       setIsCloning(true);
       setStatus({ message: 'Cloning repository from GitHub...', type: 'info' });
       showInfo('Cloning repository. This may take a moment...');
@@ -310,6 +303,9 @@ function Settings({ onBackToMain }) {
       const result = await window.electron.saveSettings(configToSave);
       
       if (result.success) {
+        // Update Redux store with the new project path
+        dispatch(setProjectPath(configToSave.projectPath));
+        
         setStatus({
           message: 'Settings saved successfully!',
           type: 'success'
@@ -323,6 +319,13 @@ function Settings({ onBackToMain }) {
             ...prev,
             token: '••••••••'
           }));
+        }
+        
+        // If GitHub mode and we just cloned/setup, go back to main after a delay
+        if (dataSource === 'github') {
+          setTimeout(() => {
+            onBackToMain();
+          }, 1500); // Give user time to see the success message
         }
       } else {
         setStatus({
