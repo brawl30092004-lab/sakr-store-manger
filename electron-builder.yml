@@ -2,7 +2,7 @@ appId: com.sakrstore.manager
 productName: Sakr Store Manager
 copyright: Copyright © 2025 Sakr Store
 
-asar: false
+asar: true
 npmRebuild: true
 
 directories:
@@ -14,6 +14,24 @@ files:
   - electron/**/*
   - package.json
   - node_modules/**/*
+  - "!node_modules/**/test/**"
+  - "!node_modules/**/tests/**"
+  - "!node_modules/**/__tests__/**"
+  - "!node_modules/**/examples/**"
+  - "!node_modules/**/example/**"
+  - "!node_modules/**/*.md"
+  - "!node_modules/**/.bin"
+  - "!node_modules/**/LICENSE*"
+  - "!node_modules/**/*.map"
+  - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
+  - "!**/node_modules/.bin"
+  - "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}"
+  - "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}"
+  - "!**/{appveyor.yml,.travis.yml,circle.yml}"
+  - "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+
+asarUnpack:
+  - "**/node_modules/sharp/**/*"
 
 win:
   target:

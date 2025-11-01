@@ -8,14 +8,14 @@ const os = require('os');
 // Detect portable mode
 const isPortable = process.execPath && process.execPath.toLowerCase().includes('portable');
 
-// Load auto-updater only if not portable
+// Load auto-updater only if not portable and in packaged mode
 let autoUpdater = null;
-if (!isPortable) {
+if (!isPortable && app.isPackaged) {
   try {
     const { autoUpdater: updater } = require('electron-updater');
     autoUpdater = updater;
   } catch (e) {
-    console.log('Auto-updater not available (portable or not installed)');
+    console.log('Auto-updater not available:', e.message);
   }
 }
 
