@@ -5,19 +5,12 @@ const fs = require('fs-extra');
 const sharp = require('sharp');
 const os = require('os');
 
-// Detect portable mode
+// Detect portable mode - check early before any updater logic
 const isPortable = process.execPath && process.execPath.toLowerCase().includes('portable');
 
-// Load auto-updater only if not portable and in packaged mode
+// Completely disable auto-updater for portable builds
 let autoUpdater = null;
-if (!isPortable && app.isPackaged) {
-  try {
-    const { autoUpdater: updater } = require('electron-updater');
-    autoUpdater = updater;
-  } catch (e) {
-    console.log('Auto-updater not available:', e.message);
-  }
-}
+// DO NOT load electron-updater for portable builds at all
 
 // Prevent multiple instances - ensure only one instance runs at a time
 const gotTheLock = app.requestSingleInstanceLock();
@@ -675,7 +668,16 @@ ipcMain.handle('git:publish', async (event, commitMessage = null) => {
  * Configure auto-updater
  */
 function setupAutoUpdater() {
-  if (!autoUpdater) return;
+  // Completely skip for portable builds
+  if (isPortable) {
+    console.log('Auto-updater disabled for portable build');
+    return;
+  }
+  
+  if (!autoUpdater) {
+    console.log('Auto-updater not available');
+    return;
+  }
   
   // Configure auto-updater
   autoUpdater.autoDownload = false; // Don't auto-download, ask user first
