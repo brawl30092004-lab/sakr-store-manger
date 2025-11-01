@@ -45,5 +45,6 @@ contextBridge.exposeInMainWorld('electron', {
   browseDirectory: () => ipcRenderer.invoke('settings:browseDirectory'),
   testConnection: (config) => ipcRenderer.invoke('settings:testConnection', config),
   getGitStatus: () => ipcRenderer.invoke('git:getStatus'),
+  cloneRepository: (targetPath, repoUrl, username, token) => ipcRenderer.invoke('git:clone', targetPath, repoUrl, username, token),
   publishToGitHub: (commitMessage) => ipcRenderer.invoke('git:publish', commitMessage),
 });

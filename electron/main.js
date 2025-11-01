@@ -191,18 +191,27 @@ function createWindow() {
 ipcMain.handle('fs:checkProjectPath', async (event, projectPath) => {
   try {
     if (!projectPath) {
-      return { exists: false, isDirectory: false, error: 'No path provided' };
+      return { exists: false, isDirectory: false, hasGitRepo: false, error: 'No path provided' };
     }
     
     const exists = await fs.pathExists(projectPath);
     if (!exists) {
-      return { exists: false, isDirectory: false, error: 'Path does not exist' };
+      return { exists: false, isDirectory: false, hasGitRepo: false, error: 'Path does not exist' };
     }
     
     const stats = await fs.stat(projectPath);
-    return { exists: true, isDirectory: stats.isDirectory(), error: null };
+    const isDirectory = stats.isDirectory();
+    
+    // Check if it's a git repository
+    let hasGitRepo = false;
+    if (isDirectory) {
+      const gitPath = path.join(projectPath, '.git');
+      hasGitRepo = await fs.pathExists(gitPath);
+    }
+    
+    return { exists: true, isDirectory, hasGitRepo, error: null };
   } catch (error) {
-    return { exists: false, isDirectory: false, error: error.message };
+    return { exists: false, isDirectory: false, hasGitRepo: false, error: error.message };
   }
 });
 
@@ -675,6 +684,26 @@ ipcMain.handle('git:getStatus', async (event) => {
       success: false,
       message: `Failed to get status: ${error.message}`,
       hasChanges: false
+    };
+  }
+});
+
+/**
+ * IPC Handler for cloning GitHub repository
+ */
+ipcMain.handle('git:clone', async (event, targetPath, repoUrl, username, token) => {
+  try {
+    const GitService = (await import('../src/services/gitService.js')).default;
+    
+    // Use the static clone method
+    const result = await GitService.cloneRepository(targetPath, repoUrl, username, token);
+    return result;
+  } catch (error) {
+    console.error('Error cloning repository:', error);
+    return {
+      success: false,
+      message: `Failed to clone repository: ${error.message}`,
+      error: error.message
     };
   }
 });

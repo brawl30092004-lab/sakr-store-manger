@@ -66,12 +66,19 @@ class ProductService {
    * Load products from GitHub repository
    * @private
    * @returns {Promise<Array>} Array of products
-   * @throws {Error} Always throws - not yet implemented
+   * @throws {Error} If loading fails
    */
   async loadProductsFromGitHub() {
-    // TODO: Implement GitHub integration
-    // This will fetch products.json from the configured GitHub repository
-    throw new Error('GitHub data source is not yet implemented. Please use Local Files mode.');
+    // In GitHub mode, we work with a local clone of the repository
+    // The projectPath should point to the cloned repository directory
+    // products.json is in the root of the repository
+    try {
+      const products = await window.electron.fs.loadProducts(this.projectPath);
+      return products;
+    } catch (error) {
+      console.error('ProductService: Error loading products from GitHub clone', error);
+      throw error;
+    }
   }
 
   /**

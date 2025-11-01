@@ -26,6 +26,7 @@ function Settings({ onBackToMain }) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [isCloning, setIsCloning] = useState(false);
   const [hasExistingToken, setHasExistingToken] = useState(false);
 
   // Load existing settings on component mount
@@ -179,6 +180,61 @@ function Settings({ onBackToMain }) {
   };
 
   /**
+   * Handles GitHub repository setup (cloning or validation)
+   * Called when saving settings in GitHub mode
+   */
+  const handleGitHubSetup = async (configToSave) => {
+    try {
+      // Check if the project path already exists and is a git repository
+      const pathCheck = await window.electron.fs.checkProjectPath(configToSave.projectPath);
+      
+      if (pathCheck.exists && pathCheck.hasGitRepo) {
+        // Repository already exists, just verify it
+        console.log('Repository already exists at:', configToSave.projectPath);
+        return { success: true, alreadyExists: true };
+      }
+
+      // Repository doesn't exist or isn't a git repo - need to clone
+      setIsCloning(true);
+      setStatus({ message: 'Cloning repository from GitHub...', type: 'info' });
+      showInfo('Cloning repository. This may take a moment...');
+
+      // Get the token (either from form or existing)
+      const tokenToUse = formData.token !== '••••••••' ? formData.token : null;
+      
+      if (!tokenToUse) {
+        throw new Error('GitHub token is required to clone the repository');
+      }
+
+      const cloneResult = await window.electron.cloneRepository(
+        configToSave.projectPath,
+        configToSave.repoUrl,
+        configToSave.username,
+        tokenToUse
+      );
+
+      if (!cloneResult.success) {
+        throw new Error(cloneResult.message || 'Failed to clone repository');
+      }
+
+      setStatus({ message: 'Repository cloned successfully!', type: 'success' });
+      showSuccess('Repository cloned successfully!');
+      
+      return { success: true, cloned: true };
+    } catch (error) {
+      console.error('GitHub setup failed:', error);
+      setStatus({
+        message: `GitHub setup failed: ${error.message}`,
+        type: 'error'
+      });
+      showError(error.message);
+      return { success: false, error: error.message };
+    } finally {
+      setIsCloning(false);
+    }
+  };
+
+  /**
    * Saves the settings
    */
   const handleSave = async () => {
@@ -231,6 +287,15 @@ function Settings({ onBackToMain }) {
         // Only include token if it's not the masked version
         ...(formData.token !== '••••••••' && { token: formData.token })
       };
+
+      // If GitHub mode, handle repository setup first
+      if (dataSource === 'github') {
+        const setupResult = await handleGitHubSetup(configToSave);
+        if (!setupResult.success) {
+          setIsLoading(false);
+          return; // Setup failed, don't save settings
+        }
+      }
 
       const result = await window.electron.saveSettings(configToSave);
       
@@ -306,6 +371,26 @@ function Settings({ onBackToMain }) {
       <div className="settings-content">
         {/* Data Source Selector */}
         <DataSourceSelector />
+
+        {dataSource === 'github' && !formData.repoUrl && (
+          <div className="github-setup-notice" style={{
+            backgroundColor: '#e3f2fd',
+            border: '2px solid #2196f3',
+            borderRadius: '8px',
+            padding: '20px',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{ color: '#1976d2', marginTop: 0 }}>🚀 GitHub Mode Setup Required</h3>
+            <p>To use GitHub mode, you need to:</p>
+            <ol style={{ marginLeft: '20px' }}>
+              <li>Enter your GitHub repository URL</li>
+              <li>Enter your GitHub username</li>
+              <li>Create and enter a Personal Access Token with 'repo' permissions</li>
+              <li>Select a local folder where the repository will be cloned</li>
+              <li>Click "Save Settings" to clone the repository and start working</li>
+            </ol>
+          </div>
+        )}
 
         <div className="settings-section">
           <h2>GitHub Configuration</h2>
@@ -402,7 +487,10 @@ function Settings({ onBackToMain }) {
               </button>
             </div>
             <small className="form-hint">
-              Select the folder containing your local Git repository
+              {dataSource === 'github' 
+                ? 'Select where to clone/store the GitHub repository locally (will be created if it doesn\'t exist)'
+                : 'Select the folder containing your products.json file'
+              }
             </small>
           </div>
         </div>
@@ -417,7 +505,7 @@ function Settings({ onBackToMain }) {
           <button
             type="button"
             onClick={handleTestConnection}
-            disabled={isTesting || isLoading || dataSource === 'local'}
+            disabled={isTesting || isLoading || isCloning || dataSource === 'local'}
             className="btn btn-test"
             title={dataSource === 'local' ? 'Connection test is only available for GitHub mode' : ''}
           >
@@ -427,16 +515,16 @@ function Settings({ onBackToMain }) {
           <button
             type="button"
             onClick={handleSave}
-            disabled={isLoading || isTesting}
+            disabled={isLoading || isTesting || isCloning}
             className="btn btn-primary"
           >
-            {isLoading ? 'Saving...' : 'Save Settings'}
+            {isCloning ? 'Cloning Repository...' : isLoading ? 'Saving...' : 'Save Settings'}
           </button>
 
           <button
             type="button"
             onClick={handleClear}
-            disabled={isLoading || isTesting}
+            disabled={isLoading || isTesting || isCloning}
             className="btn btn-secondary"
           >
             Clear

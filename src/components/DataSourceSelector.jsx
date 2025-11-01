@@ -53,9 +53,6 @@ function DataSourceSelector() {
             <div className="option-details">
               <h4>GitHub Repository</h4>
               <p>Load products.json from your configured GitHub repository</p>
-              {dataSource === 'github' && (
-                <span className="coming-soon-badge">Coming Soon</span>
-              )}
             </div>
           </div>
         </label>
@@ -68,8 +65,8 @@ function DataSourceSelector() {
       )}
       
       {dataSource === 'github' && (
-        <div className="source-info github-placeholder">
-          <strong>GitHub Mode:</strong> This feature is coming soon. Please configure your GitHub settings below for future use.
+        <div className="source-info github-info">
+          <strong>GitHub Mode:</strong> Configure your repository settings below to get started. The app will clone your repository locally and sync changes when you publish.
         </div>
       )}
     </div>

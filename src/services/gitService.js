@@ -191,6 +191,53 @@ class GitService {
   }
 
   /**
+   * Clones a repository from GitHub to a local directory
+   * @param {string} targetPath - Path where the repository should be cloned
+   * @param {string} repoUrl - GitHub repository URL
+   * @param {string} username - GitHub username
+   * @param {string} token - GitHub Personal Access Token
+   * @returns {Promise<Object>} - Result object with success status
+   */
+  static async cloneRepository(targetPath, repoUrl, username, token) {
+    try {
+      // Parse repository URL to extract owner and repo
+      const repoMatch = repoUrl.match(/github\.com[/:]([\w-]+)\/([\w-]+)/);
+      if (!repoMatch) {
+        return {
+          success: false,
+          message: 'Invalid repository URL format. Expected: https://github.com/owner/repo'
+        };
+      }
+
+      const owner = repoMatch[1];
+      const repo = repoMatch[2].replace(/\.git$/, '');
+
+      // Create authenticated URL for cloning
+      const authenticatedUrl = `https://${username}:${token}@github.com/${owner}/${repo}.git`;
+
+      console.log(`Cloning repository to: ${targetPath}`);
+
+      // Clone the repository
+      await simpleGit().clone(authenticatedUrl, targetPath);
+
+      console.log('Repository cloned successfully');
+
+      return {
+        success: true,
+        message: `Repository cloned successfully to ${targetPath}`,
+        path: targetPath
+      };
+    } catch (error) {
+      console.error('Failed to clone repository:', error);
+      return {
+        success: false,
+        message: `Failed to clone repository: ${error.message}`,
+        error: error.message
+      };
+    }
+  }
+
+  /**
    * Initializes a new Git repository
    * @returns {Promise<void>}
    */
@@ -358,8 +405,9 @@ class GitService {
 
       console.log(`Committing changes with message: ${message}`);
 
-      // Stage all changes (including new files, modifications, and deletions)
-      await this.git.add('.');
+      // Stage all changes including deletions (git add -A)
+      // This ensures deleted files are also staged, not just modifications and new files
+      await this.git.add('-A');
 
       // Commit the staged changes
       const commitResult = await this.git.commit(message);
