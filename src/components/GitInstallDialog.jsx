@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Download, ExternalLink, AlertCircle } from 'lucide-react';
+import './GitInstallDialog.css';
 
 /**
  * GitInstallDialog Component
@@ -17,48 +18,48 @@ const GitInstallDialog = ({ isOpen, onClose }) => {
   const isLinux = platform.includes('linux');
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="git-install-overlay">
+      <div className="git-install-dialog">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 text-orange-600" />
+        <div className="git-install-header">
+          <div className="git-install-header-content">
+            <div className="git-install-icon">
+              <AlertCircle />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900">Git Installation Required</h2>
+            <h2 className="git-install-title">Git Installation Required</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="git-install-close"
             aria-label="Close dialog"
           >
-            <X className="w-5 h-5" />
+            <X />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="git-install-content">
           {/* Why Git is needed */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-semibold text-blue-900 mb-2">Why do I need Git?</h3>
-            <p className="text-sm text-blue-800">
+          <div className="git-install-info">
+            <h3 className="git-install-info-title">Why do I need Git?</h3>
+            <p className="git-install-info-text">
               Git is required to sync your product data with GitHub. The app uses Git to clone repositories, 
               track changes, and publish updates to your GitHub account. It's a one-time installation.
             </p>
           </div>
 
           {/* Installation Instructions */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">Installation Instructions</h3>
+          <div className="git-install-section">
+            <h3 className="git-install-section-title">Installation Instructions</h3>
 
             {/* Windows */}
             {isWindows && (
-              <div className="border border-gray-200 rounded-lg p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Download className="w-5 h-5 text-gray-600" />
-                  <h4 className="font-semibold text-gray-900">Windows</h4>
+              <div className="git-install-platform">
+                <div className="git-install-platform-header">
+                  <Download />
+                  <h4 className="git-install-platform-name">Windows</h4>
                 </div>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700 ml-2">
+                <ol className="git-install-steps">
                   <li>Download Git for Windows from the official website</li>
                   <li>Run the installer (accept default settings)</li>
                   <li>Restart this application after installation</li>
@@ -68,72 +69,68 @@ const GitInstallDialog = ({ isOpen, onClose }) => {
                   href="https://git-scm.com/download/win"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+                  className="git-install-download-btn"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download />
                   Download Git for Windows
-                  <ExternalLink className="w-3 h-3" />
+                  <ExternalLink />
                 </a>
               </div>
             )}
 
             {/* macOS */}
             {isMac && (
-              <div className="border border-gray-200 rounded-lg p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Download className="w-5 h-5 text-gray-600" />
-                  <h4 className="font-semibold text-gray-900">macOS</h4>
+              <div className="git-install-platform">
+                <div className="git-install-platform-header">
+                  <Download />
+                  <h4 className="git-install-platform-name">macOS</h4>
                 </div>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 mb-2">Option 1: Using Homebrew (Recommended)</p>
-                    <div className="bg-gray-900 rounded p-3 font-mono text-sm text-green-400">
-                      brew install git
-                    </div>
+                <div className="git-install-option">
+                  <p className="git-install-option-title">Option 1: Using Homebrew (Recommended)</p>
+                  <div className="git-install-code">
+                    brew install git
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 mb-2">Option 2: Download Installer</p>
-                    <a
-                      href="https://git-scm.com/download/mac"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
-                    >
-                      <Download className="w-4 h-4" />
-                      Download Git for macOS
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
+                </div>
+                <div className="git-install-option">
+                  <p className="git-install-option-title">Option 2: Download Installer</p>
+                  <a
+                    href="https://git-scm.com/download/mac"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="git-install-download-btn"
+                  >
+                    <Download />
+                    Download Git for macOS
+                    <ExternalLink />
+                  </a>
                 </div>
               </div>
             )}
 
             {/* Linux */}
             {isLinux && (
-              <div className="border border-gray-200 rounded-lg p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Download className="w-5 h-5 text-gray-600" />
-                  <h4 className="font-semibold text-gray-900">Linux</h4>
+              <div className="git-install-platform">
+                <div className="git-install-platform-header">
+                  <Download />
+                  <h4 className="git-install-platform-name">Linux</h4>
                 </div>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 mb-2">Ubuntu/Debian:</p>
-                    <div className="bg-gray-900 rounded p-3 font-mono text-sm text-green-400">
-                      sudo apt-get update<br />
-                      sudo apt-get install git
-                    </div>
+                <div className="git-install-option">
+                  <p className="git-install-option-title">Ubuntu/Debian:</p>
+                  <div className="git-install-code">
+                    sudo apt-get update<br />
+                    sudo apt-get install git
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 mb-2">Fedora:</p>
-                    <div className="bg-gray-900 rounded p-3 font-mono text-sm text-green-400">
-                      sudo dnf install git
-                    </div>
+                </div>
+                <div className="git-install-option">
+                  <p className="git-install-option-title">Fedora:</p>
+                  <div className="git-install-code">
+                    sudo dnf install git
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 mb-2">Arch Linux:</p>
-                    <div className="bg-gray-900 rounded p-3 font-mono text-sm text-green-400">
-                      sudo pacman -S git
-                    </div>
+                </div>
+                <div className="git-install-option">
+                  <p className="git-install-option-title">Arch Linux:</p>
+                  <div className="git-install-code">
+                    sudo pacman -S git
                   </div>
                 </div>
               </div>
@@ -141,61 +138,61 @@ const GitInstallDialog = ({ isOpen, onClose }) => {
 
             {/* Generic instructions for unknown platforms */}
             {!isWindows && !isMac && !isLinux && (
-              <div className="border border-gray-200 rounded-lg p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Download className="w-5 h-5 text-gray-600" />
-                  <h4 className="font-semibold text-gray-900">Download Git</h4>
+              <div className="git-install-platform">
+                <div className="git-install-platform-header">
+                  <Download />
+                  <h4 className="git-install-platform-name">Download Git</h4>
                 </div>
-                <p className="text-sm text-gray-700">
+                <p className="git-install-info-text" style={{ marginBottom: '1rem' }}>
                   Visit the official Git website to download the appropriate version for your operating system.
                 </p>
                 <a
                   href="https://git-scm.com/downloads"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+                  className="git-install-download-btn"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download />
                   Visit Git Downloads Page
-                  <ExternalLink className="w-3 h-3" />
+                  <ExternalLink />
                 </a>
               </div>
             )}
           </div>
 
           {/* Verification Steps */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-            <h4 className="font-semibold text-gray-900">After Installation</h4>
-            <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700 ml-2">
+          <div className="git-install-verify">
+            <h4 className="git-install-verify-title">After Installation</h4>
+            <ol className="git-install-verify-steps">
               <li>Close and restart this application</li>
               <li>The app will automatically detect Git</li>
               <li>You can then configure your GitHub settings</li>
             </ol>
-            <p className="text-xs text-gray-600 mt-3">
+            <p className="git-install-verify-note">
               <strong>Note:</strong> If Git is still not detected after installation, you may need to restart your computer 
               or manually add Git to your system PATH.
             </p>
           </div>
 
           {/* Help Link */}
-          <div className="text-center">
+          <div className="git-install-help">
             <a
               href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700 font-medium"
+              className="git-install-help-link"
             >
               Need more help? View detailed installation guide
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink />
             </a>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end">
+        <div className="git-install-footer">
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+            className="git-install-footer-btn"
           >
             Got it
           </button>

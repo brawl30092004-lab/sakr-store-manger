@@ -1,0 +1,397 @@
+/* GitInstallDialog - Modern, lightweight styling */
+
+/* Overlay */
+.git-install-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Dialog Container */
+.git-install-dialog {
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  max-width: 650px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Custom scrollbar */
+.git-install-dialog::-webkit-scrollbar {
+  width: 8px;
+}
+
+.git-install-dialog::-webkit-scrollbar-track {
+  background: #161b22;
+}
+
+.git-install-dialog::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 4px;
+}
+
+.git-install-dialog::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
+
+/* Header */
+.git-install-header {
+  position: sticky;
+  top: 0;
+  background-color: #0d1117;
+  border-bottom: 1px solid #30363d;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 10;
+}
+
+.git-install-header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.git-install-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.git-install-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: white;
+}
+
+.git-install-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #e6edf3;
+  margin: 0;
+}
+
+.git-install-close {
+  background: none;
+  border: none;
+  color: #8b949e;
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.git-install-close:hover {
+  background-color: #30363d;
+  color: #e6edf3;
+}
+
+/* Content */
+.git-install-content {
+  padding: 1.5rem;
+}
+
+/* Info Box */
+.git-install-info {
+  background: linear-gradient(135deg, #1f2937 0%, #0d1117 100%);
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.git-install-info-title {
+  font-weight: 600;
+  color: #60a5fa;
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.git-install-info-text {
+  font-size: 0.875rem;
+  color: #c9d1d9;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Platform Section */
+.git-install-section {
+  margin-bottom: 1.5rem;
+}
+
+.git-install-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e6edf3;
+  margin: 0 0 1rem 0;
+}
+
+.git-install-platform {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.git-install-platform:hover {
+  border-color: #484f58;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.git-install-platform-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.git-install-platform-header svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #8b949e;
+}
+
+.git-install-platform-name {
+  font-weight: 600;
+  color: #e6edf3;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.git-install-steps {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin: 0 0 1rem 0;
+  color: #c9d1d9;
+}
+
+.git-install-steps li {
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.git-install-option {
+  margin-bottom: 1rem;
+}
+
+.git-install-option:last-child {
+  margin-bottom: 0;
+}
+
+.git-install-option-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #e6edf3;
+  margin: 0 0 0.5rem 0;
+}
+
+.git-install-code {
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.875rem;
+  color: #7ee787;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+.git-install-code::-webkit-scrollbar {
+  height: 6px;
+}
+
+.git-install-code::-webkit-scrollbar-track {
+  background: #161b22;
+}
+
+.git-install-code::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 3px;
+}
+
+/* Download Button */
+.git-install-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.git-install-download-btn:hover {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+.git-install-download-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Verification Box */
+.git-install-verify {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.git-install-verify-title {
+  font-weight: 600;
+  color: #e6edf3;
+  margin: 0 0 0.75rem 0;
+  font-size: 0.95rem;
+}
+
+.git-install-verify-steps {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin: 0 0 0.75rem 0;
+  color: #c9d1d9;
+}
+
+.git-install-verify-steps li {
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.git-install-verify-note {
+  font-size: 0.8125rem;
+  color: #8b949e;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.git-install-verify-note strong {
+  color: #c9d1d9;
+}
+
+/* Help Link */
+.git-install-help {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.git-install-help-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #58a6ff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.git-install-help-link:hover {
+  color: #79c0ff;
+  text-decoration: underline;
+}
+
+.git-install-help-link svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* Footer */
+.git-install-footer {
+  position: sticky;
+  bottom: 0;
+  background-color: #161b22;
+  border-top: 1px solid #30363d;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.git-install-footer-btn {
+  padding: 0.625rem 1.5rem;
+  background-color: #238636;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.git-install-footer-btn:hover {
+  background-color: #2ea043;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(35, 134, 54, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .git-install-dialog {
+    border-radius: 0;
+    max-height: 100vh;
+  }
+
+  .git-install-overlay {
+    padding: 0;
+  }
+
+  .git-install-content {
+    padding: 1rem;
+  }
+
+  .git-install-header {
+    padding: 1rem;
+  }
+}

@@ -457,21 +457,15 @@ function Settings({ onBackToMain }) {
 
         {/* Git Installation Status - Only show in GitHub mode */}
         {dataSource === 'github' && isGitInstalled !== null && (
-          <div className={`git-status ${isGitInstalled ? 'git-installed' : 'git-not-installed'}`} style={{
-            backgroundColor: isGitInstalled ? '#e8f5e9' : '#ffebee',
-            border: `2px solid ${isGitInstalled ? '#4caf50' : '#f44336'}`,
-            borderRadius: '8px',
-            padding: '15px',
-            marginBottom: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            <div>
-              <strong style={{ color: isGitInstalled ? '#2e7d32' : '#c62828' }}>
-                {isGitInstalled ? '✓ Git Detected' : '⚠ Git Not Found'}
-              </strong>
-              <p style={{ margin: '5px 0 0 0', fontSize: '14px', color: '#666' }}>
+          <div className={`git-status ${isGitInstalled ? 'git-installed' : 'git-not-installed'}`}>
+            <div className="git-status-content">
+              <div className="git-status-title">
+                <span className="git-status-icon">
+                  {isGitInstalled ? '✓' : '⚠'}
+                </span>
+                {isGitInstalled ? 'Git Detected' : 'Git Not Found'}
+              </div>
+              <p className="git-status-message">
                 {isGitInstalled 
                   ? `Version ${gitVersion} - Ready to use GitHub features`
                   : 'Git is required to use GitHub mode. Please install Git to continue.'
@@ -479,29 +473,27 @@ function Settings({ onBackToMain }) {
               </p>
             </div>
             {!isGitInstalled && (
-              <button
-                onClick={() => setShowGitInstallDialog(true)}
-                className="btn btn-primary"
-                style={{ whiteSpace: 'nowrap' }}
-              >
-                Install Git
-              </button>
+              <div className="git-status-action">
+                <button
+                  onClick={() => setShowGitInstallDialog(true)}
+                  className="git-install-btn"
+                >
+                  Install Git
+                </button>
+              </div>
             )}
           </div>
         )}
 
 
         {dataSource === 'github' && !formData.repoUrl && (
-          <div className="github-setup-notice" style={{
-            backgroundColor: '#e3f2fd',
-            border: '2px solid #2196f3',
-            borderRadius: '8px',
-            padding: '20px',
-            marginBottom: '20px'
-          }}>
-            <h3 style={{ color: '#1976d2', marginTop: 0 }}>🚀 GitHub Mode Setup Required</h3>
+          <div className="github-setup-notice">
+            <h3 className="github-setup-title">
+              <span className="github-setup-icon">🚀</span>
+              GitHub Mode Setup Required
+            </h3>
             <p>To use GitHub mode, you need to:</p>
-            <ol style={{ marginLeft: '20px' }}>
+            <ol className="github-setup-steps">
               <li>Enter your GitHub repository URL</li>
               <li>Enter your GitHub username</li>
               <li>Create and enter a Personal Access Token with 'repo' permissions</li>

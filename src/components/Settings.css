@@ -380,3 +380,192 @@
     border-top-color: #444;
   }
 }
+
+/* Git Status Banner - Modern, lightweight design */
+.git-status {
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: all 0.3s ease;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.git-status.git-installed {
+  background: linear-gradient(135deg, #0d1b0f 0%, #161b22 100%);
+  border: 1px solid #238636;
+  box-shadow: 0 2px 8px rgba(35, 134, 54, 0.15);
+}
+
+.git-status.git-not-installed {
+  background: linear-gradient(135deg, #2d1517 0%, #161b22 100%);
+  border: 1px solid #da3633;
+  box-shadow: 0 2px 8px rgba(218, 54, 51, 0.15);
+}
+
+.git-status-content {
+  flex: 1;
+}
+
+.git-status-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  margin: 0 0 0.375rem 0;
+}
+
+.git-status.git-installed .git-status-title {
+  color: #3fb950;
+}
+
+.git-status.git-not-installed .git-status-title {
+  color: #f85149;
+}
+
+.git-status-icon {
+  font-size: 1.125rem;
+}
+
+.git-status-message {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #8b949e;
+  line-height: 1.5;
+}
+
+.git-status.git-installed .git-status-message {
+  color: #7ee787;
+}
+
+.git-status.git-not-installed .git-status-message {
+  color: #ffa198;
+}
+
+.git-status-action {
+  flex-shrink: 0;
+}
+
+.git-install-btn {
+  padding: 0.625rem 1.25rem;
+  background: linear-gradient(135deg, #f85149 0%, #da3633 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.git-install-btn:hover {
+  background: linear-gradient(135deg, #da3633 0%, #c93634 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(248, 81, 73, 0.3);
+}
+
+.git-install-btn:active {
+  transform: translateY(0);
+}
+
+/* GitHub Setup Notice - Modern, lightweight design */
+.github-setup-notice {
+  background: linear-gradient(135deg, #0c2d48 0%, #161b22 100%);
+  border: 1px solid #1f6feb;
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(31, 111, 235, 0.15);
+  animation: slideDown 0.3s ease-out;
+}
+
+.github-setup-title {
+  color: #58a6ff;
+  margin: 0 0 0.75rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.github-setup-icon {
+  font-size: 1.25rem;
+}
+
+.github-setup-notice p {
+  color: #c9d1d9;
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.github-setup-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: step-counter;
+}
+
+.github-setup-steps li {
+  position: relative;
+  padding-left: 2rem;
+  margin-bottom: 0.625rem;
+  color: #c9d1d9;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  counter-increment: step-counter;
+}
+
+.github-setup-steps li:last-child {
+  margin-bottom: 0;
+}
+
+.github-setup-steps li::before {
+  content: counter(step-counter);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: linear-gradient(135deg, #1f6feb 0%, #0969da 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .git-status {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .git-status-action {
+    width: 100%;
+  }
+
+  .git-install-btn {
+    width: 100%;
+  }
+}
