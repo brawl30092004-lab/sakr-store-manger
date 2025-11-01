@@ -14,7 +14,8 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "vite build && electron-builder"
+    "electron:build": "vite build && electron-builder",
+    "electron:build:portable": "vite build && electron-builder --win portable"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

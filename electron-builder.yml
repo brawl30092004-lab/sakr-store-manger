@@ -10,29 +10,22 @@ files:
   - dist/**/*
   - electron/**/*
   - package.json
-  - node_modules/fs-extra/**/*
-  - node_modules/sharp/**/*
   - "!node_modules/**/*"
+  - node_modules/sharp/**/*
+  - node_modules/fs-extra/**/*
+  - node_modules/simple-git/**/*
 
 asarUnpack:
   - node_modules/sharp/**/*
 
 win:
   target:
-    - target: dir
-      arch:
-        - x64
     - target: portable
       arch:
         - x64
   icon: build/icon.ico
-
-nsis:
-  oneClick: false
-  allowToChangeInstallationDirectory: true
-  createDesktopShortcut: true
-  createStartMenuShortcut: true
-  shortcutName: Sakr Store Manager
+  requestedExecutionLevel: asInvoker
 
 portable:
-  artifactName: ${productName} ${version} Portable.${ext}
+  artifactName: ${productName} v${version} Portable.exe
+  unicode: true
