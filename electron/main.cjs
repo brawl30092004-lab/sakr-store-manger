@@ -1,5 +1,5 @@
 // CommonJS version for better compatibility with electron-builder
-const { app, BrowserWindow, ipcMain, dialog, protocol } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, protocol, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs-extra');
 const sharp = require('sharp');
@@ -67,6 +67,9 @@ app.on('second-instance', (event, commandLine, workingDirectory) => {
 let mainWindow;
 
 function createWindow() {
+  // Remove the default menu bar completely
+  Menu.setApplicationMenu(null);
+  
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
