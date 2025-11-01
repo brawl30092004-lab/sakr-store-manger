@@ -2,6 +2,8 @@ appId: com.sakrstore.manager
 productName: Sakr Store Manager
 copyright: Copyright © 2025 Sakr Store
 
+asar: false
+
 directories:
   output: release
   buildResources: build
@@ -17,9 +19,6 @@ files:
   - "!node_modules/**/{test,__tests__,tests,powered-test,example,examples}"
   - "!node_modules/**/*.d.ts"
   - "!node_modules/.bin"
-
-asarUnpack:
-  - node_modules/sharp/**/*
 
 win:
   target:
