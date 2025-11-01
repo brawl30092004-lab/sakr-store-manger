@@ -415,11 +415,6 @@ function App() {
         <div className="app-title">
           <h1>Sakr Store Manager</h1>
         </div>
-        <div className="app-controls">
-          <span className="window-control minimize"><Minus size={16} /></span>
-          <span className="window-control maximize"><Maximize2 size={16} /></span>
-          <span className="window-control close"><X size={16} /></span>
-        </div>
       </header>
       
       <nav className="app-menu">
