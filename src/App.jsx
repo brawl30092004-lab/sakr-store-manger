@@ -33,19 +33,24 @@ function App() {
   const mainContentRef = useRef(null);
 
   useEffect(() => {
-    // Load products on app startup
-    dispatch(loadProducts()).unwrap()
-      .catch((err) => {
-        // Check if error is due to missing products.json
-        if (err.includes('PRODUCTS_NOT_FOUND') || err.includes('ENOENT')) {
-          setShowDataSourceDialog(true);
-        }
-      });
-  }, [dispatch]);
+    // Load products on app startup only if projectPath is set
+    if (projectPath) {
+      dispatch(loadProducts()).unwrap()
+        .catch((err) => {
+          // Check if error is due to missing products.json
+          if (err.includes('PRODUCTS_NOT_FOUND') || err.includes('ENOENT')) {
+            setShowDataSourceDialog(true);
+          }
+        });
+    } else {
+      // No project path - show data source dialog
+      setShowDataSourceDialog(true);
+    }
+  }, [dispatch, projectPath]);
 
   // Reload products when data source changes
   useEffect(() => {
-    if (dataSource) {
+    if (dataSource && projectPath) {
       dispatch(loadProducts()).unwrap()
         .catch((err) => {
           if (err.includes('PRODUCTS_NOT_FOUND') || err.includes('ENOENT')) {
@@ -53,7 +58,7 @@ function App() {
           }
         });
     }
-  }, [dataSource, dispatch]);
+  }, [dataSource, dispatch, projectPath]);
 
   // Setup keyboard shortcuts
   useEffect(() => {
@@ -121,6 +126,12 @@ function App() {
   // Handle creating new products.json file - MEMOIZED
   const handleCreateNewFile = useCallback(async () => {
     try {
+      // Validate projectPath exists
+      if (!projectPath) {
+        showError('Please select a project path first');
+        return;
+      }
+      
       await window.electron.fs.createEmptyProducts(projectPath);
       showSuccess('Created empty products.json file');
       setShowDataSourceDialog(false);

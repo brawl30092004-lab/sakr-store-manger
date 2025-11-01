@@ -163,9 +163,10 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
     setSaveError(null);
 
     try {
-      const productData = { ...formData };
+      // Deep clone to avoid mutating Redux state (which is frozen/read-only)
+      const productData = JSON.parse(JSON.stringify(formData));
       const hasPendingPrimaryImage = pendingImages.primary instanceof File;
-      const galleryFiles = (productData.images.gallery || []).filter(item => item instanceof File);
+      const galleryFiles = (formData.images.gallery || []).filter(item => item instanceof File);
       const hasNewImages = hasPendingPrimaryImage || galleryFiles.length > 0;
 
       // If this is a new product (id === 0) and has new images, we need a two-step save
