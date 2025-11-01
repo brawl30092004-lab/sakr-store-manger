@@ -7,6 +7,51 @@ import { join } from 'path';
  */
 class GitService {
   /**
+   * Checks if Git is installed on the system
+   * This is a static method that can be called without instantiating the class
+   * @returns {Promise<Object>} - Result object with success status, installed status, version, and message
+   */
+  static async checkGitInstallation() {
+    try {
+      const git = simpleGit();
+      
+      // Try to get Git version
+      const version = await git.version();
+      
+      return {
+        success: true,
+        installed: true,
+        version: version.installed ? version.major + '.' + version.minor + '.' + version.patch : 'unknown',
+        gitVersion: version,
+        message: `Git is installed (version ${version.installed ? version.major + '.' + version.minor + '.' + version.patch : 'unknown'})`
+      };
+    } catch (error) {
+      console.error('Git installation check failed:', error.message);
+      
+      // Check if it's a "git not found" error
+      if (error.message.includes('spawn git ENOENT') || 
+          error.message.includes('git: command not found') ||
+          error.message.includes('not recognized as an internal or external command')) {
+        return {
+          success: false,
+          installed: false,
+          version: null,
+          message: 'Git is not installed on this system. Please install Git to use GitHub features.',
+          error: error.message
+        };
+      }
+      
+      // Other errors
+      return {
+        success: false,
+        installed: false,
+        version: null,
+        message: 'Unable to verify Git installation: ' + error.message,
+        error: error.message
+      };
+    }
+  }
+  /**
    * Creates a new GitService instance
    * @param {string} projectPath - Path to the local git repository
    * @param {Object} config - GitHub configuration

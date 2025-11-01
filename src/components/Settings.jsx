@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setProjectPath } from '../store/slices/settingsSlice';
 import { showSuccess, showError, showInfo, ToastMessages } from '../services/toastService';
 import DataSourceSelector from './DataSourceSelector';
+import GitInstallDialog from './GitInstallDialog';
 import './Settings.css';
 
 /**
@@ -30,11 +31,60 @@ function Settings({ onBackToMain }) {
   const [isTesting, setIsTesting] = useState(false);
   const [isCloning, setIsCloning] = useState(false);
   const [hasExistingToken, setHasExistingToken] = useState(false);
+  const [isGitInstalled, setIsGitInstalled] = useState(null); // null = not checked, true = installed, false = not installed
+  const [showGitInstallDialog, setShowGitInstallDialog] = useState(false);
+  const [gitVersion, setGitVersion] = useState(null);
 
   // Load existing settings on component mount
   useEffect(() => {
     loadSettings();
   }, []);
+
+  // Check Git installation when switching to GitHub mode
+  useEffect(() => {
+    if (dataSource === 'github') {
+      checkGitInstallation();
+    }
+  }, [dataSource]);
+
+  /**
+   * Checks if Git is installed on the system
+   */
+  const checkGitInstallation = async () => {
+    try {
+      const result = await window.electron.checkGitInstallation();
+      
+      setIsGitInstalled(result.installed);
+      setGitVersion(result.version);
+      
+      if (!result.installed) {
+        // Git is not installed, show warning and dialog
+        setStatus({
+          message: 'Git is not installed. GitHub features require Git to be installed on your system.',
+          type: 'error'
+        });
+        setShowGitInstallDialog(true);
+        showError('Git is not installed. Please install Git to use GitHub features.');
+      } else {
+        // Git is installed
+        console.log('Git is installed:', result.version);
+        setStatus({
+          message: `Git detected (version ${result.version})`,
+          type: 'success'
+        });
+      }
+      
+      return result.installed;
+    } catch (error) {
+      console.error('Failed to check Git installation:', error);
+      setIsGitInstalled(false);
+      setStatus({
+        message: 'Unable to verify Git installation',
+        type: 'error'
+      });
+      return false;
+    }
+  };
 
   /**
    * Loads settings from the config file
@@ -121,6 +171,13 @@ function Settings({ onBackToMain }) {
         type: 'info'
       });
       showInfo(message);
+      return;
+    }
+
+    // Check if Git is installed
+    if (isGitInstalled === false) {
+      setShowGitInstallDialog(true);
+      showError('Git is not installed. Please install Git to use GitHub features.');
       return;
     }
 
@@ -241,6 +298,13 @@ function Settings({ onBackToMain }) {
    * Saves the settings
    */
   const handleSave = async () => {
+    // For GitHub mode, check if Git is installed first
+    if (dataSource === 'github' && isGitInstalled === false) {
+      setShowGitInstallDialog(true);
+      showError('Git is not installed. Please install Git to use GitHub features.');
+      return;
+    }
+
     // For local mode, only projectPath is required
     // For GitHub mode, all fields are required
     if (dataSource === 'local') {
@@ -362,6 +426,12 @@ function Settings({ onBackToMain }) {
 
   return (
     <div className="settings-container">
+      {/* Git Installation Dialog */}
+      <GitInstallDialog 
+        isOpen={showGitInstallDialog}
+        onClose={() => setShowGitInstallDialog(false)}
+      />
+
       <div className="settings-header">
         <div className="settings-header-content">
           <div>
@@ -384,6 +454,42 @@ function Settings({ onBackToMain }) {
       <div className="settings-content">
         {/* Data Source Selector */}
         <DataSourceSelector />
+
+        {/* Git Installation Status - Only show in GitHub mode */}
+        {dataSource === 'github' && isGitInstalled !== null && (
+          <div className={`git-status ${isGitInstalled ? 'git-installed' : 'git-not-installed'}`} style={{
+            backgroundColor: isGitInstalled ? '#e8f5e9' : '#ffebee',
+            border: `2px solid ${isGitInstalled ? '#4caf50' : '#f44336'}`,
+            borderRadius: '8px',
+            padding: '15px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <div>
+              <strong style={{ color: isGitInstalled ? '#2e7d32' : '#c62828' }}>
+                {isGitInstalled ? '✓ Git Detected' : '⚠ Git Not Found'}
+              </strong>
+              <p style={{ margin: '5px 0 0 0', fontSize: '14px', color: '#666' }}>
+                {isGitInstalled 
+                  ? `Version ${gitVersion} - Ready to use GitHub features`
+                  : 'Git is required to use GitHub mode. Please install Git to continue.'
+                }
+              </p>
+            </div>
+            {!isGitInstalled && (
+              <button
+                onClick={() => setShowGitInstallDialog(true)}
+                className="btn btn-primary"
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                Install Git
+              </button>
+            )}
+          </div>
+        )}
+
 
         {dataSource === 'github' && !formData.repoUrl && (
           <div className="github-setup-notice" style={{
@@ -427,7 +533,7 @@ function Settings({ onBackToMain }) {
               onChange={handleInputChange}
               placeholder="https://github.com/username/repository"
               className="form-input"
-              disabled={dataSource === 'local'}
+              disabled={dataSource === 'local' || (dataSource === 'github' && isGitInstalled === false)}
             />
             <small className="form-hint">
               Example: https://github.com/yourusername/sakr-store-data
@@ -446,7 +552,7 @@ function Settings({ onBackToMain }) {
               onChange={handleInputChange}
               placeholder="Enter your GitHub username"
               className="form-input"
-              disabled={dataSource === 'local'}
+              disabled={dataSource === 'local' || (dataSource === 'github' && isGitInstalled === false)}
             />
           </div>
 
@@ -462,7 +568,7 @@ function Settings({ onBackToMain }) {
               onChange={handleInputChange}
               placeholder="Enter your GitHub PAT"
               className="form-input"
-              disabled={dataSource === 'local'}
+              disabled={dataSource === 'local' || (dataSource === 'github' && isGitInstalled === false)}
             />
             <small className="form-hint">
               Create a token with 'repo' permissions at{' '}
@@ -518,9 +624,9 @@ function Settings({ onBackToMain }) {
           <button
             type="button"
             onClick={handleTestConnection}
-            disabled={isTesting || isLoading || isCloning || dataSource === 'local'}
+            disabled={isTesting || isLoading || isCloning || dataSource === 'local' || (dataSource === 'github' && isGitInstalled === false)}
             className="btn btn-test"
-            title={dataSource === 'local' ? 'Connection test is only available for GitHub mode' : ''}
+            title={dataSource === 'local' ? 'Connection test is only available for GitHub mode' : isGitInstalled === false ? 'Git is required to test connection' : ''}
           >
             {isTesting ? 'Testing...' : 'Test Connection'}
           </button>
@@ -528,8 +634,9 @@ function Settings({ onBackToMain }) {
           <button
             type="button"
             onClick={handleSave}
-            disabled={isLoading || isTesting || isCloning}
+            disabled={isLoading || isTesting || isCloning || (dataSource === 'github' && isGitInstalled === false)}
             className="btn btn-primary"
+            title={dataSource === 'github' && isGitInstalled === false ? 'Git is required to save GitHub settings' : ''}
           >
             {isCloning ? 'Cloning Repository...' : isLoading ? 'Saving...' : 'Save Settings'}
           </button>

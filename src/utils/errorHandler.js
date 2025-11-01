@@ -39,6 +39,8 @@ const ERROR_MESSAGES = {
   INVALID_FORMAT: "Invalid format. Please check your input.",
   
   // Git Errors
+  GIT_NOT_INSTALLED: "Git is not installed. Please install Git to use GitHub features.",
+  GIT_NOT_FOUND: "Git is not installed. Please install Git to use GitHub features.",
   GIT_NOT_INITIALIZED: "Git repository not initialized. Please initialize in Settings.",
   GIT_OPERATION_FAILED: "Git operation failed. Please try again.",
   PUSH_FAILED: "Failed to push to GitHub. Check your connection and permissions.",
@@ -134,6 +136,12 @@ export function getUserFriendlyError(error) {
   }
 
   // Git errors
+  if (messageLower.includes('git') && (messageLower.includes('not found') || 
+      messageLower.includes('spawn git enoent') ||
+      messageLower.includes('command not found') ||
+      messageLower.includes('not recognized as an internal or external command'))) {
+    return ERROR_MESSAGES.GIT_NOT_INSTALLED;
+  }
   if (messageLower.includes('not a git repository') || 
       messageLower.includes('git not initialized')) {
     return ERROR_MESSAGES.GIT_NOT_INITIALIZED;

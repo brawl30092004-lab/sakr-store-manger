@@ -536,6 +536,29 @@ ipcMain.handle('settings:load', async (event) => {
 });
 
 /**
+ * IPC Handler for checking if Git is installed on the system
+ */
+ipcMain.handle('git:checkInstallation', async () => {
+  try {
+    // Dynamically import GitService
+    const GitService = (await import('../src/services/gitService.js')).default;
+    
+    // Call the static method to check Git installation
+    const result = await GitService.checkGitInstallation();
+    return result;
+  } catch (error) {
+    console.error('Error checking Git installation:', error);
+    return {
+      success: false,
+      installed: false,
+      version: null,
+      message: 'Failed to check Git installation: ' + error.message,
+      error: error.message
+    };
+  }
+});
+
+/**
  * IPC Handler for testing GitHub connection
  */
 ipcMain.handle('settings:testConnection', async (event, config) => {
