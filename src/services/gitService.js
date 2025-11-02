@@ -184,6 +184,142 @@ class GitService {
   }
 
   /**
+   * Analyzes changes in products.json to show detailed product-level changes
+   * @returns {Promise<Array>} - Array of detailed change descriptions
+   */
+  async analyzeProductChanges() {
+    try {
+      // Get the diff for products.json
+      const diff = await this.git.diff(['HEAD', 'products.json']);
+      
+      if (!diff) {
+        return [];
+      }
+
+      // Get old version (HEAD)
+      let oldProducts = [];
+      try {
+        const oldContent = await this.git.show(['HEAD:products.json']);
+        oldProducts = JSON.parse(oldContent);
+      } catch (error) {
+        // File might be new, that's okay
+        console.log('Could not get old products.json:', error.message);
+      }
+
+      // Get new version (working directory)
+      let newProducts = [];
+      try {
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        const newContent = await fs.readFile(path.join(this.projectPath, 'products.json'), 'utf-8');
+        newProducts = JSON.parse(newContent);
+      } catch (error) {
+        console.log('Could not get new products.json:', error.message);
+        return [];
+      }
+
+      // Create maps for easy lookup
+      const oldMap = new Map(oldProducts.map(p => [p.id, p]));
+      const newMap = new Map(newProducts.map(p => [p.id, p]));
+
+      const changes = [];
+
+      // Check for deleted products
+      for (const [id, product] of oldMap) {
+        if (!newMap.has(id)) {
+          changes.push({
+            type: 'deleted',
+            productId: id,
+            productName: product.name,
+            description: `${product.name}: deleted`
+          });
+        }
+      }
+
+      // Check for new and modified products
+      for (const [id, newProduct] of newMap) {
+        const oldProduct = oldMap.get(id);
+
+        if (!oldProduct) {
+          // New product
+          changes.push({
+            type: 'added',
+            productId: id,
+            productName: newProduct.name,
+            description: `${newProduct.name}: added`
+          });
+        } else {
+          // Check for modifications
+          const productChanges = [];
+
+          // Name change
+          if (oldProduct.name !== newProduct.name) {
+            productChanges.push(`renamed from "${oldProduct.name}" to "${newProduct.name}"`);
+          }
+
+          // Stock change
+          if (oldProduct.stock !== newProduct.stock) {
+            productChanges.push(`stock changed from ${oldProduct.stock} to ${newProduct.stock}`);
+          }
+
+          // Price change
+          if (oldProduct.price !== newProduct.price) {
+            productChanges.push(`price changed from EGP ${oldProduct.price.toFixed(2)} to EGP ${newProduct.price.toFixed(2)}`);
+          }
+
+          // Discount change
+          if (oldProduct.discount !== newProduct.discount) {
+            if (newProduct.discount) {
+              productChanges.push(`discount added (EGP ${newProduct.discountedPrice.toFixed(2)})`);
+            } else {
+              productChanges.push('discount removed');
+            }
+          } else if (oldProduct.discount && newProduct.discount && 
+                     oldProduct.discountedPrice !== newProduct.discountedPrice) {
+            productChanges.push(`discounted price changed from EGP ${oldProduct.discountedPrice.toFixed(2)} to EGP ${newProduct.discountedPrice.toFixed(2)}`);
+          }
+
+          // Category change
+          if (oldProduct.category !== newProduct.category) {
+            productChanges.push(`category changed from "${oldProduct.category}" to "${newProduct.category}"`);
+          }
+
+          // Description change
+          if (oldProduct.description !== newProduct.description) {
+            productChanges.push('description updated');
+          }
+
+          // Image changes
+          if (oldProduct.image !== newProduct.image || 
+              JSON.stringify(oldProduct.images) !== JSON.stringify(newProduct.images)) {
+            productChanges.push('images updated');
+          }
+
+          // isNew flag change
+          if (oldProduct.isNew !== newProduct.isNew) {
+            productChanges.push(newProduct.isNew ? 'marked as new' : 'unmarked as new');
+          }
+
+          // If there are changes, add them
+          if (productChanges.length > 0) {
+            changes.push({
+              type: 'modified',
+              productId: id,
+              productName: newProduct.name,
+              description: `${newProduct.name}: ${productChanges.join(', ')}`
+            });
+          }
+        }
+      }
+
+      return changes;
+    } catch (error) {
+      console.error('Error analyzing product changes:', error);
+      return [];
+    }
+  }
+
+  /**
    * Gets the current repository status with detailed change information
    * @returns {Promise<Object>} - Git status object with hasChanges flag and file counts
    */
@@ -197,6 +333,13 @@ class GitService {
       const deleted = status.deleted.length;
       const renamed = status.renamed.length;
       const totalChanges = modified + created + deleted + renamed;
+
+      // Check if products.json is modified and get detailed changes
+      let productChanges = [];
+      if (status.modified.includes('products.json') || 
+          status.created.includes('products.json')) {
+        productChanges = await this.analyzeProductChanges();
+      }
       
       return {
         hasChanges: !status.isClean(),
@@ -212,6 +355,7 @@ class GitService {
           deleted: status.deleted,
           renamed: status.renamed
         },
+        productChanges, // Add detailed product changes
         current: status.current,
         tracking: status.tracking,
         ahead: status.ahead,
@@ -388,6 +532,71 @@ class GitService {
         success: false,
         error: error.message,
         message: `Failed to restore file: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Undoes a specific product change by restoring the old value from HEAD
+   * @param {Object} productChange - The product change object with productId and type
+   * @returns {Promise<Object>} - Result object with success status
+   */
+  async undoProductChange(productChange) {
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      const productsPath = path.join(this.projectPath, 'products.json');
+
+      // Get old version from HEAD
+      let oldProducts = [];
+      try {
+        const oldContent = await this.git.show(['HEAD:products.json']);
+        oldProducts = JSON.parse(oldContent);
+      } catch (error) {
+        return {
+          success: false,
+          message: 'Could not read original products.json from repository'
+        };
+      }
+
+      // Get current version
+      const currentContent = await fs.readFile(productsPath, 'utf-8');
+      const currentProducts = JSON.parse(currentContent);
+
+      // Find the product by ID
+      const oldProduct = oldProducts.find(p => p.id === productChange.productId);
+      const currentProductIndex = currentProducts.findIndex(p => p.id === productChange.productId);
+
+      if (productChange.type === 'deleted') {
+        // Product was deleted, restore it
+        if (oldProduct) {
+          currentProducts.push(oldProduct);
+        }
+      } else if (productChange.type === 'added') {
+        // Product was added, remove it
+        if (currentProductIndex !== -1) {
+          currentProducts.splice(currentProductIndex, 1);
+        }
+      } else if (productChange.type === 'modified') {
+        // Product was modified, restore old version
+        if (oldProduct && currentProductIndex !== -1) {
+          currentProducts[currentProductIndex] = oldProduct;
+        }
+      }
+
+      // Save the updated products.json
+      await fs.writeFile(productsPath, JSON.stringify(currentProducts, null, 2), 'utf-8');
+
+      return {
+        success: true,
+        message: `Undone changes for: ${productChange.productName}`
+      };
+    } catch (error) {
+      console.error('Failed to undo product change:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: `Failed to undo product change: ${error.message}`
       };
     }
   }

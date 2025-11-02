@@ -49,4 +49,5 @@ contextBridge.exposeInMainWorld('electron', {
   cloneRepository: (targetPath, repoUrl, username, token) => ipcRenderer.invoke('git:clone', targetPath, repoUrl, username, token),
   publishToGitHub: (commitMessage, files) => ipcRenderer.invoke('git:publish', commitMessage, files),
   restoreFile: (filePath) => ipcRenderer.invoke('git:restoreFile', filePath),
+  undoProductChange: (productChange) => ipcRenderer.invoke('git:undoProductChange', productChange),
 });

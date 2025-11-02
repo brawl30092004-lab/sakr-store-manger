@@ -51,6 +51,7 @@ function StatusBar() {
           created: status.created || 0,
           deleted: status.deleted || 0,
           files: status.files || { modified: [], created: [], deleted: [] },
+          productChanges: status.productChanges || [], // Add product changes
           message: status.hasChanges 
             ? `Unsaved changes: ${status.totalChanges} file${status.totalChanges !== 1 ? 's' : ''}`
             : 'Ready'

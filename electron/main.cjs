@@ -847,6 +847,42 @@ ipcMain.handle('git:restoreFile', async (event, filePath) => {
   }
 });
 
+/**
+ * IPC Handler for undoing a specific product change
+ */
+ipcMain.handle('git:undoProductChange', async (event, productChange) => {
+  try {
+    const { getConfigService } = await import('../src/services/configService.js');
+    const GitService = (await import('../src/services/gitService.js')).default;
+    
+    const configService = getConfigService();
+    const config = configService.getConfigWithToken();
+    
+    if (!config || !config.projectPath) {
+      return {
+        success: false,
+        message: 'No project path configured'
+      };
+    }
+    
+    const gitService = new GitService(config.projectPath, {
+      username: config.username,
+      token: config.token,
+      repoUrl: config.repoUrl
+    });
+    
+    const result = await gitService.undoProductChange(productChange);
+    return result;
+  } catch (error) {
+    console.error('Error undoing product change:', error);
+    return {
+      success: false,
+      message: `Failed to undo product change: ${error.message}`,
+      error: error.message
+    };
+  }
+});
+
 // Auto-Updater Configuration and Handlers
 
 /**

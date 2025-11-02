@@ -108,6 +108,25 @@ function ChangesSummaryDialog({ isOpen, onClose, gitStatus, onPublish }) {
     }
   };
 
+  // Undo a specific product change
+  const handleUndoProductChange = async (productChange) => {
+    try {
+      const result = await window.electron.undoProductChange(productChange);
+      if (result.success) {
+        showSuccess(`Undone: ${productChange.productName}`);
+        // Trigger a refresh of git status
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      } else {
+        showError(result.message || `Failed to undo change for ${productChange.productName}`);
+      }
+    } catch (error) {
+      console.error('Failed to undo product change:', error);
+      showError(`Failed to undo product change: ${error.message}`);
+    }
+  };
+
   const handlePublish = async () => {
     if (!commitMessage.trim()) {
       showError('Please enter a commit message');
@@ -194,6 +213,55 @@ function ChangesSummaryDialog({ isOpen, onClose, gitStatus, onPublish }) {
               </div>
             )}
           </div>
+
+          {/* Product Changes Summary */}
+          {gitStatus.productChanges && gitStatus.productChanges.length > 0 && (
+            <div className="product-changes-section">
+              <div className="product-changes-header">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M1.75 2.5a.25.25 0 00-.25.25v10.5c0 .138.112.25.25.25h12.5a.25.25 0 00.25-.25V2.75a.25.25 0 00-.25-.25H1.75zM0 2.75C0 1.784.784 1 1.75 1h12.5c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0114.25 15H1.75A1.75 1.75 0 010 13.25V2.75z"/>
+                  <path d="M6.5 3.25a.75.75 0 00-.75.75v8a.75.75 0 001.5 0V4a.75.75 0 00-.75-.75zm2.75.75a.75.75 0 011.5 0v8a.75.75 0 01-1.5 0V4z"/>
+                </svg>
+                <h3>Product Changes</h3>
+                <span className="product-changes-count">{gitStatus.productChanges.length}</span>
+              </div>
+              <ul className="product-changes-list">
+                {gitStatus.productChanges.map((change, index) => (
+                  <li key={index} className={`product-change-item ${change.type}`}>
+                    <div className="product-change-content">
+                      {change.type === 'added' && (
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                          <path d="M8 2a.75.75 0 01.75.75v4.5h4.5a.75.75 0 010 1.5h-4.5v4.5a.75.75 0 01-1.5 0v-4.5h-4.5a.75.75 0 010-1.5h4.5v-4.5A.75.75 0 018 2z"/>
+                        </svg>
+                      )}
+                      {change.type === 'deleted' && (
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                          <path d="M2.75 7.25a.75.75 0 000 1.5h10.5a.75.75 0 000-1.5H2.75z"/>
+                        </svg>
+                      )}
+                      {change.type === 'modified' && (
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                          <path d="M11.93 8.5a4.002 4.002 0 01-7.86 0H.75a.75.75 0 010-1.5h3.32a4.002 4.002 0 017.86 0h3.32a.75.75 0 010 1.5h-3.32zM8 6a2 2 0 100 4 2 2 0 000-4z"/>
+                        </svg>
+                      )}
+                      <span className="product-change-description">{change.description}</span>
+                    </div>
+                    <button 
+                      className="btn-undo-product"
+                      onClick={() => handleUndoProductChange(change)}
+                      disabled={isPublishing}
+                      title={`Undo changes to ${change.productName}`}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 2.5a5.487 5.487 0 00-4.131 1.869l1.204 1.204A.25.25 0 014.896 6H1.25A.25.25 0 011 5.75V2.104a.25.25 0 01.427-.177l1.38 1.38A7.001 7.001 0 0114.95 7.16a.75.75 0 11-1.49.178A5.501 5.501 0 008 2.5zM1.705 8.005a.75.75 0 01.834.656 5.501 5.501 0 009.592 2.97l-1.204-1.204a.25.25 0 01.177-.427h3.646a.25.25 0 01.25.25v3.646a.25.25 0 01-.427.177l-1.38-1.38A7.001 7.001 0 011.05 8.84a.75.75 0 01.656-.834z"/>
+                      </svg>
+                      Undo
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Selection Controls */}
           <div className="selection-controls">

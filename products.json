@@ -2,7 +2,7 @@
   {
     "id": 1,
     "name": "Classic Black T-Shirt",
-    "price": 25.00,
+    "price": 29.99,
     "description": "A high-quality, 100% cotton t-shirt.",
     "image": "images/tshirt.jpg",
     "images": {
@@ -16,7 +16,7 @@
     "category": "Apparel",
     "discount": true,
     "discountedPrice": 14.00,
-    "stock": 6,
+    "stock": 50,
     "isNew": true
   },
   {
@@ -34,8 +34,8 @@
     },
     "category": "Home Goods",
     "discount": true,
-    "discountedPrice": 13.18,
-    "stock": 5,
+    "discountedPrice": 12.99,
+    "stock": 0,
     "isNew": false
   },
   {
