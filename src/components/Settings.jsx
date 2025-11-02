@@ -633,12 +633,6 @@ function Settings({ onBackToMain }) {
           </div>
         </div>
 
-        {status.message && (
-          <div className={`status-message status-${status.type}`}>
-            {status.message}
-          </div>
-        )}
-
         <div className="settings-actions">
           <button
             type="button"
