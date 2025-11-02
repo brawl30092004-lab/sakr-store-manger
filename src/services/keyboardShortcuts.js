@@ -18,6 +18,7 @@
  * @param {Function} handlers.onZoomOut - Ctrl+- handler
  * @param {Function} handlers.onActualSize - Ctrl+0 handler
  * @param {Function} handlers.onToggleFullscreen - F11 handler
+ * @param {Function} handlers.onCommandPalette - Ctrl+K handler
  */
 export const attachKeyboardShortcuts = (handlers) => {
   const handleKeyDown = (e) => {
@@ -28,6 +29,15 @@ export const attachKeyboardShortcuts = (handlers) => {
       activeElement.tagName === 'TEXTAREA' ||
       activeElement.isContentEditable
     );
+
+    // Ctrl+K - Command Palette (priority - works even when typing)
+    if (e.ctrlKey && e.key === 'k') {
+      e.preventDefault();
+      if (handlers.onCommandPalette) {
+        handlers.onCommandPalette();
+      }
+      return;
+    }
 
     // Ctrl+N - New Product
     if (e.ctrlKey && e.key === 'n') {

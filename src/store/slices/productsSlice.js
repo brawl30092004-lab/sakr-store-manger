@@ -194,6 +194,14 @@ const productsSlice = createSlice({
       state.items = state.items.filter(p => p.id !== action.payload);
       state.hasUnsavedChanges = true;
     },
+    toggleProductNew: (state, action) => {
+      const productId = action.payload;
+      const index = state.items.findIndex(p => p.id === productId);
+      if (index !== -1) {
+        state.items[index].isNew = !state.items[index].isNew;
+        state.hasUnsavedChanges = true;
+      }
+    },
     bulkRemoveNewBadge: (state, action) => {
       const productIds = action.payload; // Array of product IDs
       if (!state.items || !Array.isArray(state.items)) {
@@ -375,6 +383,7 @@ export const {
   addProductLocal,
   updateProductLocal,
   deleteProductLocal,
+  toggleProductNew,
   bulkRemoveNewBadge,
   bulkRemoveDiscount,
   bulkDeleteProducts,

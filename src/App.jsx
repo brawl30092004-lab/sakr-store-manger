@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback, lazy, Suspense } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
-import { Minus, Maximize2, X } from 'lucide-react';
+import { Minus, Maximize2, X, Home, Package, Plus, Save, Upload, Settings, Github, Keyboard } from 'lucide-react';
 import { loadProducts, bulkRemoveNewBadge, bulkRemoveDiscount, bulkDeleteProducts, bulkApplyDiscount, bulkMakeNew, saveProducts } from './store/slices/productsSlice';
 import { setProjectPath } from './store/slices/settingsSlice';
 import { attachKeyboardShortcuts } from './services/keyboardShortcuts';
@@ -10,10 +10,13 @@ import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import StatusBar from './components/StatusBar';
 import DataSourceNotFoundDialog from './components/DataSourceNotFoundDialog';
+import SettingsPanel from './components/SettingsPanel';
+import Breadcrumbs from './components/Breadcrumbs';
+import FloatingActionButtons from './components/FloatingActionButtons';
+import CommandPalette from './components/CommandPalette';
 import './App.css';
 
 // Lazy load heavy components
-const Settings = lazy(() => import('./components/Settings'));
 const BulkOperationsDialog = lazy(() => import('./components/BulkOperationsDialog'));
 
 function App() {
@@ -22,11 +25,12 @@ function App() {
   const { projectPath, dataSource } = useSelector((state) => state.settings);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeFilters, setActiveFilters] = useState([]); // Array to support multiple filters
-  const [currentView, setCurrentView] = useState('main'); // 'main' or 'settings'
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false); // Settings panel instead of view
   const [showDataSourceDialog, setShowDataSourceDialog] = useState(false);
   const [activeMenu, setActiveMenu] = useState(null); // Track which menu is open
   const [showAboutDialog, setShowAboutDialog] = useState(false);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false); // Command palette
   const [bulkOperationDialog, setBulkOperationDialog] = useState({ isOpen: false, type: null });
   
   // Refs for keyboard shortcut handlers
@@ -64,12 +68,12 @@ function App() {
   useEffect(() => {
     const handlers = {
       onNewProduct: () => {
-        if (currentView === 'main' && mainContentRef.current?.handleNewProduct) {
+        if (mainContentRef.current?.handleNewProduct) {
           mainContentRef.current.handleNewProduct();
         }
       },
       onSave: () => {
-        if (currentView === 'main' && mainContentRef.current?.handleSave) {
+        if (mainContentRef.current?.handleSave) {
           mainContentRef.current.handleSave();
         }
       },
@@ -77,18 +81,20 @@ function App() {
         handlePublishToGitHub();
       },
       onFocusSearch: () => {
-        if (currentView === 'main' && mainContentRef.current?.focusSearch) {
+        if (mainContentRef.current?.focusSearch) {
           mainContentRef.current.focusSearch();
         }
       },
       onDelete: () => {
-        if (currentView === 'main' && mainContentRef.current?.handleDeleteShortcut) {
+        if (mainContentRef.current?.handleDeleteShortcut) {
           mainContentRef.current.handleDeleteShortcut();
         }
       },
       onEscape: () => {
-        if (currentView === 'settings') {
-          setCurrentView('main');
+        if (showSettingsPanel) {
+          setShowSettingsPanel(false);
+        } else if (showCommandPalette) {
+          setShowCommandPalette(false);
         } else if (showAboutDialog) {
           setShowAboutDialog(false);
         } else if (showShortcutsDialog) {
@@ -98,7 +104,7 @@ function App() {
         }
       },
       onEnter: () => {
-        if (currentView === 'main' && mainContentRef.current?.handleEnter) {
+        if (mainContentRef.current?.handleEnter) {
           mainContentRef.current.handleEnter();
         }
       },
@@ -116,12 +122,15 @@ function App() {
       },
       onToggleFullscreen: () => {
         handleToggleFullscreen();
+      },
+      onCommandPalette: () => {
+        setShowCommandPalette(prev => !prev);
       }
     };
 
     const cleanup = attachKeyboardShortcuts(handlers);
     return cleanup;
-  }, [currentView, showAboutDialog, showShortcutsDialog]);
+  }, [showSettingsPanel, showCommandPalette, showAboutDialog, showShortcutsDialog]);
 
   // Handle creating new products.json file - MEMOIZED
   const handleCreateNewFile = useCallback(async () => {
@@ -172,25 +181,25 @@ function App() {
 
   // Menu handlers - MEMOIZED
   const handleNewProduct = useCallback(() => {
-    if (currentView === 'main' && mainContentRef.current?.handleNewProduct) {
+    if (mainContentRef.current?.handleNewProduct) {
       mainContentRef.current.handleNewProduct();
       setActiveMenu(null);
     }
-  }, [currentView]);
+  }, []);
 
   const handleSaveAll = useCallback(async () => {
-    if (currentView === 'main' && mainContentRef.current?.handleSave) {
+    if (mainContentRef.current?.handleSave) {
       await mainContentRef.current.handleSave();
       setActiveMenu(null);
     }
-  }, [currentView]);
+  }, []);
 
   const handleExport = useCallback(() => {
-    if (currentView === 'main' && mainContentRef.current?.handleExport) {
+    if (mainContentRef.current?.handleExport) {
       mainContentRef.current.handleExport();
       setActiveMenu(null);
     }
-  }, [currentView]);
+  }, []);
 
   const handleBrowseDataSource = useCallback(() => {
     setShowDataSourceDialog(true);
@@ -198,7 +207,7 @@ function App() {
   }, []);
 
   const handleOpenSettings = useCallback(() => {
-    setCurrentView('settings');
+    setShowSettingsPanel(true);
     setActiveMenu(null);
   }, []);
 
@@ -210,7 +219,7 @@ function App() {
   }, []);
 
   const handleDeleteProduct = () => {
-    if (currentView === 'main' && mainContentRef.current?.handleDeleteShortcut) {
+    if (mainContentRef.current?.handleDeleteShortcut) {
       mainContentRef.current.handleDeleteShortcut();
       setActiveMenu(null);
     }
@@ -698,32 +707,115 @@ function App() {
       )}
 
       <div className="app-body">
-        {currentView === 'settings' ? (
-          <Suspense fallback={<div className="loading-message">Loading settings...</div>}>
-            <Settings onBackToMain={() => setCurrentView('main')} />
-          </Suspense>
-        ) : (
-          <>
-            <Sidebar 
-              selectedCategory={selectedCategory}
-              onCategorySelect={setSelectedCategory}
-              activeFilters={activeFilters}
-              onFilterToggle={(filterId) => {
-                setActiveFilters(prev => 
-                  prev.includes(filterId) 
-                    ? prev.filter(id => id !== filterId)
-                    : [...prev, filterId]
-                );
-              }}
-            />
-            <MainContent 
-              ref={mainContentRef}
-              selectedCategory={selectedCategory}
-              activeFilters={activeFilters}
-            />
-          </>
-        )}
+        {/* Breadcrumbs */}
+        <Breadcrumbs 
+          path={[
+            { 
+              label: 'Products', 
+              icon: <Package size={14} />,
+              onClick: () => setSelectedCategory('all')
+            },
+            selectedCategory !== 'all' && {
+              label: selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1),
+              icon: null
+            }
+          ].filter(Boolean)}
+        />
+        
+        <div className="app-body-content">
+          <Sidebar 
+            selectedCategory={selectedCategory}
+            onCategorySelect={setSelectedCategory}
+            activeFilters={activeFilters}
+            onFilterToggle={(filterId) => {
+              setActiveFilters(prev => 
+                prev.includes(filterId) 
+                  ? prev.filter(id => id !== filterId)
+                  : [...prev, filterId]
+              );
+            }}
+          />
+          <MainContent 
+            ref={mainContentRef}
+            selectedCategory={selectedCategory}
+            activeFilters={activeFilters}
+          />
+        </div>
       </div>
+
+      {/* Settings Panel - Slide-out */}
+      <SettingsPanel 
+        isOpen={showSettingsPanel}
+        onClose={() => setShowSettingsPanel(false)}
+      />
+
+      {/* Floating Action Buttons */}
+      <FloatingActionButtons
+        onNewProduct={handleNewProduct}
+        onSave={handleSaveAll}
+        onExport={handleExport}
+      />
+
+      {/* Command Palette */}
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        commands={[
+          {
+            id: 'new-product',
+            label: 'New Product',
+            icon: <Plus size={16} />,
+            shortcut: 'Ctrl+N',
+            category: 'Product',
+            keywords: ['add', 'create', 'new', 'product'],
+            action: handleNewProduct
+          },
+          {
+            id: 'save',
+            label: 'Save All Changes',
+            icon: <Save size={16} />,
+            shortcut: 'Ctrl+S',
+            category: 'File',
+            keywords: ['save', 'write', 'persist'],
+            action: handleSaveAll
+          },
+          {
+            id: 'export',
+            label: 'Export Products',
+            icon: <Upload size={16} />,
+            shortcut: 'Ctrl+E',
+            category: 'File',
+            keywords: ['export', 'download', 'backup'],
+            action: handleExport
+          },
+          {
+            id: 'settings',
+            label: 'Open Settings',
+            icon: <Settings size={16} />,
+            category: 'App',
+            keywords: ['settings', 'preferences', 'config', 'configuration'],
+            action: handleOpenSettings
+          },
+          {
+            id: 'github-publish',
+            label: 'Publish to GitHub',
+            icon: <Github size={16} />,
+            shortcut: 'Ctrl+P',
+            category: 'GitHub',
+            keywords: ['github', 'publish', 'push', 'upload'],
+            action: handlePublishToGitHub
+          },
+          {
+            id: 'shortcuts',
+            label: 'Show Keyboard Shortcuts',
+            icon: <Keyboard size={16} />,
+            shortcut: 'Ctrl+/',
+            category: 'Help',
+            keywords: ['help', 'shortcuts', 'keyboard', 'hotkeys'],
+            action: handleShowShortcuts
+          }
+        ]}
+      />
 
       <StatusBar />
     </div>

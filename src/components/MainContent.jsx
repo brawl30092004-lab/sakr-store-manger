@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Search, Package, Edit, Copy, Trash2 } from 'lucide-react';
-import { addProduct, updateProduct, deleteProduct, duplicateProduct } from '../store/slices/productsSlice';
+import { addProduct, updateProduct, deleteProduct, duplicateProduct, toggleProductNew } from '../store/slices/productsSlice';
 import { defaultProduct } from '../store/slices/productsSlice';
 import ProductForm from './ProductForm';
 import ProductImage from './ProductImage';
 import ExportDialog from './ExportDialog';
+import ContextMenu from './ContextMenu';
 import './MainContent.css';
 
 const MainContent = forwardRef(({ selectedCategory, activeFilters }, ref) => {
@@ -15,6 +16,7 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters }, ref) => {
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null); // Context menu state
   const { items: products, loading, error } = useSelector((state) => state.products);
   const dispatch = useDispatch();
   
@@ -127,6 +129,21 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters }, ref) => {
     dispatch(duplicateProduct(id));
   }, [dispatch]);
 
+  // Handle right-click context menu
+  const handleContextMenu = useCallback((e, product) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      product: product
+    });
+  }, []);
+
+  // Handle toggling new badge
+  const handleToggleNew = useCallback((id) => {
+    dispatch(toggleProductNew(id));
+  }, [dispatch]);
+
   // Expose methods to parent via ref
   useImperativeHandle(ref, () => ({
     handleNewProduct,
@@ -219,7 +236,11 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters }, ref) => {
           </div>
         ) : (
           filteredProducts.map((product) => (
-            <div key={product.id} className="product-card">
+            <div 
+              key={product.id} 
+              className="product-card"
+              onContextMenu={(e) => handleContextMenu(e, product)}
+            >
               {/* Product Image */}
               <ProductImage product={product} />
 
@@ -253,7 +274,7 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters }, ref) => {
               >
                 <button 
                   className="btn-action btn-edit" 
-                  title="Edit"
+                  title="Edit (or Right-click for menu)"
                   onClick={() => handleEditProduct(product)}
                 >
                   <Edit size={16} /> Edit
@@ -277,6 +298,24 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters }, ref) => {
           ))
         )}
       </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          onEdit={() => handleEditProduct(contextMenu.product)}
+          onDuplicate={() => handleDuplicateProduct(contextMenu.product.id)}
+          onDelete={() => {
+            setSelectedProductId(contextMenu.product.id);
+            handleDeleteClick(contextMenu.product.id);
+          }}
+          onToggleNew={() => handleToggleNew(contextMenu.product.id)}
+          productName={contextMenu.product.name}
+          isNew={contextMenu.product.isNew}
+        />
+      )}
 
       {/* Product Form Modal */}
       {isFormOpen && (
