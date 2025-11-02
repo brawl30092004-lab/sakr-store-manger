@@ -726,6 +726,10 @@ function App() {
           <Sidebar 
             selectedCategory={selectedCategory}
             onCategorySelect={setSelectedCategory}
+          />
+          <MainContent 
+            ref={mainContentRef}
+            selectedCategory={selectedCategory}
             activeFilters={activeFilters}
             onFilterToggle={(filterId) => {
               setActiveFilters(prev => 
@@ -734,11 +738,6 @@ function App() {
                   : [...prev, filterId]
               );
             }}
-          />
-          <MainContent 
-            ref={mainContentRef}
-            selectedCategory={selectedCategory}
-            activeFilters={activeFilters}
           />
         </div>
       </div>

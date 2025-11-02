@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import { useSelector } from 'react-redux';
-import { Package, Star, Gift } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { getCategoriesFromProducts } from '../services/productValidation';
 import './Sidebar.css';
 
-function Sidebar({ selectedCategory, onCategorySelect, activeFilters, onFilterToggle }) {
+function Sidebar({ selectedCategory, onCategorySelect }) {
   const { items: products } = useSelector((state) => state.products);
 
   // Generate dynamic categories from products
@@ -26,21 +26,10 @@ function Sidebar({ selectedCategory, onCategorySelect, activeFilters, onFilterTo
     ];
   }, [dynamicCategories, products.length]);
 
-  // Calculate filter counts
-  const filters = useMemo(() => {
-    const featuredCount = products.filter(p => p.isNew || p.tags?.includes('featured')).length;
-    const discountsCount = products.filter(p => p.discount > 0).length;
-    
-    return [
-      { id: 'featured', name: 'Featured', icon: Star, count: featuredCount },
-      { id: 'discounts', name: 'Discounts', icon: Gift, count: discountsCount },
-    ];
-  }, [products]);
-
   return (
     <div className="sidebar">
       <div className="sidebar-section">
-        <h3 className="sidebar-title">PRODUCTS</h3>
+        <h3 className="sidebar-title">CATEGORIES</h3>
         <div className="sidebar-divider"></div>
         <ul className="sidebar-list">
           {categories.map((category) => (
@@ -53,25 +42,6 @@ function Sidebar({ selectedCategory, onCategorySelect, activeFilters, onFilterTo
               <span className="sidebar-label">{category.name}</span>
               {category.count !== undefined && (
                 <span className="sidebar-count">{category.count}</span>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="sidebar-section">
-        <h3 className="sidebar-subtitle">Filters</h3>
-        <ul className="sidebar-list">
-          {filters.map((filter) => (
-            <li 
-              key={filter.id} 
-              className={`sidebar-item ${activeFilters.includes(filter.id) ? 'active' : ''}`}
-              onClick={() => onFilterToggle && onFilterToggle(filter.id)}
-            >
-              <span className="sidebar-icon"><filter.icon size={18} /></span>
-              <span className="sidebar-label">{filter.name}</span>
-              {filter.count !== undefined && (
-                <span className="sidebar-count">{filter.count}</span>
               )}
             </li>
           ))}

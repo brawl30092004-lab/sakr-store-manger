@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Search, Package, Edit, Copy, Trash2 } from 'lucide-react';
+import { Search, Package, Edit, Copy, Trash2, Star, Gift, X } from 'lucide-react';
 import { addProduct, updateProduct, deleteProduct, duplicateProduct, toggleProductNew } from '../store/slices/productsSlice';
 import { defaultProduct } from '../store/slices/productsSlice';
 import ProductForm from './ProductForm';
@@ -9,7 +9,7 @@ import ExportDialog from './ExportDialog';
 import ContextMenu from './ContextMenu';
 import './MainContent.css';
 
-const MainContent = forwardRef(({ selectedCategory, activeFilters }, ref) => {
+const MainContent = forwardRef(({ selectedCategory, activeFilters, onFilterToggle }, ref) => {
   const [searchText, setSearchText] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -23,6 +23,17 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters }, ref) => {
   // Refs for child components
   const searchInputRef = useRef(null);
   const productFormRef = useRef(null);
+
+  // Calculate filter counts
+  const filters = useMemo(() => {
+    const featuredCount = products.filter(p => p.isNew || p.tags?.includes('featured')).length;
+    const discountsCount = products.filter(p => p.discount > 0).length;
+    
+    return [
+      { id: 'featured', name: 'Featured', icon: Star, count: featuredCount },
+      { id: 'discounts', name: 'Discounts', icon: Gift, count: discountsCount },
+    ];
+  }, [products]);
 
   // Filtering Pipeline
   const filteredProducts = useMemo(() => {
@@ -197,35 +208,41 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters }, ref) => {
 
   return (
     <div className="main-content">
-      {/* Toolbar with New Product Button */}
+      {/* Toolbar with Filters and Search */}
       <div className="toolbar">
-        <button 
-          className="btn-new-product"
-          onClick={handleNewProduct}
-        >
-          + New Product
-        </button>
-        
-        <button 
-          className="btn-export"
-          onClick={() => setIsExportDialogOpen(true)}
-          title="Export products to organized folder structure"
-        >
-          <Package size={18} /> Export Products
-        </button>
-      </div>
+        {/* Filter Chips */}
+        <div className="filter-chips">
+          {filters.map((filter) => {
+            const Icon = filter.icon;
+            const isActive = activeFilters.includes(filter.id);
+            return (
+              <button
+                key={filter.id}
+                className={`filter-chip ${isActive ? 'active' : ''}`}
+                onClick={() => onFilterToggle && onFilterToggle(filter.id)}
+                title={`${filter.name} (${filter.count})`}
+              >
+                <Icon size={16} />
+                <span className="filter-chip-label">{filter.name}</span>
+                <span className="filter-chip-count">{filter.count}</span>
+                {isActive && <X size={14} className="filter-chip-close" />}
+              </button>
+            );
+          })}
+        </div>
 
-      {/* Search Bar */}
-      <div className="search-bar">
-        <input
-          ref={searchInputRef}
-          type="text"
-          className="search-input"
-          placeholder="Search products by name or description..."
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-        />
-        <span className="search-icon"><Search size={20} /></span>
+        {/* Search Bar */}
+        <div className="toolbar-search">
+          <Search size={18} className="toolbar-search-icon" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            className="toolbar-search-input"
+            placeholder="Search products..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+        </div>
       </div>
 
       {/* Product List */}
