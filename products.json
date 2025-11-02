@@ -1,0 +1,80 @@
+[
+  {
+    "id": 1,
+    "name": "Classic Black T-Shirt",
+    "price": 25.00,
+    "description": "A high-quality, 100% cotton t-shirt.",
+    "image": "images/tshirt.jpg",
+    "images": {
+      "primary": "images/tshirt.jpg",
+      "gallery": [
+        "images/mockup.jpg",
+        "images/mockup.jpg",
+        "images/product-1-gallery-2.jpg"
+      ]
+    },
+    "category": "Apparel",
+    "discount": true,
+    "discountedPrice": 14.00,
+    "stock": 6,
+    "isNew": true
+  },
+  {
+    "id": 2,
+    "name": "Modern Coffee Mug",
+    "price": 15.50,
+    "description": "A stylish ceramic mug with a matte finish.",
+    "image": "images/mug.jpg",
+    "images": {
+      "primary": "images/mug.jpg",
+      "gallery": [
+        "images/mockup.jpg",
+        "images/mockup.jpg"
+      ]
+    },
+    "category": "Home Goods",
+    "discount": true,
+    "discountedPrice": 13.18,
+    "stock": 5,
+    "isNew": false
+  },
+  {
+    "id": 3,
+    "name": "حقيبة توت كبيرة من كانفاس القطنية الثقيلة",
+    "price": 19.99,
+    "description": "حقيبة توت كبيرة متعددة الاستخدامات مصنوعة من قماش القطن الثقيل، مثالية للتسوق أو الاستخدام اليومي.",
+    "image": "images/tote.jpg",
+    "images": {
+      "primary": "images/tote.jpg",
+      "gallery": [
+        "images/mockup.jpg",
+        "images/mockup.jpg",
+        "images/product-3-gallery-2.jpg"
+      ]
+    },
+    "category": "Accessories",
+    "discount": true,
+    "discountedPrice": 10.00,
+    "stock": 10,
+    "isNew": true
+  },
+  {
+    "name": "Modern Coffee Mug (Copy)",
+    "price": 15.50,
+    "description": "A stylish ceramic mug with a matte finish.",
+    "image": "images/mug.jpg",
+    "images": {
+      "primary": "images/mug.jpg",
+      "gallery": [
+        "images/mockup.jpg",
+        "images/mockup.jpg"
+      ]
+    },
+    "category": "Home Goodss",
+    "discount": true,
+    "discountedPrice": 15.33,
+    "stock": 5,
+    "isNew": false,
+    "id": 4
+  }
+]
