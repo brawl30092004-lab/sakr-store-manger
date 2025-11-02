@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { setProjectPath } from '../store/slices/settingsSlice';
 import { showSuccess, showError, showInfo, ToastMessages } from '../services/toastService';
@@ -14,6 +14,9 @@ function Settings({ onBackToMain }) {
   const dispatch = useDispatch();
   // Get current data source from Redux
   const dataSource = useSelector((state) => state.settings.dataSource);
+  
+  // Ref for scrolling to top
+  const containerRef = useRef(null);
   
   const [formData, setFormData] = useState({
     repoUrl: '',
@@ -35,6 +38,13 @@ function Settings({ onBackToMain }) {
   const [showGitInstallDialog, setShowGitInstallDialog] = useState(false);
   const [gitVersion, setGitVersion] = useState(null);
 
+  // Scroll to top on mount
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  }, []);
+
   // Load existing settings on component mount
   useEffect(() => {
     loadSettings();
@@ -44,8 +54,25 @@ function Settings({ onBackToMain }) {
   useEffect(() => {
     if (dataSource === 'github') {
       checkGitInstallation();
+      // Scroll to top when switching to GitHub mode to show any notices
+      setTimeout(() => {
+        if (containerRef.current) {
+          containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 100);
     }
   }, [dataSource]);
+
+  // Scroll to top when Git installation status changes
+  useEffect(() => {
+    if (isGitInstalled !== null && containerRef.current) {
+      setTimeout(() => {
+        if (containerRef.current) {
+          containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 150);
+    }
+  }, [isGitInstalled]);
 
   /**
    * Checks if Git is installed on the system
@@ -425,7 +452,7 @@ function Settings({ onBackToMain }) {
   };
 
   return (
-    <div className="settings-container">
+    <div className="settings-container" ref={containerRef}>
       {/* Git Installation Dialog */}
       <GitInstallDialog 
         isOpen={showGitInstallDialog}

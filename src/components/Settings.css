@@ -7,6 +7,8 @@
   color: #e6edf3;
   overflow-y: auto;
   overflow-x: hidden;
+  scroll-behavior: smooth;
+  box-sizing: border-box;
 }
 
 /* Custom scrollbar for settings */
@@ -28,8 +30,8 @@
 }
 
 .settings-header {
-  margin-bottom: 2rem;
-  border-bottom: 2px solid #30363d;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #30363d;
   padding-bottom: 1rem;
 }
 
@@ -42,31 +44,33 @@
 
 .settings-header h1 {
   margin: 0 0 0.5rem 0;
-  font-size: 2rem;
+  font-size: 1.75rem;
+  font-weight: 600;
   color: #e6edf3;
 }
 
 .settings-description {
   margin: 0;
   color: #8b949e;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
 }
 
 .settings-content {
   background: #161b22;
   border: 1px solid #30363d;
   border-radius: 8px;
-  padding: 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .settings-section {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .settings-section h2 {
-  margin: 0 0 1.5rem 0;
-  font-size: 1.3rem;
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
   color: #e6edf3;
   border-bottom: 1px solid #30363d;
   padding-bottom: 0.5rem;
@@ -74,7 +78,7 @@
 
 /* Form Styles */
 .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .form-group label {
@@ -82,7 +86,7 @@
   margin-bottom: 0.5rem;
   font-weight: 600;
   color: #e6edf3;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
 }
 
 .form-group label .required {
@@ -92,11 +96,11 @@
 
 .form-input {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.625rem 0.75rem;
   border: 1px solid #30363d;
-  border-radius: 4px;
-  font-size: 0.95rem;
-  transition: border-color 0.2s;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
   background-color: #0d1117;
   color: #e6edf3;
@@ -105,7 +109,7 @@
 .form-input:focus {
   outline: none;
   border-color: #58a6ff;
-  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
 }
 
 .form-input:disabled {
@@ -152,10 +156,10 @@
 
 /* Status Message */
 .status-message {
-  padding: 1rem;
-  border-radius: 4px;
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
+  padding: 0.875rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
   font-weight: 500;
 }
 
@@ -179,13 +183,13 @@
 
 /* Info Message */
 .info-message {
-  padding: 1rem;
-  margin-bottom: 1.5rem;
+  padding: 0.875rem 1rem;
+  margin-bottom: 1.25rem;
   background-color: rgba(88, 166, 255, 0.1);
-  border-left: 4px solid #58a6ff;
+  border-left: 3px solid #58a6ff;
   border-radius: 4px;
   color: #8b949e;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   line-height: 1.5;
 }
 
@@ -204,13 +208,13 @@
 }
 
 .btn {
-  padding: 0.75rem 1.5rem;
+  padding: 0.625rem 1.25rem;
   border: none;
-  border-radius: 4px;
-  font-size: 0.95rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   text-transform: none;
 }
 
@@ -226,12 +230,11 @@
 
 .btn-primary:hover:not(:disabled) {
   background-color: #2ea043;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(35, 134, 54, 0.25);
 }
 
 .btn-primary:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 
 .btn-secondary {
@@ -242,12 +245,11 @@
 
 .btn-secondary:hover:not(:disabled) {
   background-color: #30363d;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  border-color: #8b949e;
 }
 
 .btn-secondary:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 
 .btn-test {
@@ -256,20 +258,19 @@
 }
 
 .btn-test:hover:not(:disabled) {
-  background-color: #1a5fcc;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  background-color: #388bfd;
+  box-shadow: 0 2px 8px rgba(31, 111, 235, 0.25);
 }
 
 .btn-test:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 
 .btn-back {
   background-color: #21262d;
   color: #e6edf3;
   border: 1px solid #30363d;
-  padding: 0.6rem 1.2rem;
+  padding: 0.5rem 1rem;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -278,12 +279,10 @@
   background-color: #30363d;
   border-color: #58a6ff;
   color: #58a6ff;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .btn-back:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 
 /* Responsive Design */
@@ -383,21 +382,21 @@
 
 /* Git Status Banner - Modern, lightweight design */
 .git-status {
-  border-radius: 10px;
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  transition: all 0.3s ease;
-  animation: slideDown 0.3s ease-out;
+  transition: all 0.2s ease;
+  animation: slideDown 0.2s ease-out;
 }
 
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-5px);
   }
   to {
     opacity: 1;
@@ -406,15 +405,13 @@
 }
 
 .git-status.git-installed {
-  background: linear-gradient(135deg, #0d1b0f 0%, #161b22 100%);
+  background: rgba(35, 134, 54, 0.1);
   border: 1px solid #238636;
-  box-shadow: 0 2px 8px rgba(35, 134, 54, 0.15);
 }
 
 .git-status.git-not-installed {
-  background: linear-gradient(135deg, #2d1517 0%, #161b22 100%);
+  background: rgba(248, 81, 73, 0.1);
   border: 1px solid #da3633;
-  box-shadow: 0 2px 8px rgba(218, 54, 51, 0.15);
 }
 
 .git-status-content {
@@ -426,8 +423,8 @@
   align-items: center;
   gap: 0.5rem;
   font-weight: 600;
-  font-size: 1rem;
-  margin: 0 0 0.375rem 0;
+  font-size: 0.875rem;
+  margin: 0 0 0.25rem 0;
 }
 
 .git-status.git-installed .git-status-title {
@@ -439,14 +436,14 @@
 }
 
 .git-status-icon {
-  font-size: 1.125rem;
+  font-size: 1rem;
 }
 
 .git-status-message {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: #8b949e;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .git-status.git-installed .git-status-message {
@@ -462,43 +459,42 @@
 }
 
 .git-install-btn {
-  padding: 0.625rem 1.25rem;
-  background: linear-gradient(135deg, #f85149 0%, #da3633 100%);
+  padding: 0.5rem 1rem;
+  background: #da3633;
   color: white;
-  border: none;
+  border: 1px solid rgba(218, 54, 51, 0.3);
   border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.8125rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
 }
 
 .git-install-btn:hover {
-  background: linear-gradient(135deg, #da3633 0%, #c93634 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(248, 81, 73, 0.3);
+  background: #f85149;
+  border-color: rgba(218, 54, 51, 0.5);
+  box-shadow: 0 2px 8px rgba(218, 54, 51, 0.25);
 }
 
 .git-install-btn:active {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 
 /* GitHub Setup Notice - Modern, lightweight design */
 .github-setup-notice {
-  background: linear-gradient(135deg, #0c2d48 0%, #161b22 100%);
+  background: rgba(31, 111, 235, 0.1);
   border: 1px solid #1f6feb;
-  border-radius: 10px;
-  padding: 1.25rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px rgba(31, 111, 235, 0.15);
-  animation: slideDown 0.3s ease-out;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  animation: slideDown 0.2s ease-out;
 }
 
 .github-setup-title {
   color: #58a6ff;
-  margin: 0 0 0.75rem 0;
-  font-size: 1.125rem;
+  margin: 0 0 0.625rem 0;
+  font-size: 1rem;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -506,14 +502,14 @@
 }
 
 .github-setup-icon {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
 }
 
 .github-setup-notice p {
   color: #c9d1d9;
-  margin: 0 0 0.75rem 0;
-  font-size: 0.875rem;
-  line-height: 1.6;
+  margin: 0 0 0.625rem 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
 }
 
 .github-setup-steps {
@@ -525,11 +521,11 @@
 
 .github-setup-steps li {
   position: relative;
-  padding-left: 2rem;
-  margin-bottom: 0.625rem;
+  padding-left: 1.75rem;
+  margin-bottom: 0.5rem;
   color: #c9d1d9;
-  font-size: 0.875rem;
-  line-height: 1.6;
+  font-size: 0.8125rem;
+  line-height: 1.5;
   counter-increment: step-counter;
 }
 
@@ -542,14 +538,14 @@
   position: absolute;
   left: 0;
   top: 0;
-  width: 1.5rem;
-  height: 1.5rem;
-  background: linear-gradient(135deg, #1f6feb 0%, #0969da 100%);
+  width: 1.25rem;
+  height: 1.25rem;
+  background: #1f6feb;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: white;
 }
