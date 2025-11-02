@@ -20,6 +20,17 @@ const defaultOptions = {
 };
 
 /**
+ * Extended duration options for important notifications
+ */
+export const ToastDurations = {
+  SHORT: 3000,      // Quick confirmations
+  NORMAL: 4000,     // Default
+  LONG: 6000,       // Errors, important info
+  EXTENDED: 8000,   // Critical messages
+  PERSISTENT: 12000, // Very important messages
+};
+
+/**
  * Show a success toast notification
  * @param {string} message - Success message to display
  * @param {object} options - Additional toast options
@@ -47,7 +58,7 @@ export function showError(error, options = {}) {
   
   toast.error(message, {
     ...defaultOptions,
-    duration: 6000, // Errors show longer
+    duration: ToastDurations.LONG, // Errors show longer
     ...options,
     style: {
       ...defaultOptions.style,
@@ -66,7 +77,7 @@ export function showError(error, options = {}) {
 export function showWarning(message, options = {}) {
   toast(message, {
     ...defaultOptions,
-    duration: 5000,
+    duration: ToastDurations.LONG,
     ...options,
     icon: '⚠️',
     style: {

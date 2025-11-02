@@ -7,6 +7,9 @@ import ProductForm from './ProductForm';
 import ProductImage from './ProductImage';
 import ExportDialog from './ExportDialog';
 import ContextMenu from './ContextMenu';
+import InlineConfirmation from './InlineConfirmation';
+import { showUndoNotification } from '../services/undoService.jsx';
+import { showSuccess } from '../services/toastService';
 import './MainContent.css';
 
 const MainContent = forwardRef(({ selectedCategory, activeFilters, onFilterToggle }, ref) => {
@@ -124,12 +127,34 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters, onFilterToggl
     setDeleteConfirmId(id);
   }, []);
 
-  const handleDeleteConfirm = useCallback(() => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (deleteConfirmId) {
-      dispatch(deleteProduct(deleteConfirmId));
+      const productToDelete = products.find(p => p.id === deleteConfirmId);
+      
+      // Store deleted product for undo
+      const deletedProduct = { ...productToDelete };
+      
+      // Delete the product
+      await dispatch(deleteProduct(deleteConfirmId));
+      
+      // Show undo notification
+      showUndoNotification(
+        {
+          type: 'DELETE_PRODUCT',
+          description: `Deleted "${deletedProduct.name}"`,
+          data: deletedProduct,
+        },
+        async () => {
+          // Undo function - restore the product
+          await dispatch(addProduct(deletedProduct)).unwrap();
+          showSuccess('Product restored');
+        },
+        8000 // Show for 8 seconds
+      );
+      
       setDeleteConfirmId(null);
     }
-  }, [deleteConfirmId, dispatch]);
+  }, [deleteConfirmId, dispatch, products]);
 
   const handleDeleteCancel = useCallback(() => {
     setDeleteConfirmId(null);
@@ -346,26 +371,23 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters, onFilterToggl
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
-        <div className="confirmation-overlay">
-          <div className="confirmation-modal">
-            <h3>Confirm Delete</h3>
-            <p>Are you sure you want to delete this product?</p>
-            <p className="confirmation-warning">This action cannot be undone.</p>
-            <div className="confirmation-actions">
-              <button 
-                className="btn btn-secondary"
-                onClick={handleDeleteCancel}
-              >
-                Cancel
-              </button>
-              <button 
-                className="btn btn-danger"
-                onClick={handleDeleteConfirm}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
+        <div style={{ 
+          position: 'fixed', 
+          top: '70px', 
+          left: '50%', 
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          maxWidth: '500px',
+          width: '90%'
+        }}>
+          <InlineConfirmation
+            message={`Are you sure you want to delete "${products.find(p => p.id === deleteConfirmId)?.name}"? You can undo this action.`}
+            onConfirm={handleDeleteConfirm}
+            onCancel={handleDeleteCancel}
+            confirmText="Delete"
+            cancelText="Cancel"
+            variant="danger"
+          />
         </div>
       )}
       
