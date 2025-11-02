@@ -328,6 +328,7 @@
   border-top: 1px solid #2d3139;
   background: #1a1d24;
   margin-top: auto;
+  flex-shrink: 0;
 }
 
 .step-info {
@@ -467,21 +468,23 @@
 
 /* Form Body */
 .product-form {
-  padding: 16px 20px;
+  padding: 16px 20px 24px 20px;
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Form Sections */
 .form-section {
-  margin-bottom: 18px;
-  padding: 0 0 16px 0;
+  margin-bottom: 24px;
+  padding: 0 0 20px 0;
   border-bottom: 1px solid #2d3139;
 }
 
 .form-section:last-of-type {
-  margin-bottom: 0;
+  margin-bottom: 24px;
   border-bottom: none;
   padding-bottom: 0;
 }
