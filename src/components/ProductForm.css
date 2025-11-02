@@ -8,10 +8,11 @@
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
   z-index: 1000;
   animation: fadeIn 0.3s ease-out;
+  padding: 20px;
 }
 
 @keyframes fadeIn {
@@ -30,12 +31,12 @@
   box-shadow: none;
   width: 100%;
   max-width: 1600px;
-  height: 100vh;
+  height: 100%;
+  max-height: calc(100vh - 40px);
   display: grid;
   grid-template-columns: 1fr 420px;
   gap: 0;
   animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  padding: 40px;
 }
 
 @keyframes scaleIn {
@@ -183,6 +184,7 @@
   background: rgba(59, 130, 246, 0.1);
   border-bottom: 1px solid rgba(59, 130, 246, 0.2);
   animation: slideDown 0.3s ease-out;
+  flex-shrink: 0;
 }
 
 .draft-notification-content {
@@ -234,6 +236,7 @@
   background: #1a1d24;
   border-bottom: 1px solid #2d3139;
   gap: 0;
+  flex-shrink: 0;
 }
 
 .step {
@@ -466,14 +469,23 @@
   color: #e5e7eb;
 }
 
-/* Form Body */
+/* Form Wrapper - Contains scrollable form and fixed buttons */
+.product-form-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Form Body - Scrollable content */
 .product-form {
-  padding: 16px 20px 24px 20px;
+  padding: 16px 20px;
+  padding-bottom: 32px;
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
+  scroll-behavior: smooth;
 }
 
 /* Form Sections */
@@ -484,7 +496,7 @@
 }
 
 .form-section:last-of-type {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
   border-bottom: none;
   padding-bottom: 0;
 }

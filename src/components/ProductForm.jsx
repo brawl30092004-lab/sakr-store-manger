@@ -464,7 +464,8 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
           ))}
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="product-form">
+        <form onSubmit={handleSubmit(onSubmit)} className="product-form-wrapper">
+          <div className="product-form">
           {/* Step 1: Basic Information Section */}
           {currentStep === 1 && (
           <section className="form-section step-basic-info">
@@ -940,6 +941,7 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
             </div>
           </section>
           )}
+          </div>
 
           {/* Step Navigation Buttons */}
           <div className="step-navigation">
