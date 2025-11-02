@@ -110,6 +110,66 @@
   }
 }
 
+/* Action buttons container */
+.status-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* View Changes Button */
+.view-changes-btn {
+  padding: 6px 14px;
+  background: transparent;
+  color: #8b949e;
+  border: 1px solid rgba(240, 246, 252, 0.1);
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.view-changes-btn:hover:not(:disabled) {
+  background: rgba(240, 246, 252, 0.08);
+  border-color: rgba(240, 246, 252, 0.2);
+  color: #c9d1d9;
+  transform: translateY(-1px);
+}
+
+.view-changes-btn:active:not(:disabled) {
+  transform: translateY(0);
+  background: rgba(240, 246, 252, 0.12);
+}
+
+.view-changes-btn.has-changes {
+  color: #58a6ff;
+  border-color: rgba(56, 139, 253, 0.2);
+}
+
+.view-changes-btn.has-changes:hover:not(:disabled) {
+  background: rgba(56, 139, 253, 0.1);
+  border-color: rgba(56, 139, 253, 0.3);
+  color: #79c0ff;
+}
+
+.view-changes-btn:disabled {
+  background: transparent;
+  color: #484f58;
+  border-color: rgba(240, 246, 252, 0.05);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.view-changes-btn svg {
+  flex-shrink: 0;
+}
+
 .publish-btn {
   padding: 6px 16px;
   background: #238636;

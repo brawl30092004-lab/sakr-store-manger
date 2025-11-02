@@ -766,7 +766,7 @@ ipcMain.handle('git:clone', async (event, targetPath, repoUrl, username, token) 
 /**
  * IPC Handler for publishing changes to GitHub
  */
-ipcMain.handle('git:publish', async (event, commitMessage = null) => {
+ipcMain.handle('git:publish', async (event, commitMessage = null, files = null) => {
   try {
     // Dynamically import the ES modules
     const { getConfigService } = await import('../src/services/configService.js');
@@ -798,14 +798,50 @@ ipcMain.handle('git:publish', async (event, commitMessage = null) => {
       repoUrl: config.repoUrl
     });
     
-    // Execute the publish workflow
-    const result = await gitService.publishChanges(commitMessage);
+    // Execute the publish workflow with optional selective files
+    const result = await gitService.publishChanges(commitMessage, files);
     return result;
   } catch (error) {
     console.error('Error publishing to GitHub:', error);
     return {
       success: false,
       message: `Failed to publish: ${error.message}`,
+      error: error.message
+    };
+  }
+});
+
+/**
+ * IPC Handler for restoring a specific file to its last committed state
+ */
+ipcMain.handle('git:restoreFile', async (event, filePath) => {
+  try {
+    const { getConfigService } = await import('../src/services/configService.js');
+    const GitService = (await import('../src/services/gitService.js')).default;
+    
+    const configService = getConfigService();
+    const config = configService.getConfigWithToken();
+    
+    if (!config || !config.projectPath) {
+      return {
+        success: false,
+        message: 'No project path configured'
+      };
+    }
+    
+    const gitService = new GitService(config.projectPath, {
+      username: config.username,
+      token: config.token,
+      repoUrl: config.repoUrl
+    });
+    
+    const result = await gitService.restoreFile(filePath);
+    return result;
+  } catch (error) {
+    console.error('Error restoring file:', error);
+    return {
+      success: false,
+      message: `Failed to restore file: ${error.message}`,
       error: error.message
     };
   }

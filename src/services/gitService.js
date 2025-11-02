@@ -371,6 +371,88 @@ class GitService {
   }
 
   /**
+   * Restores a specific file to its last committed state (discards changes)
+   * @param {string} filePath - Path to the file to restore
+   * @returns {Promise<Object>} - Result object with success status
+   */
+  async restoreFile(filePath) {
+    try {
+      await this.git.checkout(['--', filePath]);
+      return {
+        success: true,
+        message: `File restored: ${filePath}`
+      };
+    } catch (error) {
+      console.error(`Failed to restore file ${filePath}:`, error);
+      return {
+        success: false,
+        error: error.message,
+        message: `Failed to restore file: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Stages specific files for commit
+   * @param {Array<string>} files - Array of file paths to stage
+   * @returns {Promise<Object>} - Result object with success status
+   */
+  async stageFiles(files) {
+    try {
+      if (!files || files.length === 0) {
+        return {
+          success: false,
+          message: 'No files specified to stage'
+        };
+      }
+      
+      await this.git.add(files);
+      return {
+        success: true,
+        message: `Staged ${files.length} file(s)`,
+        files
+      };
+    } catch (error) {
+      console.error('Failed to stage files:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: `Failed to stage files: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Unstages specific files (removes from staging area)
+   * @param {Array<string>} files - Array of file paths to unstage
+   * @returns {Promise<Object>} - Result object with success status
+   */
+  async unstageFiles(files) {
+    try {
+      if (!files || files.length === 0) {
+        return {
+          success: false,
+          message: 'No files specified to unstage'
+        };
+      }
+      
+      await this.git.reset(['--', ...files]);
+      return {
+        success: true,
+        message: `Unstaged ${files.length} file(s)`,
+        files
+      };
+    } catch (error) {
+      console.error('Failed to unstage files:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: `Failed to unstage files: ${error.message}`
+      };
+    }
+  }
+
+  /**
    * Pushes changes to the remote repository
    * @param {string} remote - Remote name (default: 'origin')
    * @param {string} branch - Branch name (default: current branch)
@@ -470,9 +552,10 @@ class GitService {
   /**
    * Stages and commits all changes with a commit message
    * @param {string} message - Commit message (optional, will auto-generate if not provided)
+   * @param {Array<string>} files - Optional array of specific files to commit (if null, commits all changes)
    * @returns {Promise<Object>} - Result object with success status and commit details
    */
-  async commitChanges(message = null) {
+  async commitChanges(message = null, files = null) {
     try {
       // Get current status to check for changes
       const status = await this.getStatus();
@@ -501,9 +584,15 @@ class GitService {
 
       console.log(`Committing changes with message: ${message}`);
 
-      // Stage all changes including deletions (git add -A)
-      // This ensures deleted files are also staged, not just modifications and new files
-      await this.git.add('-A');
+      // Stage changes - either specific files or all changes
+      if (files && files.length > 0) {
+        // Stage only the specified files
+        console.log(`Staging ${files.length} specific file(s)`);
+        await this.git.add(files);
+      } else {
+        // Stage all changes including deletions (git add -A)
+        await this.git.add('-A');
+      }
 
       // Commit the staged changes
       const commitResult = await this.git.commit(message);
@@ -514,7 +603,8 @@ class GitService {
         commit: commitResult.commit,
         summary: commitResult.summary,
         branch: commitResult.branch,
-        commitMessage: message
+        commitMessage: message,
+        filesCommitted: files || 'all'
       };
     } catch (error) {
       console.error('Failed to commit changes:', error);
@@ -638,9 +728,10 @@ class GitService {
    * Publishes all changes to GitHub
    * Executes the full workflow: pull, commit, and push
    * @param {string} commitMessage - Custom commit message (optional)
+   * @param {Array<string>} files - Optional array of specific files to commit (if null, commits all changes)
    * @returns {Promise<Object>} - Result object with success status and detailed information
    */
-  async publishChanges(commitMessage = null) {
+  async publishChanges(commitMessage = null, files = null) {
     const startTime = Date.now();
     const results = {
       pull: null,
@@ -665,7 +756,7 @@ class GitService {
 
       // Step 2: Commit changes
       console.log('Step 2/3: Committing changes...');
-      results.commit = await this.commitChanges(commitMessage);
+      results.commit = await this.commitChanges(commitMessage, files);
 
       if (!results.commit.success) {
         // If there are no changes to commit, it's not really an error
@@ -708,6 +799,7 @@ class GitService {
         duration,
         commitMessage: results.commit.commitMessage,
         branch: results.push.branch,
+        filesCommitted: results.commit.filesCommitted,
         results
       };
     } catch (error) {
