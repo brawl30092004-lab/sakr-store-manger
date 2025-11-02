@@ -25,6 +25,8 @@ const ImageUpload = React.memo(function ImageUpload({ value, onChange, error, on
   const [recommendations, setRecommendations] = useState(null);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const [currentFile, setCurrentFile] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef(null);
   
   // Resolve existing image path if it's a relative path
@@ -53,12 +55,28 @@ const ImageUpload = React.memo(function ImageUpload({ value, onChange, error, on
     if (!file) return;
 
     setValidationError(null);
+    setIsProcessing(true);
+    setUploadProgress(0);
+
+    // Simulate upload progress
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 10;
+      });
+    }, 100);
 
     // Validate the image
     const validation = await validateUploadedImage(file);
     
     if (!validation.valid) {
+      clearInterval(progressInterval);
       setValidationError(validation.error);
+      setIsProcessing(false);
+      setUploadProgress(0);
       return;
     }
 
@@ -72,29 +90,40 @@ const ImageUpload = React.memo(function ImageUpload({ value, onChange, error, on
     // Convert to data URL for preview
     try {
       const dataURL = await fileToDataURL(file);
-      setPreview(dataURL);
-      setCurrentFile(file);
-      setFileInfo({
-        name: file.name,
-        size: formatFileSize(file.size),
-        dimensions: `${width}×${height}px`
-      });
+      setUploadProgress(100);
       
-      // Show recommendation message
-      if (!recs.isSquare) {
-        showWarning('Image is not square. Consider cropping for best results.');
-      }
-      
-      // Show size warning if present
-      if (validation.warning) {
-        showWarning(validation.warning);
-      }
-      
-      // Pass the File object to parent (not dataURL)
-      // The parent will process it through the backend when saving
-      onChange(file);
+      setTimeout(() => {
+        setPreview(dataURL);
+        setCurrentFile(file);
+        setFileInfo({
+          name: file.name,
+          size: formatFileSize(file.size),
+          dimensions: `${width}×${height}px`
+        });
+        
+        // Show recommendation message
+        if (!recs.isSquare) {
+          showWarning('Image is not square. Consider cropping for best results.');
+        }
+        
+        // Show size warning if present
+        if (validation.warning) {
+          showWarning(validation.warning);
+        }
+        
+        // Pass the File object to parent (not dataURL)
+        // The parent will process it through the backend when saving
+        onChange(file);
+        
+        clearInterval(progressInterval);
+        setIsProcessing(false);
+        setUploadProgress(0);
+      }, 300);
     } catch (error) {
+      clearInterval(progressInterval);
       setValidationError('Failed to process image. Please try again.');
+      setIsProcessing(false);
+      setUploadProgress(0);
     }
   }, [onChange]);
 
@@ -221,35 +250,55 @@ const ImageUpload = React.memo(function ImageUpload({ value, onChange, error, on
       {!preview ? (
         // Upload Area
         <div
-          className={`upload-area ${isDragging ? 'dragging' : ''} ${error || validationError ? 'error' : ''}`}
+          className={`upload-area ${isDragging ? 'dragging' : ''} ${error || validationError ? 'error' : ''} ${isProcessing ? 'processing' : ''}`}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
-          onClick={handleClick}
+          onClick={!isProcessing ? handleClick : undefined}
         >
-          <div className="upload-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <polyline points="21 15 16 10 5 21"/>
-            </svg>
-          </div>
-          <p className="upload-text">Drag & drop an image here</p>
-          <p className="upload-subtext">or click to browse</p>
-          <p className="upload-requirements">
-            JPEG, PNG, WebP, AVIF • Max 10 MB
-          </p>
-          <div className="upload-recommendations">
-            <p className="recommendation-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <path d="M9 11l3 3L22 4"/>
-              </svg>
-              Recommended:
-            </p>
-            <p className="recommendation-details">800×800px to 1200×1200px • Square (1:1 ratio)</p>
-          </div>
+          {isProcessing ? (
+            // Upload Progress
+            <div className="upload-progress-container">
+              <div className="upload-icon processing">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+              </div>
+              <p className="upload-text">Processing image...</p>
+              <div className="progress-bar">
+                <div className="progress-fill" style={{ width: `${uploadProgress}%` }}></div>
+              </div>
+              <p className="upload-subtext">{uploadProgress}%</p>
+            </div>
+          ) : (
+            <>
+              <div className="upload-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+              </div>
+              <p className="upload-text">Drag & drop an image here</p>
+              <p className="upload-subtext">or click to browse</p>
+              <p className="upload-requirements">
+                JPEG, PNG, WebP, AVIF • Max 10 MB
+              </p>
+              <div className="upload-recommendations">
+                <p className="recommendation-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <path d="M9 11l3 3L22 4"/>
+                  </svg>
+                  Recommended:
+                </p>
+                <p className="recommendation-details">800×800px to 1200×1200px • Square (1:1 ratio)</p>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         // Preview Area

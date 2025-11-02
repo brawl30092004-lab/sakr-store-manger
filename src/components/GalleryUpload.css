@@ -22,18 +22,44 @@
   border: 2px solid #30363d;
   background-color: #0d1117;
   cursor: move;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .gallery-item:hover {
   border-color: #58a6ff;
   transform: scale(1.05);
   z-index: 10;
+  box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2);
 }
 
 .gallery-item.dragging {
-  opacity: 0.5;
-  transform: scale(0.95);
+  opacity: 0.4;
+  transform: scale(0.9) rotate(2deg);
+  border-color: #58a6ff;
+  box-shadow: 0 8px 24px rgba(88, 166, 255, 0.3);
+  z-index: 100;
+}
+
+.gallery-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(88, 166, 255, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.gallery-item:hover::before {
+  opacity: 1;
+}
+
+.gallery-item.dragging::before {
+  background: linear-gradient(135deg, transparent 0%, rgba(88, 166, 255, 0.2) 100%);
+  opacity: 1;
 }
 
 .gallery-thumbnail {
@@ -79,24 +105,32 @@
   position: absolute;
   bottom: 4px;
   right: 4px;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 4px;
-  background-color: rgba(22, 27, 34, 0.9);
-  color: #e6edf3;
-  font-size: 12px;
+  background-color: rgba(88, 166, 255, 0.9);
+  color: #ffffff;
+  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: all 0.2s ease;
   z-index: 2;
   pointer-events: none;
   letter-spacing: -2px;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .gallery-item:hover .gallery-drag-handle {
   opacity: 1;
+  transform: scale(1.05);
+}
+
+.gallery-item.dragging .gallery-drag-handle {
+  opacity: 1;
+  background-color: rgba(88, 166, 255, 1);
 }
 
 /* Add Button */
