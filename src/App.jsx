@@ -107,6 +107,9 @@ function App() {
           mainContentRef.current.handleSave();
         }
       },
+      onExport: () => {
+        handleExport();
+      },
       onPublish: () => {
         handlePublishToGitHub();
       },
@@ -158,6 +161,9 @@ function App() {
       },
       onCommandPalette: () => {
         setShowCommandPalette(prev => !prev);
+      },
+      onShowShortcuts: () => {
+        setShowShortcutsDialog(prev => !prev);
       }
     };
 
@@ -489,6 +495,7 @@ function App() {
           </span>
           {activeMenu === 'file' && (
             <div className="menu-dropdown">
+              <div className="menu-section-label">Product Management</div>
               <div className="menu-option" onClick={handleNewProduct}>
                 <span>New Product</span>
                 <span className="shortcut">Ctrl+N</span>
@@ -498,8 +505,10 @@ function App() {
                 <span className="shortcut">Ctrl+S</span>
               </div>
               <div className="menu-divider"></div>
+              <div className="menu-section-label">Data Operations</div>
               <div className="menu-option" onClick={handleExport}>
                 <span>Export...</span>
+                <span className="shortcut">Ctrl+E</span>
               </div>
               <div className="menu-option" onClick={handleBrowseDataSource}>
                 <span>Browse Data Source...</span>
@@ -529,11 +538,13 @@ function App() {
           </span>
           {activeMenu === 'edit' && (
             <div className="menu-dropdown">
+              <div className="menu-section-label">Single Product</div>
               <div className="menu-option" onClick={handleDeleteProduct}>
                 <span>Delete Product</span>
                 <span className="shortcut">Delete</span>
               </div>
               <div className="menu-divider"></div>
+              <div className="menu-section-label">Discount Operations</div>
               <div className="menu-option" onClick={handleBulkApplyDiscount}>
                 <span>Bulk Apply Discount</span>
               </div>
@@ -541,6 +552,7 @@ function App() {
                 <span>Bulk Remove Discount</span>
               </div>
               <div className="menu-divider"></div>
+              <div className="menu-section-label">Badge Operations</div>
               <div className="menu-option" onClick={handleBulkMakeNew}>
                 <span>Bulk Make New</span>
               </div>
@@ -548,7 +560,8 @@ function App() {
                 <span>Bulk Remove New Badge</span>
               </div>
               <div className="menu-divider"></div>
-              <div className="menu-option" onClick={handleBulkDeleteProducts}>
+              <div className="menu-section-label">Danger Zone</div>
+              <div className="menu-option menu-option-danger" onClick={handleBulkDeleteProducts}>
                 <span>Bulk Delete Products</span>
               </div>
             </div>
@@ -568,6 +581,7 @@ function App() {
           </span>
           {activeMenu === 'view' && (
             <div className="menu-dropdown">
+              <div className="menu-section-label">Navigation</div>
               <div className="menu-option" onClick={() => { setCurrentView('dashboard'); setActiveMenu(null); }}>
                 <span>Dashboard</span>
                 <span className="shortcut">Ctrl+D</span>
@@ -576,15 +590,13 @@ function App() {
                 <span>Products</span>
               </div>
               <div className="menu-divider"></div>
+              <div className="menu-section-label">Refresh</div>
               <div className="menu-option" onClick={handleReload}>
                 <span>Reload</span>
                 <span className="shortcut">Ctrl+R</span>
               </div>
               <div className="menu-divider"></div>
-              <div className="menu-option" onClick={handleActualSize}>
-                <span>Actual Size</span>
-                <span className="shortcut">Ctrl+0</span>
-              </div>
+              <div className="menu-section-label">Zoom</div>
               <div className="menu-option" onClick={handleZoomIn}>
                 <span>Zoom In</span>
                 <span className="shortcut">Ctrl++</span>
@@ -592,6 +604,10 @@ function App() {
               <div className="menu-option" onClick={handleZoomOut}>
                 <span>Zoom Out</span>
                 <span className="shortcut">Ctrl+-</span>
+              </div>
+              <div className="menu-option" onClick={handleActualSize}>
+                <span>Actual Size</span>
+                <span className="shortcut">Ctrl+0</span>
               </div>
               <div className="menu-divider"></div>
               <div className="menu-option" onClick={handleToggleFullscreen}>
@@ -615,11 +631,13 @@ function App() {
           </span>
           {activeMenu === 'tools' && (
             <div className="menu-dropdown">
+              <div className="menu-section-label">Publishing</div>
               <div className="menu-option" onClick={handlePublishToGitHub}>
                 <span>Publish to GitHub</span>
                 <span className="shortcut">Ctrl+P</span>
               </div>
               <div className="menu-divider"></div>
+              <div className="menu-section-label">Utilities</div>
               <div className="menu-option" onClick={handleCheckUpdates}>
                 <span>Check for Updates...</span>
               </div>
@@ -643,6 +661,13 @@ function App() {
           </span>
           {activeMenu === 'help' && (
             <div className="menu-dropdown">
+              <div className="menu-section-label">Quick Access</div>
+              <div className="menu-option" onClick={() => { setShowCommandPalette(true); setActiveMenu(null); }}>
+                <span>Command Palette</span>
+                <span className="shortcut">Ctrl+K</span>
+              </div>
+              <div className="menu-divider"></div>
+              <div className="menu-section-label">Resources</div>
               <div className="menu-option" onClick={handleShowDocumentation}>
                 <span>Documentation</span>
               </div>
@@ -691,12 +716,16 @@ function App() {
                   <kbd>Ctrl+N</kbd>
                 </div>
                 <div className="shortcut-row">
-                  <span>Save</span>
+                  <span>Save All</span>
                   <kbd>Ctrl+S</kbd>
                 </div>
                 <div className="shortcut-row">
                   <span>Delete Product</span>
                   <kbd>Delete</kbd>
+                </div>
+                <div className="shortcut-row">
+                  <span>Export Products</span>
+                  <kbd>Ctrl+E</kbd>
                 </div>
               </div>
               <div className="shortcut-section">
@@ -712,6 +741,10 @@ function App() {
                 <div className="shortcut-row">
                   <span>Command Palette</span>
                   <kbd>Ctrl+K</kbd>
+                </div>
+                <div className="shortcut-row">
+                  <span>Keyboard Shortcuts</span>
+                  <kbd>Ctrl+/</kbd>
                 </div>
                 <div className="shortcut-row">
                   <span>Close Dialog</span>
@@ -826,6 +859,7 @@ function App() {
         isOpen={showCommandPalette}
         onClose={() => setShowCommandPalette(false)}
         commands={[
+          // View Commands
           {
             id: 'dashboard',
             label: 'Show Dashboard',
@@ -844,6 +878,16 @@ function App() {
             action: () => setCurrentView('products')
           },
           {
+            id: 'reload',
+            label: 'Reload Products',
+            icon: <Upload size={16} />,
+            shortcut: 'Ctrl+R',
+            category: 'View',
+            keywords: ['reload', 'refresh', 'update'],
+            action: handleReload
+          },
+          // Product Management Commands
+          {
             id: 'new-product',
             label: 'New Product',
             icon: <Plus size={16} />,
@@ -852,6 +896,7 @@ function App() {
             keywords: ['add', 'create', 'new', 'product'],
             action: handleNewProduct
           },
+          // File Commands
           {
             id: 'save',
             label: 'Save All Changes',
@@ -871,10 +916,60 @@ function App() {
             action: handleExport
           },
           {
+            id: 'browse-data-source',
+            label: 'Browse Data Source',
+            icon: <Package size={16} />,
+            category: 'File',
+            keywords: ['browse', 'open', 'data', 'source', 'folder'],
+            action: handleBrowseDataSource
+          },
+          // Edit - Bulk Operations
+          {
+            id: 'bulk-apply-discount',
+            label: 'Bulk Apply Discount',
+            icon: <Package size={16} />,
+            category: 'Bulk Operations',
+            keywords: ['bulk', 'discount', 'apply', 'sale'],
+            action: handleBulkApplyDiscount
+          },
+          {
+            id: 'bulk-remove-discount',
+            label: 'Bulk Remove Discount',
+            icon: <Package size={16} />,
+            category: 'Bulk Operations',
+            keywords: ['bulk', 'discount', 'remove'],
+            action: handleBulkRemoveDiscount
+          },
+          {
+            id: 'bulk-make-new',
+            label: 'Bulk Make New',
+            icon: <Package size={16} />,
+            category: 'Bulk Operations',
+            keywords: ['bulk', 'new', 'badge'],
+            action: handleBulkMakeNew
+          },
+          {
+            id: 'bulk-remove-new-badge',
+            label: 'Bulk Remove New Badge',
+            icon: <Package size={16} />,
+            category: 'Bulk Operations',
+            keywords: ['bulk', 'new', 'badge', 'remove'],
+            action: handleBulkRemoveNewBadge
+          },
+          {
+            id: 'bulk-delete',
+            label: 'Bulk Delete Products',
+            icon: <Package size={16} />,
+            category: 'Bulk Operations',
+            keywords: ['bulk', 'delete', 'remove', 'multiple'],
+            action: handleBulkDeleteProducts
+          },
+          // Settings & Tools
+          {
             id: 'settings',
             label: 'Open Settings',
             icon: <Settings size={16} />,
-            category: 'App',
+            category: 'Tools',
             keywords: ['settings', 'preferences', 'config', 'configuration'],
             action: handleOpenSettings
           },
@@ -883,10 +978,27 @@ function App() {
             label: 'Publish to GitHub',
             icon: <Github size={16} />,
             shortcut: 'Ctrl+P',
-            category: 'GitHub',
+            category: 'Tools',
             keywords: ['github', 'publish', 'push', 'upload'],
             action: handlePublishToGitHub
           },
+          {
+            id: 'check-updates',
+            label: 'Check for Updates',
+            icon: <Upload size={16} />,
+            category: 'Tools',
+            keywords: ['update', 'check', 'version'],
+            action: handleCheckUpdates
+          },
+          {
+            id: 'open-data-folder',
+            label: 'Open Data Folder',
+            icon: <Package size={16} />,
+            category: 'Tools',
+            keywords: ['open', 'folder', 'data', 'directory'],
+            action: handleOpenDataFolder
+          },
+          // Help Commands
           {
             id: 'shortcuts',
             label: 'Show Keyboard Shortcuts',
@@ -895,6 +1007,14 @@ function App() {
             category: 'Help',
             keywords: ['help', 'shortcuts', 'keyboard', 'hotkeys'],
             action: handleShowShortcuts
+          },
+          {
+            id: 'about',
+            label: 'About Application',
+            icon: <Package size={16} />,
+            category: 'Help',
+            keywords: ['about', 'info', 'version'],
+            action: handleShowAbout
           }
         ]}
       />

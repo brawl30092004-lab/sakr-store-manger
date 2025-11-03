@@ -9,6 +9,7 @@
  * @param {Function} handlers.onNewProduct - Ctrl+N handler
  * @param {Function} handlers.onSave - Ctrl+S handler
  * @param {Function} handlers.onPublish - Ctrl+P handler
+ * @param {Function} handlers.onExport - Ctrl+E handler
  * @param {Function} handlers.onFocusSearch - Ctrl+F handler
  * @param {Function} handlers.onDelete - Delete handler
  * @param {Function} handlers.onEscape - Escape handler
@@ -20,6 +21,7 @@
  * @param {Function} handlers.onToggleFullscreen - F11 handler
  * @param {Function} handlers.onCommandPalette - Ctrl+K handler
  * @param {Function} handlers.onDashboard - Ctrl+D handler
+ * @param {Function} handlers.onShowShortcuts - Ctrl+/ handler
  */
 export const attachKeyboardShortcuts = (handlers) => {
   const handleKeyDown = (e) => {
@@ -36,6 +38,15 @@ export const attachKeyboardShortcuts = (handlers) => {
       e.preventDefault();
       if (handlers.onCommandPalette) {
         handlers.onCommandPalette();
+      }
+      return;
+    }
+
+    // Ctrl+/ - Show Keyboard Shortcuts (priority - works even when typing)
+    if (e.ctrlKey && e.key === '/') {
+      e.preventDefault();
+      if (handlers.onShowShortcuts) {
+        handlers.onShowShortcuts();
       }
       return;
     }
@@ -63,6 +74,15 @@ export const attachKeyboardShortcuts = (handlers) => {
       e.preventDefault();
       if (handlers.onSave) {
         handlers.onSave();
+      }
+      return;
+    }
+
+    // Ctrl+E - Export
+    if (e.ctrlKey && e.key === 'e') {
+      e.preventDefault();
+      if (handlers.onExport) {
+        handlers.onExport();
       }
       return;
     }

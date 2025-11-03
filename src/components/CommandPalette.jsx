@@ -1,17 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Search, 
-  Plus, 
-  Save, 
-  Upload, 
-  Settings, 
   Package, 
-  Filter,
-  Trash2,
-  Download,
-  Github,
-  HelpCircle,
-  Keyboard,
   ChevronRight
 } from 'lucide-react';
 import './CommandPalette.css';
@@ -26,102 +16,10 @@ function CommandPalette({ isOpen, onClose, commands }) {
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
-  // Default commands structure
-  const defaultCommands = useMemo(() => [
-    {
-      id: 'new-product',
-      label: 'New Product',
-      icon: <Plus size={16} />,
-      shortcut: 'Ctrl+N',
-      category: 'Product',
-      keywords: ['add', 'create', 'new', 'product']
-    },
-    {
-      id: 'save',
-      label: 'Save All Changes',
-      icon: <Save size={16} />,
-      shortcut: 'Ctrl+S',
-      category: 'File',
-      keywords: ['save', 'write', 'persist']
-    },
-    {
-      id: 'export',
-      label: 'Export Products',
-      icon: <Upload size={16} />,
-      shortcut: 'Ctrl+E',
-      category: 'File',
-      keywords: ['export', 'download', 'backup']
-    },
-    {
-      id: 'import',
-      label: 'Import Products',
-      icon: <Download size={16} />,
-      category: 'File',
-      keywords: ['import', 'upload', 'load']
-    },
-    {
-      id: 'settings',
-      label: 'Open Settings',
-      icon: <Settings size={16} />,
-      category: 'App',
-      keywords: ['settings', 'preferences', 'config', 'configuration']
-    },
-    {
-      id: 'github-publish',
-      label: 'Publish to GitHub',
-      icon: <Github size={16} />,
-      shortcut: 'Ctrl+P',
-      category: 'GitHub',
-      keywords: ['github', 'publish', 'push', 'upload']
-    },
-    {
-      id: 'filter-new',
-      label: 'Filter: New Products',
-      icon: <Filter size={16} />,
-      category: 'View',
-      keywords: ['filter', 'new', 'badge']
-    },
-    {
-      id: 'filter-discount',
-      label: 'Filter: Discounted Products',
-      icon: <Filter size={16} />,
-      category: 'View',
-      keywords: ['filter', 'discount', 'sale']
-    },
-    {
-      id: 'filter-stock',
-      label: 'Filter: Out of Stock',
-      icon: <Filter size={16} />,
-      category: 'View',
-      keywords: ['filter', 'stock', 'inventory']
-    },
-    {
-      id: 'bulk-delete',
-      label: 'Bulk Delete Products',
-      icon: <Trash2 size={16} />,
-      category: 'Bulk',
-      keywords: ['bulk', 'delete', 'remove', 'multiple']
-    },
-    {
-      id: 'help',
-      label: 'Show Keyboard Shortcuts',
-      icon: <Keyboard size={16} />,
-      shortcut: 'Ctrl+/',
-      category: 'Help',
-      keywords: ['help', 'shortcuts', 'keyboard', 'hotkeys']
-    },
-    {
-      id: 'about',
-      label: 'About Application',
-      icon: <HelpCircle size={16} />,
-      category: 'Help',
-      keywords: ['about', 'info', 'version']
-    }
-  ], []);
-
+  // Use provided commands or empty array
   const allCommands = useMemo(() => {
-    return [...defaultCommands, ...(commands || [])];
-  }, [defaultCommands, commands]);
+    return commands || [];
+  }, [commands]);
 
   // Filter commands based on search
   const filteredCommands = useMemo(() => {

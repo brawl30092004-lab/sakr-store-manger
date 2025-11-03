@@ -160,6 +160,25 @@
   margin: 4px 8px;
 }
 
+.menu-section-label {
+  padding: 6px 16px 4px;
+  color: #8b949e;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: default;
+}
+
+.menu-option-danger {
+  color: #f85149;
+}
+
+.menu-option-danger:hover {
+  background: rgba(248, 81, 73, 0.15);
+  color: #ff7b72;
+}
+
 /* Modal styles for dialogs */
 .modal-overlay {
   position: fixed;
