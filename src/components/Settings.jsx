@@ -467,14 +467,6 @@ function Settings({ onBackToMain }) {
               Configure your data source and GitHub integration for product data synchronization
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onBackToMain}
-            className="btn btn-back"
-            title="Back to Main Window"
-          >
-            ← Back to Main
-          </button>
         </div>
       </div>
 
