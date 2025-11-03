@@ -554,10 +554,10 @@ function App() {
               <div className="menu-divider"></div>
               <div className="menu-section-label">Badge Operations</div>
               <div className="menu-option" onClick={handleBulkMakeNew}>
-                <span>Bulk Make New</span>
+                <span>Bulk Mark as "New"</span>
               </div>
               <div className="menu-option" onClick={handleBulkRemoveNewBadge}>
-                <span>Bulk Remove New Badge</span>
+                <span>Bulk Remove "New"</span>
               </div>
               <div className="menu-divider"></div>
               <div className="menu-section-label">Danger Zone</div>
@@ -942,7 +942,7 @@ function App() {
           },
           {
             id: 'bulk-make-new',
-            label: 'Bulk Make New',
+            label: 'Bulk Mark as "New"',
             icon: <Package size={16} />,
             category: 'Bulk Operations',
             keywords: ['bulk', 'new', 'badge'],
@@ -950,7 +950,7 @@ function App() {
           },
           {
             id: 'bulk-remove-new-badge',
-            label: 'Bulk Remove New Badge',
+            label: 'Bulk Remove "New"',
             icon: <Package size={16} />,
             category: 'Bulk Operations',
             keywords: ['bulk', 'new', 'badge', 'remove'],

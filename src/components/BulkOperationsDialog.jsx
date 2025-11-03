@@ -30,7 +30,7 @@ const BulkOperationsDialog = ({ isOpen, onClose, products, operationType, onConf
     switch (operationType) {
       case 'removeNewBadge':
         return {
-          title: 'Bulk Remove New Badge',
+          title: 'Bulk Remove "New"',
           description: 'Select products to remove the "New" badge from:',
           confirmText: 'Remove New Badge',
           emptyMessage: 'No products have the "New" badge.'
@@ -51,7 +51,7 @@ const BulkOperationsDialog = ({ isOpen, onClose, products, operationType, onConf
         };
       case 'makeNew':
         return {
-          title: 'Bulk Make New',
+          title: 'Bulk Mark as "New"',
           description: 'Select products to mark as "New":',
           confirmText: 'Mark as New',
           emptyMessage: 'All products are already marked as new.'
