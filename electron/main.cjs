@@ -305,13 +305,14 @@ ipcMain.handle('fs:getImagePath', async (event, projectPath, relativePath) => {
 // Image Processing Handlers
 
 /**
- * Process a product image: resize if needed, convert to multiple formats
- * @param {Buffer} imageBuffer - Image data as Buffer
+ * Process a product image: resize if needed, convert to WebP format
+ * Accepts any image format (JPEG, PNG, WebP, AVIF) and converts to WebP
+ * @param {Buffer} imageBuffer - Image data as Buffer (any format)
  * @param {string} projectPath - Project root path
  * @param {number} productId - Product ID
  * @param {string} imageType - 'primary' or 'gallery'
  * @param {number|null} index - Gallery image index (null for primary)
- * @returns {Promise<string>} Path to primary JPG file (relative to project root)
+ * @returns {Promise<string>} Path to WebP file (relative to project root)
  */
 async function processProductImage(imageBuffer, projectPath, productId, imageType, index = null) {
   try {
@@ -324,7 +325,7 @@ async function processProductImage(imageBuffer, projectPath, productId, imageTyp
       ? `product-${productId}-primary`
       : `product-${productId}-gallery-${index}`;
 
-    // Load image with Sharp from buffer
+    // Load image with Sharp from buffer (Sharp auto-detects format: JPEG, PNG, WebP, AVIF, etc.)
     let image = sharp(imageBuffer);
     
     // Get metadata to check dimensions
@@ -338,25 +339,14 @@ async function processProductImage(imageBuffer, projectPath, productId, imageTyp
       });
     }
 
-    // Process and save in parallel: JPG, WebP, and AVIF
-    const jpgPath = path.join(imagesDir, `${baseName}.jpg`);
+    // Process and save as WebP only (converts from any input format)
     const webpPath = path.join(imagesDir, `${baseName}.webp`);
-    const avifPath = path.join(imagesDir, `${baseName}.avif`);
 
-    await Promise.all([
-      // JPG - high quality, progressive
-      image.clone().jpeg({ quality: 90, progressive: true }).toFile(jpgPath),
-      
-      // WebP - good quality, smaller size
-      image.clone().webp({ quality: 80 }).toFile(webpPath),
-      
-      // AVIF - lower quality, excellent compression
-      image.clone().avif({ quality: 60 }).toFile(avifPath)
-    ]);
+    await image.webp({ quality: 85 }).toFile(webpPath);
 
-    // Return the relative path to the primary JPG
+    // Return the relative path to the WebP file
     // Using forward slashes for consistency across platforms
-    return `images/${baseName}.jpg`;
+    return `images/${baseName}.webp`;
   } catch (error) {
     console.error('Error processing image:', error);
     throw new Error(`Failed to process image: ${error.message}`);
@@ -390,18 +380,12 @@ ipcMain.handle('image:delete', async (event, projectPath, imagePath) => {
     // Extract base name (without extension)
     const ext = path.extname(imagePath);
     const basePath = imagePath.slice(0, -ext.length);
-    const fullBasePath = path.join(projectPath, basePath);
+    const fullPath = path.join(projectPath, basePath) + '.webp';
 
-    // Delete all three formats
-    const extensions = ['.jpg', '.webp', '.avif'];
-    await Promise.all(
-      extensions.map(async (ext) => {
-        const filePath = fullBasePath + ext;
-        if (await fs.pathExists(filePath)) {
-          await fs.remove(filePath);
-        }
-      })
-    );
+    // Delete WebP file
+    if (await fs.pathExists(fullPath)) {
+      await fs.remove(fullPath);
+    }
 
     return { success: true };
   } catch (error) {

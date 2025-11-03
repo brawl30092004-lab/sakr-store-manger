@@ -4,13 +4,13 @@
     "name": "Classic Black T-Shirt",
     "price": 29.99,
     "description": "A high-quality, 100% cotton t-shirt.",
-    "image": "images/tshirt.jpg",
+    "image": "images/tshirt.webp",
     "images": {
-      "primary": "images/tshirt.jpg",
+      "primary": "images/tshirt.webp",
       "gallery": [
-        "images/mockup.jpg",
-        "images/mockup.jpg",
-        "images/product-1-gallery-2.jpg"
+        "images/mockup.webp",
+        "images/mockup.webp",
+        "images/product-1-gallery-2.webp"
       ]
     },
     "category": "Apparel",
@@ -24,12 +24,12 @@
     "name": "Modern Coffee Mug",
     "price": 15.50,
     "description": "A stylish ceramic mug with a matte finish.",
-    "image": "images/mug.jpg",
+    "image": "images/mug.webp",
     "images": {
-      "primary": "images/mug.jpg",
+      "primary": "images/mug.webp",
       "gallery": [
-        "images/mockup.jpg",
-        "images/mockup.jpg"
+        "images/mockup.webp",
+        "images/mockup.webp"
       ]
     },
     "category": "Home Goods",
@@ -43,13 +43,13 @@
     "name": "حقيبة توت كبيرة من كانفاس القطنية الثقيلة",
     "price": 19.99,
     "description": "حقيبة توت كبيرة متعددة الاستخدامات مصنوعة من قماش القطن الثقيل، مثالية للتسوق أو الاستخدام اليومي.",
-    "image": "images/tote.jpg",
+    "image": "images/tote.webp",
     "images": {
-      "primary": "images/tote.jpg",
+      "primary": "images/tote.webp",
       "gallery": [
-        "images/mockup.jpg",
-        "images/mockup.jpg",
-        "images/product-3-gallery-2.jpg"
+        "images/mockup.webp",
+        "images/mockup.webp",
+        "images/product-3-gallery-2.webp"
       ]
     },
     "category": "Accessories",
@@ -62,12 +62,12 @@
     "name": "Modern Coffee Mug (Copy)",
     "price": 15.50,
     "description": "A stylish ceramic mug with a matte finish.",
-    "image": "images/mug.jpg",
+    "image": "images/mug.webp",
     "images": {
-      "primary": "images/mug.jpg",
+      "primary": "images/mug.webp",
       "gallery": [
-        "images/mockup.jpg",
-        "images/mockup.jpg"
+        "images/mockup.webp",
+        "images/mockup.webp"
       ]
     },
     "category": "Home Goodss",

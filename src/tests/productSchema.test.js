@@ -243,7 +243,7 @@ describe('Product Schema Validation', () => {
       const product = {
         ...validProduct,
         images: {
-          primary: "images/product.jpg",
+          primary: "images/product.webp",
           gallery: []
         }
       };
@@ -332,10 +332,10 @@ describe('Product Schema Validation', () => {
       const product = {
         ...validProduct,
         images: {
-          primary: "images/product.jpg",
+          primary: "images/product.webp",
           gallery: [
-            "img1.jpg", "img2.jpg", "img3.jpg", "img4.jpg", "img5.jpg",
-            "img6.jpg", "img7.jpg", "img8.jpg", "img9.jpg", "img10.jpg"
+            "img1.webp", "img2.webp", "img3.webp", "img4.webp", "img5.webp",
+            "img6.webp", "img7.webp", "img8.webp", "img9.webp", "img10.webp"
           ]
         }
       };

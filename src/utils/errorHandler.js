@@ -29,7 +29,7 @@ const ERROR_MESSAGES = {
   
   // Image Errors
   FILE_TOO_LARGE: "Image file is too large (max 10 MB).",
-  INVALID_FILE_TYPE: "Invalid file type. Please upload a valid image file (JPG, PNG, AVIF, WEBP).",
+  INVALID_FILE_TYPE: "Invalid file type. Please upload a valid image file (JPEG, PNG, WebP, AVIF).",
   IMAGE_LOAD_FAILED: "Failed to load image. The file may be corrupted.",
   IMAGE_PROCESSING_FAILED: "Failed to process image. Please try a different file.",
   

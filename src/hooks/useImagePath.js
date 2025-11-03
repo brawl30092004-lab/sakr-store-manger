@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 
 /**
  * Custom hook to resolve relative image paths to absolute file:// URLs
- * This handles the conversion from "images/product-1.jpg" to "file:///C:/path/to/project/images/product-1.jpg"
+ * This handles the conversion from "images/product-1.webp" to "file:///C:/path/to/project/images/product-1.webp"
  * 
  * @param {string} relativePath - Relative image path from products.json
  * @returns {string|null} Absolute file:// URL or data URL, or null if not found

@@ -54,10 +54,8 @@ function generateSlug(name, id) {
  * ├── products.json (with updated paths)
  * └── images/
  *     ├── classic-black-t-shirt-1/
- *     │   ├── primary.jpg
  *     │   ├── primary.webp
- *     │   ├── primary.avif
- *     │   ├── gallery-1.jpg
+ *     │   ├── gallery-1.webp
  *     │   └── ...
  *     └── modern-coffee-mug-2/
  *         └── ...
@@ -70,7 +68,7 @@ function generateSlug(name, id) {
 export async function exportProducts(products, projectPath, options = {}) {
   const {
     exportPath = null, // If null, creates "Exported" in projectPath
-    includeFormats = ['jpg', 'webp', 'avif'], // Which formats to include
+    includeFormats = ['webp'], // Only WebP format
     onProgress = null // Progress callback (current, total, message)
   } = options;
   
@@ -231,7 +229,7 @@ export async function exportProducts(products, projectPath, options = {}) {
 async function copyAndRenameImage(sourcePath, targetPath, sourceImagePath, targetFolder, newName, includeFormats) {
   try {
     // Extract base name without extension
-    const extMatch = sourceImagePath.match(/\.(jpg|jpeg|png|webp|avif)$/i);
+    const extMatch = sourceImagePath.match(/\.webp$/i);
     if (!extMatch) {
       return { success: false, count: 0 };
     }
@@ -239,42 +237,30 @@ async function copyAndRenameImage(sourcePath, targetPath, sourceImagePath, targe
     const basePath = sourceImagePath.replace(/\.[^.]+$/, '');
     let copiedCount = 0;
     
-    // Copy all format variants
-    const formatMap = {
-      'jpg': ['.jpg', '.jpeg'],
-      'webp': ['.webp'],
-      'avif': ['.avif']
-    };
+    // Copy WebP format only
+    const sourceFile = window.electron.fs ?
+      await window.electron.fs.joinPath(sourcePath, `${basePath}.webp`) :
+      `${sourcePath}/${basePath}.webp`;
     
-    for (const format of includeFormats) {
-      const extensions = formatMap[format] || [`.${format}`];
-      
-      for (const ext of extensions) {
-        const sourceFile = window.electron.fs ?
-          await window.electron.fs.joinPath(sourcePath, `${basePath}${ext}`) :
-          `${sourcePath}/${basePath}${ext}`;
-        
-        const targetFile = window.electron.fs ?
-          await window.electron.fs.joinPath(targetPath, targetFolder, `${newName}${ext}`) :
-          `${targetPath}/${targetFolder}/${newName}${ext}`;
-        
-        // Check if source file exists
-        const exists = window.electron?.export ?
-          await window.electron.export.fileExists(sourceFile) :
-          false;
-        
-        if (exists) {
-          // Copy file
-          if (window.electron?.export) {
-            await window.electron.export.copyFile(sourceFile, targetFile);
-            copiedCount++;
-          }
-        }
+    const targetFile = window.electron.fs ?
+      await window.electron.fs.joinPath(targetPath, targetFolder, `${newName}.webp`) :
+      `${targetPath}/${targetFolder}/${newName}.webp`;
+    
+    // Check if source file exists
+    const exists = window.electron?.export ?
+      await window.electron.export.fileExists(sourceFile) :
+      false;
+    
+    if (exists) {
+      // Copy file
+      if (window.electron?.export) {
+        await window.electron.export.copyFile(sourceFile, targetFile);
+        copiedCount++;
       }
     }
     
-    // Return path to primary JPG
-    const newPath = `${targetFolder}/primary.jpg`;
+    // Return path to WebP
+    const newPath = `${targetFolder}/primary.webp`;
     
     return {
       success: copiedCount > 0,
@@ -298,7 +284,7 @@ export function validateExportOptions(options) {
   const errors = [];
   
   if (options.includeFormats) {
-    const validFormats = ['jpg', 'webp', 'avif'];
+    const validFormats = ['webp'];
     const invalid = options.includeFormats.filter(f => !validFormats.includes(f));
     
     if (invalid.length > 0) {

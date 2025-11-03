@@ -6,7 +6,8 @@
 import { createError } from '../utils/errorHandler.js';
 
 /**
- * Supported image formats
+ * Supported image formats for upload
+ * Note: All formats are converted to WebP for storage
  */
 const SUPPORTED_IMAGE_TYPES = [
   'image/jpeg',
@@ -42,7 +43,7 @@ export async function validateUploadedImage(file) {
 
   // Step 2: Check file type
   if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
-    throw createError('INVALID_FILE_TYPE', `Invalid file type. Supported formats: JPEG, PNG, WebP, AVIF`);
+    throw createError('INVALID_FILE_TYPE', `Invalid file type. Supported formats: JPEG, PNG, WebP, AVIF (all will be converted to WebP)`);
   }
 
   // Step 3: Check file size
@@ -172,14 +173,14 @@ export const supportedImageTypes = SUPPORTED_IMAGE_TYPES;
 
 /**
  * Process uploaded image through Electron backend
- * Converts image to multiple formats (JPG, WebP, AVIF) and saves to project
+ * Accepts multiple formats (JPEG, PNG, WebP, AVIF) and converts to WebP for storage
  * 
- * @param {File} file - The uploaded image file
+ * @param {File} file - The uploaded image file (any supported format)
  * @param {string} projectPath - Project root path
  * @param {number} productId - Product ID
  * @param {string} imageType - 'primary' or 'gallery'
  * @param {number|null} index - Gallery image index (null for primary)
- * @returns {Promise<string>} Path to the saved JPG image (e.g., 'images/product-23-primary.jpg')
+ * @returns {Promise<string>} Path to the saved WebP image (e.g., 'images/product-23-primary.webp')
  */
 export async function processProductImage(file, projectPath, productId, imageType, index = null) {
   if (!file) {
@@ -227,10 +228,10 @@ export async function processProductImage(file, projectPath, productId, imageTyp
 }
 
 /**
- * Delete image files (all formats) from project
+ * Delete image files from project
  * 
  * @param {string} projectPath - Project root path
- * @param {string} imagePath - Relative path to image (e.g., 'images/product-23-primary.jpg')
+ * @param {string} imagePath - Relative path to image (e.g., 'images/product-23-primary.webp')
  * @returns {Promise<boolean>} Success status
  */
 export async function deleteProductImage(projectPath, imagePath) {
