@@ -19,6 +19,7 @@
  * @param {Function} handlers.onActualSize - Ctrl+0 handler
  * @param {Function} handlers.onToggleFullscreen - F11 handler
  * @param {Function} handlers.onCommandPalette - Ctrl+K handler
+ * @param {Function} handlers.onDashboard - Ctrl+D handler
  */
 export const attachKeyboardShortcuts = (handlers) => {
   const handleKeyDown = (e) => {
@@ -35,6 +36,15 @@ export const attachKeyboardShortcuts = (handlers) => {
       e.preventDefault();
       if (handlers.onCommandPalette) {
         handlers.onCommandPalette();
+      }
+      return;
+    }
+
+    // Ctrl+D - Dashboard
+    if (e.ctrlKey && e.key === 'd') {
+      e.preventDefault();
+      if (handlers.onDashboard) {
+        handlers.onDashboard();
       }
       return;
     }

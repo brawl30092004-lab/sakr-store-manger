@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useRef, useCallback, lazy, Suspense } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
-import { Minus, Maximize2, X, Home, Package, Plus, Save, Upload, Settings, Github, Keyboard } from 'lucide-react';
+import { Minus, Maximize2, X, Home, Package, Plus, Save, Upload, Settings, Github, Keyboard, BarChart3 } from 'lucide-react';
 import { loadProducts, bulkRemoveNewBadge, bulkRemoveDiscount, bulkDeleteProducts, bulkApplyDiscount, bulkMakeNew, saveProducts } from './store/slices/productsSlice';
 import { setProjectPath } from './store/slices/settingsSlice';
 import { attachKeyboardShortcuts } from './services/keyboardShortcuts';
 import { showSuccess, showError } from './services/toastService';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
+import Dashboard from './components/Dashboard';
 import StatusBar from './components/StatusBar';
 import DataSourceNotFoundDialog from './components/DataSourceNotFoundDialog';
 import SettingsPanel from './components/SettingsPanel';
@@ -24,6 +25,7 @@ function App() {
   const dispatch = useDispatch();
   const { items: products, loading, error } = useSelector((state) => state.products);
   const { projectPath, dataSource } = useSelector((state) => state.settings);
+  const [currentView, setCurrentView] = useState('products'); // 'dashboard' or 'products'
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeFilters, setActiveFilters] = useState([]); // Array to support multiple filters
   const [showSettingsPanel, setShowSettingsPanel] = useState(false); // Settings panel instead of view
@@ -107,6 +109,9 @@ function App() {
       },
       onPublish: () => {
         handlePublishToGitHub();
+      },
+      onDashboard: () => {
+        setCurrentView('dashboard');
       },
       onFocusSearch: () => {
         if (mainContentRef.current?.focusSearch) {
@@ -563,6 +568,14 @@ function App() {
           </span>
           {activeMenu === 'view' && (
             <div className="menu-dropdown">
+              <div className="menu-option" onClick={() => { setCurrentView('dashboard'); setActiveMenu(null); }}>
+                <span>Dashboard</span>
+                <span className="shortcut">Ctrl+D</span>
+              </div>
+              <div className="menu-option" onClick={() => { setCurrentView('products'); setActiveMenu(null); }}>
+                <span>Products</span>
+              </div>
+              <div className="menu-divider"></div>
               <div className="menu-option" onClick={handleReload}>
                 <span>Reload</span>
                 <span className="shortcut">Ctrl+R</span>
@@ -689,8 +702,16 @@ function App() {
               <div className="shortcut-section">
                 <h3>Navigation</h3>
                 <div className="shortcut-row">
+                  <span>Dashboard</span>
+                  <kbd>Ctrl+D</kbd>
+                </div>
+                <div className="shortcut-row">
                   <span>Focus Search</span>
                   <kbd>Ctrl+F</kbd>
+                </div>
+                <div className="shortcut-row">
+                  <span>Command Palette</span>
+                  <kbd>Ctrl+K</kbd>
                 </div>
                 <div className="shortcut-row">
                   <span>Close Dialog</span>
@@ -742,7 +763,13 @@ function App() {
       <div className="app-body">
         {/* Breadcrumbs */}
         <Breadcrumbs 
-          path={[
+          path={currentView === 'dashboard' ? [
+            { 
+              label: 'Dashboard', 
+              icon: <BarChart3 size={14} />,
+              onClick: () => setCurrentView('dashboard')
+            }
+          ] : [
             { 
               label: 'Products', 
               icon: <Package size={14} />,
@@ -756,22 +783,28 @@ function App() {
         />
         
         <div className="app-body-content">
-          <Sidebar 
-            selectedCategory={selectedCategory}
-            onCategorySelect={setSelectedCategory}
-          />
-          <MainContent 
-            ref={mainContentRef}
-            selectedCategory={selectedCategory}
-            activeFilters={activeFilters}
-            onFilterToggle={(filterId) => {
-              setActiveFilters(prev => 
-                prev.includes(filterId) 
-                  ? prev.filter(id => id !== filterId)
-                  : [...prev, filterId]
-              );
-            }}
-          />
+          {currentView === 'dashboard' ? (
+            <Dashboard onNavigateToProducts={() => setCurrentView('products')} />
+          ) : (
+            <>
+              <Sidebar 
+                selectedCategory={selectedCategory}
+                onCategorySelect={setSelectedCategory}
+              />
+              <MainContent 
+                ref={mainContentRef}
+                selectedCategory={selectedCategory}
+                activeFilters={activeFilters}
+                onFilterToggle={(filterId) => {
+                  setActiveFilters(prev => 
+                    prev.includes(filterId) 
+                      ? prev.filter(id => id !== filterId)
+                      : [...prev, filterId]
+                  );
+                }}
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -793,6 +826,23 @@ function App() {
         isOpen={showCommandPalette}
         onClose={() => setShowCommandPalette(false)}
         commands={[
+          {
+            id: 'dashboard',
+            label: 'Show Dashboard',
+            icon: <BarChart3 size={16} />,
+            shortcut: 'Ctrl+D',
+            category: 'View',
+            keywords: ['dashboard', 'overview', 'metrics', 'analytics', 'stats'],
+            action: () => setCurrentView('dashboard')
+          },
+          {
+            id: 'products',
+            label: 'Show Products',
+            icon: <Package size={16} />,
+            category: 'View',
+            keywords: ['products', 'items', 'inventory', 'list'],
+            action: () => setCurrentView('products')
+          },
           {
             id: 'new-product',
             label: 'New Product',
