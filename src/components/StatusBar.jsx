@@ -133,7 +133,19 @@ function StatusBar() {
       <div className="status-bar">
         <div className="status-message">
           <span className={`status-indicator ${gitStatus.hasChanges ? 'changes' : 'ready'}`}></span>
-          <span>{isPublishing ? 'Publishing...' : gitStatus.message}</span>
+          <span className="status-text">
+            {isPublishing ? 'Publishing changes to GitHub...' : (
+              gitStatus.hasChanges ? (
+                gitStatus.productChanges && gitStatus.productChanges.length > 0 ? (
+                  `${gitStatus.productChanges.length} product${gitStatus.productChanges.length !== 1 ? 's' : ''} changed`
+                ) : (
+                  `${gitStatus.totalChanges} file${gitStatus.totalChanges !== 1 ? 's' : ''} modified`
+                )
+              ) : (
+                'All changes published • Ready'
+              )
+            )}
+          </span>
           {gitStatus.hasChanges && gitStatus.totalChanges > 0 && !isPublishing && (
             <span className="status-details">
               {gitStatus.modified > 0 && ` • ${gitStatus.modified} modified`}
