@@ -14,6 +14,7 @@ import SettingsPanel from './components/SettingsPanel';
 import Breadcrumbs from './components/Breadcrumbs';
 import FloatingActionButtons from './components/FloatingActionButtons';
 import CommandPalette from './components/CommandPalette';
+import WelcomeScreen from './components/WelcomeScreen';
 import './App.css';
 
 // Lazy load heavy components
@@ -32,11 +33,36 @@ function App() {
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false); // Command palette
   const [bulkOperationDialog, setBulkOperationDialog] = useState({ isOpen: false, type: null });
+  const [showWelcomeScreen, setShowWelcomeScreen] = useState(false);
   
   // Refs for keyboard shortcut handlers
   const mainContentRef = useRef(null);
 
+  // Check if this is the user's first time using the app
   useEffect(() => {
+    const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+    if (!hasSeenWelcome) {
+      setShowWelcomeScreen(true);
+    }
+  }, []);
+
+  // Handle welcome screen completion
+  const handleWelcomeComplete = useCallback(() => {
+    localStorage.setItem('hasSeenWelcome', 'true');
+    setShowWelcomeScreen(false);
+    
+    // After welcome screen, check if we need to show data source dialog
+    if (!projectPath) {
+      setShowDataSourceDialog(true);
+    }
+  }, [projectPath]);
+
+  useEffect(() => {
+    // Don't load products while welcome screen is showing
+    if (showWelcomeScreen) {
+      return;
+    }
+    
     // Load products on app startup only if projectPath is set
     if (projectPath) {
       dispatch(loadProducts()).unwrap()
@@ -47,10 +73,12 @@ function App() {
           }
         });
     } else {
-      // No project path - show data source dialog
-      setShowDataSourceDialog(true);
+      // No project path - show data source dialog (but not if welcome screen is showing)
+      if (!showWelcomeScreen) {
+        setShowDataSourceDialog(true);
+      }
     }
-  }, [dispatch, projectPath]);
+  }, [dispatch, projectPath, showWelcomeScreen]);
 
   // Reload products when data source changes
   useEffect(() => {
@@ -411,8 +439,13 @@ function App() {
     <div className="App">
       <Toaster />
       
+      {/* Welcome Screen - First Time Users */}
+      {showWelcomeScreen && (
+        <WelcomeScreen onGetStarted={handleWelcomeComplete} />
+      )}
+      
       {/* Data Source Not Found Dialog */}
-      {showDataSourceDialog && (
+      {showDataSourceDialog && !showWelcomeScreen && (
         <DataSourceNotFoundDialog
           onCreateNew={handleCreateNewFile}
           onBrowseExisting={handleBrowseForExisting}
