@@ -1,11 +1,48 @@
 import simpleGit from 'simple-git';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import { execSync } from 'child_process';
 
 /**
  * GitService - Handles Git operations and GitHub integration
  */
 class GitService {
+  /**
+   * Finds Git executable path on Windows
+   * Checks common installation paths when Git is not in PATH
+   * @returns {string|null} - Path to git.exe or null if not found
+   */
+  static findGitPath() {
+    // Common Git installation paths on Windows
+    const commonPaths = [
+      'C:\\Program Files\\Git\\cmd\\git.exe',
+      'C:\\Program Files (x86)\\Git\\cmd\\git.exe',
+      'C:\\Program Files\\Git\\bin\\git.exe',
+      'C:\\Program Files (x86)\\Git\\bin\\git.exe',
+      join(process.env.LOCALAPPDATA || '', 'Programs', 'Git', 'cmd', 'git.exe'),
+      join(process.env.PROGRAMFILES || 'C:\\Program Files', 'Git', 'cmd', 'git.exe'),
+      join(process.env['PROGRAMFILES(X86)'] || 'C:\\Program Files (x86)', 'Git', 'cmd', 'git.exe'),
+    ];
+
+    // Check if git is in PATH first
+    try {
+      execSync('git --version', { stdio: 'ignore' });
+      return 'git'; // Git is in PATH
+    } catch (error) {
+      // Not in PATH, check common installation paths
+    }
+
+    // Check common installation paths
+    for (const gitPath of commonPaths) {
+      if (existsSync(gitPath)) {
+        console.log('Found Git at:', gitPath);
+        return gitPath;
+      }
+    }
+
+    return null;
+  }
+
   /**
    * Checks if Git is installed on the system
    * This is a static method that can be called without instantiating the class
@@ -13,7 +50,22 @@ class GitService {
    */
   static async checkGitInstallation() {
     try {
-      const git = simpleGit();
+      // Find Git executable path (important for portable builds)
+      const gitPath = this.findGitPath();
+      
+      if (!gitPath) {
+        return {
+          success: false,
+          installed: false,
+          version: null,
+          message: 'Git is not installed on this system. Please install Git to use GitHub features.',
+          error: 'Git executable not found in PATH or common installation directories'
+        };
+      }
+
+      // Create simple-git instance with custom Git path if needed
+      const gitOptions = gitPath !== 'git' ? { binary: gitPath } : {};
+      const git = simpleGit(gitOptions);
       
       // Try to get Git version
       const version = await git.version();
@@ -23,6 +75,7 @@ class GitService {
         installed: true,
         version: version.installed ? version.major + '.' + version.minor + '.' + version.patch : 'unknown',
         gitVersion: version,
+        gitPath: gitPath,
         message: `Git is installed (version ${version.installed ? version.major + '.' + version.minor + '.' + version.patch : 'unknown'})`
       };
     } catch (error) {
@@ -67,8 +120,15 @@ class GitService {
       repoUrl: config.repoUrl || ''
     };
     
-    // Initialize simple-git with the project path
-    this.git = simpleGit(projectPath);
+    // Find Git executable path (important for portable builds)
+    const gitPath = GitService.findGitPath();
+    
+    // Initialize simple-git with the project path and custom Git binary if needed
+    const gitOptions = gitPath && gitPath !== 'git' 
+      ? { baseDir: projectPath, binary: gitPath }
+      : { baseDir: projectPath };
+    
+    this.git = simpleGit(gitOptions);
   }
 
   /**
@@ -419,7 +479,13 @@ class GitService {
           // Directory exists but is empty - use init + remote + pull approach
           console.log('Directory exists but is empty, using init + pull approach');
           
-          const git = simpleGit(targetPath);
+          // Find Git executable path
+          const gitPath = GitService.findGitPath();
+          const gitOptions = gitPath && gitPath !== 'git'
+            ? { baseDir: targetPath, binary: gitPath }
+            : { baseDir: targetPath };
+          
+          const git = simpleGit(gitOptions);
           
           // Initialize repository
           await git.init();
@@ -455,7 +521,11 @@ class GitService {
         }
       } else {
         // Directory doesn't exist - use normal clone
-        await simpleGit().clone(authenticatedUrl, targetPath);
+        // Find Git executable path
+        const gitPath = GitService.findGitPath();
+        const gitOptions = gitPath && gitPath !== 'git' ? { binary: gitPath } : {};
+        
+        await simpleGit(gitOptions).clone(authenticatedUrl, targetPath);
       }
 
       console.log('Repository cloned successfully');

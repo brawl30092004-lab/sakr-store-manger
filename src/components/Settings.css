@@ -414,6 +414,11 @@
   border: 1px solid #da3633;
 }
 
+.git-status.git-warning {
+  background: rgba(187, 128, 9, 0.1);
+  border: 1px solid #d29922;
+}
+
 .git-status-content {
   flex: 1;
 }
@@ -435,6 +440,10 @@
   color: #f85149;
 }
 
+.git-status.git-warning .git-status-title {
+  color: #d29922;
+}
+
 .git-status-icon {
   font-size: 1rem;
 }
@@ -454,15 +463,19 @@
   color: #ffa198;
 }
 
+.git-status.git-warning .git-status-message {
+  color: #e3b341;
+}
+
 .git-status-action {
   flex-shrink: 0;
 }
 
 .git-install-btn {
   padding: 0.5rem 1rem;
-  background: #da3633;
+  background: #d29922;
   color: white;
-  border: 1px solid rgba(218, 54, 51, 0.3);
+  border: 1px solid rgba(210, 153, 34, 0.3);
   border-radius: 6px;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -472,9 +485,9 @@
 }
 
 .git-install-btn:hover {
-  background: #f85149;
-  border-color: rgba(218, 54, 51, 0.5);
-  box-shadow: 0 2px 8px rgba(218, 54, 51, 0.25);
+  background: #e8a42f;
+  border-color: rgba(210, 153, 34, 0.5);
+  box-shadow: 0 2px 8px rgba(210, 153, 34, 0.25);
 }
 
 .git-install-btn:active {

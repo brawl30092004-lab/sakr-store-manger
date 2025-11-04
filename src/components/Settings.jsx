@@ -85,13 +85,12 @@ function Settings({ onBackToMain }) {
       setGitVersion(result.version);
       
       if (!result.installed) {
-        // Git is not installed, show warning and dialog
+        // Git is not installed, show warning but don't block
         setStatus({
-          message: 'Git is not installed. GitHub features require Git to be installed on your system.',
-          type: 'error'
+          message: 'Warning: Git not detected. GitHub features may not work properly.',
+          type: 'warning'
         });
-        setShowGitInstallDialog(true);
-        showError('Git is not installed. Please install Git to use GitHub features.');
+        console.warn('Git is not installed. GitHub features may not work properly.');
       } else {
         // Git is installed
         console.log('Git is installed:', result.version);
@@ -106,8 +105,8 @@ function Settings({ onBackToMain }) {
       console.error('Failed to check Git installation:', error);
       setIsGitInstalled(false);
       setStatus({
-        message: 'Unable to verify Git installation',
-        type: 'error'
+        message: 'Warning: Unable to verify Git installation. GitHub features may not work.',
+        type: 'warning'
       });
       return false;
     }
@@ -201,11 +200,9 @@ function Settings({ onBackToMain }) {
       return;
     }
 
-    // Check if Git is installed
+    // Warn if Git is not installed but don't block
     if (isGitInstalled === false) {
-      setShowGitInstallDialog(true);
-      showError('Git is not installed. Please install Git to use GitHub features.');
-      return;
+      showWarning('Warning: Git not detected. Connection test may fail if Git is required.');
     }
 
     // Validate form data
@@ -325,11 +322,9 @@ function Settings({ onBackToMain }) {
    * Saves the settings
    */
   const handleSave = async () => {
-    // For GitHub mode, check if Git is installed first
+    // For GitHub mode, warn if Git is not installed but don't block
     if (dataSource === 'github' && isGitInstalled === false) {
-      setShowGitInstallDialog(true);
-      showError('Git is not installed. Please install Git to use GitHub features.');
-      return;
+      showWarning('Warning: Git not detected. GitHub features may not work properly without Git installed.');
     }
 
     // For local mode, only projectPath is required
@@ -476,18 +471,18 @@ function Settings({ onBackToMain }) {
 
         {/* Git Installation Status - Only show in GitHub mode */}
         {dataSource === 'github' && isGitInstalled !== null && (
-          <div className={`git-status ${isGitInstalled ? 'git-installed' : 'git-not-installed'}`}>
+          <div className={`git-status ${isGitInstalled ? 'git-installed' : 'git-warning'}`}>
             <div className="git-status-content">
               <div className="git-status-title">
                 <span className="git-status-icon">
                   {isGitInstalled ? '✓' : '⚠'}
                 </span>
-                {isGitInstalled ? 'Git Detected' : 'Git Not Found'}
+                {isGitInstalled ? 'Git Detected' : 'Git Not Detected'}
               </div>
               <p className="git-status-message">
                 {isGitInstalled 
                   ? `Version ${gitVersion} - Ready to use GitHub features`
-                  : 'Git is required to use GitHub mode. Please install Git to continue.'
+                  : 'Warning: Git not detected. You can still try GitHub features, but they may not work without Git installed.'
                 }
               </p>
             </div>
@@ -544,7 +539,7 @@ function Settings({ onBackToMain }) {
               onChange={handleInputChange}
               placeholder="https://github.com/username/repository"
               className="form-input"
-              disabled={dataSource === 'local' || (dataSource === 'github' && isGitInstalled === false)}
+              disabled={dataSource === 'local'}
             />
             <small className="form-hint">
               Example: https://github.com/yourusername/sakr-store-data
@@ -563,7 +558,7 @@ function Settings({ onBackToMain }) {
               onChange={handleInputChange}
               placeholder="Enter your GitHub username"
               className="form-input"
-              disabled={dataSource === 'local' || (dataSource === 'github' && isGitInstalled === false)}
+              disabled={dataSource === 'local'}
             />
           </div>
 
@@ -579,7 +574,7 @@ function Settings({ onBackToMain }) {
               onChange={handleInputChange}
               placeholder="Enter your GitHub PAT"
               className="form-input"
-              disabled={dataSource === 'local' || (dataSource === 'github' && isGitInstalled === false)}
+              disabled={dataSource === 'local'}
             />
             <small className="form-hint">
               Create a token with 'repo' permissions at{' '}
@@ -629,9 +624,9 @@ function Settings({ onBackToMain }) {
           <button
             type="button"
             onClick={handleTestConnection}
-            disabled={isTesting || isLoading || isCloning || dataSource === 'local' || (dataSource === 'github' && isGitInstalled === false)}
+            disabled={isTesting || isLoading || isCloning || dataSource === 'local'}
             className="btn btn-test"
-            title={dataSource === 'local' ? 'Connection test is only available for GitHub mode' : isGitInstalled === false ? 'Git is required to test connection' : ''}
+            title={dataSource === 'local' ? 'Connection test is only available for GitHub mode' : ''}
           >
             {isTesting ? 'Testing...' : 'Test Connection'}
           </button>
@@ -639,9 +634,8 @@ function Settings({ onBackToMain }) {
           <button
             type="button"
             onClick={handleSave}
-            disabled={isLoading || isTesting || isCloning || (dataSource === 'github' && isGitInstalled === false)}
+            disabled={isLoading || isTesting || isCloning}
             className="btn btn-primary"
-            title={dataSource === 'github' && isGitInstalled === false ? 'Git is required to save GitHub settings' : ''}
           >
             {isCloning ? 'Cloning Repository...' : isLoading ? 'Saving...' : 'Save Settings'}
           </button>
