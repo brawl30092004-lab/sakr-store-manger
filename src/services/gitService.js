@@ -1051,6 +1051,316 @@ class GitService {
       };
     }
   }
+
+  /**
+   * Checks if there are new changes on the remote repository
+   * Compares local HEAD with remote HEAD without pulling
+   * @param {string} branch - Branch name (defaults to current branch)
+   * @returns {Promise<Object>} - Result with hasRemoteChanges and behindBy count
+   */
+  async checkForRemoteChanges(branch = null) {
+    try {
+      // Get current branch if not specified
+      if (!branch) {
+        const status = await this.git.status();
+        branch = status.current;
+      }
+
+      console.log(`Checking for remote changes on ${branch}...`);
+
+      // Fetch latest remote refs without pulling
+      await this.git.fetch('origin');
+
+      // Get local and remote commit hashes
+      const localHead = await this.git.revparse(['HEAD']);
+      const remoteHead = await this.git.revparse([`origin/${branch}`]);
+
+      // Check if we're behind
+      const behindBy = localHead !== remoteHead 
+        ? parseInt(await this.git.raw(['rev-list', '--count', `HEAD..origin/${branch}`]))
+        : 0;
+
+      // Check if we're ahead
+      const aheadBy = localHead !== remoteHead 
+        ? parseInt(await this.git.raw(['rev-list', '--count', `origin/${branch}..HEAD`]))
+        : 0;
+
+      return {
+        success: true,
+        hasRemoteChanges: behindBy > 0,
+        behindBy,
+        aheadBy,
+        upToDate: behindBy === 0 && aheadBy === 0,
+        message: behindBy > 0 
+          ? `${behindBy} new change(s) available on GitHub`
+          : 'Your local copy is up to date'
+      };
+    } catch (error) {
+      console.error('Failed to check for remote changes:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: `Failed to check for remote changes: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Pulls changes from GitHub with retry logic and better error handling
+   * @param {string} branch - Branch name (defaults to current branch)
+   * @param {number} maxRetries - Maximum number of retry attempts
+   * @returns {Promise<Object>} - Result with success status and details
+   */
+  async pullWithRetry(branch = null, maxRetries = 3) {
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Pull attempt ${attempt}/${maxRetries}...`);
+        
+        const result = await this.pullLatestChanges(branch);
+        
+        if (result.success) {
+          return result;
+        }
+
+        // If it's a conflict error, don't retry
+        if (result.error && result.error.includes('conflict')) {
+          return result;
+        }
+
+        lastError = result.error;
+
+        // Wait before retrying (exponential backoff)
+        if (attempt < maxRetries) {
+          const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`Waiting ${waitTime}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      } catch (error) {
+        lastError = error.message;
+
+        // If it's a conflict or auth error, don't retry
+        if (error.message.includes('conflict') || 
+            error.message.includes('authentication') ||
+            error.message.includes('401') ||
+            error.message.includes('403')) {
+          return {
+            success: false,
+            error: error.message,
+            message: `Pull failed: ${error.message}`
+          };
+        }
+
+        // Wait before retrying
+        if (attempt < maxRetries) {
+          const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+    }
+
+    return {
+      success: false,
+      error: lastError,
+      message: `Pull failed after ${maxRetries} attempts: ${lastError}`,
+      retriesExhausted: true
+    };
+  }
+
+  /**
+   * Handles merge conflicts by providing resolution options
+   * @returns {Promise<Object>} - Conflict details with resolution options
+   */
+  async getConflictDetails() {
+    try {
+      // Get list of conflicted files
+      const statusSummary = await this.git.status();
+      const conflictedFiles = statusSummary.conflicted || [];
+
+      if (conflictedFiles.length === 0) {
+        return {
+          success: true,
+          hasConflicts: false,
+          message: 'No conflicts found'
+        };
+      }
+
+      // Get details for products.json conflicts (most common)
+      const conflicts = [];
+      
+      for (const file of conflictedFiles) {
+        try {
+          // Get both versions of the file
+          let localVersion = null;
+          let remoteVersion = null;
+
+          try {
+            localVersion = await this.git.show(['HEAD:' + file]);
+          } catch (e) {
+            console.log('Could not get local version of', file);
+          }
+
+          try {
+            remoteVersion = await this.git.show(['MERGE_HEAD:' + file]);
+          } catch (e) {
+            console.log('Could not get remote version of', file);
+          }
+
+          conflicts.push({
+            file,
+            localVersion,
+            remoteVersion
+          });
+        } catch (error) {
+          console.error(`Error getting conflict details for ${file}:`, error);
+        }
+      }
+
+      return {
+        success: true,
+        hasConflicts: true,
+        conflictedFiles,
+        conflicts,
+        message: `${conflictedFiles.length} file(s) have conflicts`
+      };
+    } catch (error) {
+      console.error('Failed to get conflict details:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: `Failed to analyze conflicts: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Resolves conflicts by choosing a version
+   * @param {string} resolution - 'local', 'remote', or 'abort'
+   * @param {Array<string>} files - Files to resolve (defaults to all conflicted files)
+   * @returns {Promise<Object>} - Resolution result
+   */
+  async resolveConflict(resolution, files = null) {
+    try {
+      const statusSummary = await this.git.status();
+      const conflictedFiles = files || statusSummary.conflicted || [];
+
+      if (conflictedFiles.length === 0) {
+        return {
+          success: true,
+          message: 'No conflicts to resolve'
+        };
+      }
+
+      if (resolution === 'abort') {
+        // Abort the merge
+        await this.git.raw(['merge', '--abort']);
+        return {
+          success: true,
+          aborted: true,
+          message: 'Merge aborted, returned to previous state'
+        };
+      }
+
+      // Resolve conflicts by choosing a version
+      for (const file of conflictedFiles) {
+        if (resolution === 'local') {
+          // Keep local version (ours)
+          await this.git.raw(['checkout', '--ours', file]);
+        } else if (resolution === 'remote') {
+          // Keep remote version (theirs)
+          await this.git.raw(['checkout', '--theirs', file]);
+        }
+        
+        // Stage the resolved file
+        await this.git.add(file);
+      }
+
+      // Complete the merge
+      await this.git.raw(['commit', '--no-edit']);
+
+      return {
+        success: true,
+        resolved: true,
+        resolution,
+        filesResolved: conflictedFiles.length,
+        message: `Resolved ${conflictedFiles.length} file(s) by keeping ${resolution} version`
+      };
+    } catch (error) {
+      console.error('Failed to resolve conflicts:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: `Failed to resolve conflicts: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Pushes changes to GitHub with retry logic
+   * @param {string} branch - Branch name
+   * @param {number} maxRetries - Maximum retry attempts
+   * @returns {Promise<Object>} - Push result
+   */
+  async pushWithRetry(branch = null, maxRetries = 3) {
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Push attempt ${attempt}/${maxRetries}...`);
+        
+        const result = await this.pushToGitHub(branch);
+        
+        if (result.success) {
+          return result;
+        }
+
+        lastError = result.error;
+
+        // If it's an auth error, don't retry
+        if (result.error && (
+          result.error.includes('authentication') ||
+          result.error.includes('401') ||
+          result.error.includes('403')
+        )) {
+          return result;
+        }
+
+        // Wait before retrying (exponential backoff)
+        if (attempt < maxRetries) {
+          const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`Waiting ${waitTime}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      } catch (error) {
+        lastError = error.message;
+
+        // If it's an auth error, don't retry
+        if (error.message.includes('authentication') ||
+            error.message.includes('401') ||
+            error.message.includes('403')) {
+          return {
+            success: false,
+            error: error.message,
+            message: `Push failed: ${error.message}`
+          };
+        }
+
+        // Wait before retrying
+        if (attempt < maxRetries) {
+          const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+    }
+
+    return {
+      success: false,
+      error: lastError,
+      message: `Push failed after ${maxRetries} attempts: ${lastError}`,
+      retriesExhausted: true
+    };
+  }
 }
 
 export default GitService;

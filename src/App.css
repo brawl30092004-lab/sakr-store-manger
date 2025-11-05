@@ -356,6 +356,15 @@
   overflow: hidden;
 }
 
+.app-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 20px;
+  flex-wrap: wrap;
+}
+
 .app-body-content {
   flex: 1;
   display: flex;

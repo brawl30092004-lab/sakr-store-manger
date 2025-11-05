@@ -10,6 +10,7 @@ import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import Dashboard from './components/Dashboard';
 import StatusBar from './components/StatusBar';
+import SyncStatusIndicator from './components/SyncStatusIndicator';
 import DataSourceNotFoundDialog from './components/DataSourceNotFoundDialog';
 import SettingsPanel from './components/SettingsPanel';
 import Breadcrumbs from './components/Breadcrumbs';
@@ -794,26 +795,31 @@ function App() {
       )}
 
       <div className="app-body">
-        {/* Breadcrumbs */}
-        <Breadcrumbs 
-          path={currentView === 'dashboard' ? [
-            { 
-              label: 'Dashboard', 
-              icon: <BarChart3 size={14} />,
-              onClick: () => setCurrentView('dashboard')
-            }
-          ] : [
-            { 
-              label: 'Products', 
-              icon: <Package size={14} />,
-              onClick: () => setSelectedCategory('all')
-            },
-            selectedCategory !== 'all' && {
-              label: selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1),
-              icon: null
-            }
-          ].filter(Boolean)}
-        />
+        {/* Breadcrumbs and Sync Status */}
+        <div className="app-header-bar">
+          <Breadcrumbs 
+            path={currentView === 'dashboard' ? [
+              { 
+                label: 'Dashboard', 
+                icon: <BarChart3 size={14} />,
+                onClick: () => setCurrentView('dashboard')
+              }
+            ] : [
+              { 
+                label: 'Products', 
+                icon: <Package size={14} />,
+                onClick: () => setSelectedCategory('all')
+              },
+              selectedCategory !== 'all' && {
+                label: selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1),
+                icon: null
+              }
+            ].filter(Boolean)}
+          />
+          
+          {/* Sync Status Indicator - Only shows in GitHub mode */}
+          <SyncStatusIndicator />
+        </div>
         
         <div className="app-body-content">
           {currentView === 'dashboard' ? (

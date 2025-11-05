@@ -1117,6 +1117,159 @@ ipcMain.handle('git:undoProductChange', async (event, productChange) => {
   }
 });
 
+/**
+ * IPC Handler for checking remote changes (without pulling)
+ */
+ipcMain.handle('git:checkRemoteChanges', async (event) => {
+  try {
+    const { getConfigService } = await import('../src/services/configService.js');
+    const GitService = (await import('../src/services/gitService.js')).default;
+    
+    const configService = getConfigService();
+    const config = configService.getConfigWithToken();
+    
+    if (!config || !config.projectPath) {
+      return {
+        success: false,
+        message: 'No project path configured'
+      };
+    }
+    
+    const gitPath = findGitPath();
+    const gitService = new GitService(config.projectPath, {
+      username: config.username,
+      token: config.token,
+      repoUrl: config.repoUrl,
+      gitPath: gitPath
+    });
+    
+    const result = await gitService.checkForRemoteChanges();
+    return result;
+  } catch (error) {
+    console.error('Error checking remote changes:', error);
+    return {
+      success: false,
+      message: `Failed to check remote changes: ${error.message}`,
+      error: error.message
+    };
+  }
+});
+
+/**
+ * IPC Handler for manual pull from GitHub with retry logic
+ */
+ipcMain.handle('git:pullManual', async (event) => {
+  try {
+    const { getConfigService } = await import('../src/services/configService.js');
+    const GitService = (await import('../src/services/gitService.js')).default;
+    
+    const configService = getConfigService();
+    const config = configService.getConfigWithToken();
+    
+    if (!config || !config.projectPath) {
+      return {
+        success: false,
+        message: 'No project path configured'
+      };
+    }
+    
+    const gitPath = findGitPath();
+    const gitService = new GitService(config.projectPath, {
+      username: config.username,
+      token: config.token,
+      repoUrl: config.repoUrl,
+      gitPath: gitPath
+    });
+    
+    // Use pull with retry for better reliability
+    const result = await gitService.pullWithRetry();
+    return result;
+  } catch (error) {
+    console.error('Error pulling from GitHub:', error);
+    return {
+      success: false,
+      message: `Failed to pull from GitHub: ${error.message}`,
+      error: error.message
+    };
+  }
+});
+
+/**
+ * IPC Handler for getting conflict details
+ */
+ipcMain.handle('git:getConflictDetails', async (event) => {
+  try {
+    const { getConfigService } = await import('../src/services/configService.js');
+    const GitService = (await import('../src/services/gitService.js')).default;
+    
+    const configService = getConfigService();
+    const config = configService.getConfigWithToken();
+    
+    if (!config || !config.projectPath) {
+      return {
+        success: false,
+        message: 'No project path configured'
+      };
+    }
+    
+    const gitPath = findGitPath();
+    const gitService = new GitService(config.projectPath, {
+      username: config.username,
+      token: config.token,
+      repoUrl: config.repoUrl,
+      gitPath: gitPath
+    });
+    
+    const result = await gitService.getConflictDetails();
+    return result;
+  } catch (error) {
+    console.error('Error getting conflict details:', error);
+    return {
+      success: false,
+      message: `Failed to get conflict details: ${error.message}`,
+      error: error.message
+    };
+  }
+});
+
+/**
+ * IPC Handler for resolving conflicts
+ */
+ipcMain.handle('git:resolveConflict', async (event, resolution, files) => {
+  try {
+    const { getConfigService } = await import('../src/services/configService.js');
+    const GitService = (await import('../src/services/gitService.js')).default;
+    
+    const configService = getConfigService();
+    const config = configService.getConfigWithToken();
+    
+    if (!config || !config.projectPath) {
+      return {
+        success: false,
+        message: 'No project path configured'
+      };
+    }
+    
+    const gitPath = findGitPath();
+    const gitService = new GitService(config.projectPath, {
+      username: config.username,
+      token: config.token,
+      repoUrl: config.repoUrl,
+      gitPath: gitPath
+    });
+    
+    const result = await gitService.resolveConflict(resolution, files);
+    return result;
+  } catch (error) {
+    console.error('Error resolving conflict:', error);
+    return {
+      success: false,
+      message: `Failed to resolve conflict: ${error.message}`,
+      error: error.message
+    };
+  }
+});
+
 // Auto-Updater Configuration and Handlers
 
 /**

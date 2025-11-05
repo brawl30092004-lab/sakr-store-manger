@@ -50,4 +50,10 @@ contextBridge.exposeInMainWorld('electron', {
   publishToGitHub: (commitMessage, files) => ipcRenderer.invoke('git:publish', commitMessage, files),
   restoreFile: (filePath) => ipcRenderer.invoke('git:restoreFile', filePath),
   undoProductChange: (productChange) => ipcRenderer.invoke('git:undoProductChange', productChange),
+  
+  // New sync and conflict resolution APIs
+  checkRemoteChanges: () => ipcRenderer.invoke('git:checkRemoteChanges'),
+  pullManual: () => ipcRenderer.invoke('git:pullManual'),
+  getConflictDetails: () => ipcRenderer.invoke('git:getConflictDetails'),
+  resolveConflict: (resolution, files) => ipcRenderer.invoke('git:resolveConflict', resolution, files),
 });
