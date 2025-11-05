@@ -86,9 +86,60 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:5173');
     // Open DevTools in development
     mainWindow.webContents.openDevTools();
+    
+    // Test Git detection on startup (dev mode only)
+    mainWindow.webContents.on('did-finish-load', async () => {
+      console.log('=== TESTING GIT DETECTION ===');
+      const gitPath = findGitPath();
+      console.log('Git path found:', gitPath);
+      
+      // Try to actually call Git
+      if (gitPath) {
+        try {
+          const simpleGit = (await import('simple-git')).default;
+          const gitOptions = gitPath !== 'git' ? { binary: gitPath } : {};
+          const git = simpleGit(gitOptions);
+          const version = await git.version();
+          console.log('Git version check successful:', version);
+        } catch (error) {
+          console.error('Git version check failed:', error.message);
+        }
+      }
+      console.log('=== GIT DETECTION TEST COMPLETE ===');
+    });
   } else {
     // Production mode - load from built files
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    
+    // Test Git detection on startup (production mode)
+    mainWindow.webContents.on('did-finish-load', async () => {
+      console.log('=== PRODUCTION MODE - TESTING GIT DETECTION ===');
+      console.log('Is Portable:', isPortable);
+      console.log('Is Packaged:', app.isPackaged);
+      console.log('Process PATH:', process.env.PATH);
+      console.log('__dirname:', __dirname);
+      
+      const gitPath = findGitPath();
+      console.log('Git path found:', gitPath);
+      
+      // Try to actually call Git
+      if (gitPath) {
+        try {
+          const simpleGit = (await import('simple-git')).default;
+          const gitOptions = gitPath !== 'git' ? { binary: gitPath } : {};
+          console.log('Git options:', gitOptions);
+          const git = simpleGit(gitOptions);
+          const version = await git.version();
+          console.log('Git version check successful:', version);
+        } catch (error) {
+          console.error('Git version check failed:', error.message);
+          console.error('Error stack:', error.stack);
+        }
+      } else {
+        console.error('Git path is null - Git not found');
+      }
+      console.log('=== GIT DETECTION TEST COMPLETE ===');
+    });
     
     // Check for updates after window loads (skip for portable)
     if (autoUpdater && !isPortable) {
@@ -503,6 +554,58 @@ ipcMain.handle('settings:save', async (event, config) => {
 });
 
 /**
+ * Finds Git executable path on Windows
+ * Checks common installation paths when Git is not in PATH
+ * @returns {string|null} - Path to git.exe or null if not found
+ */
+function findGitPath() {
+  console.log('[findGitPath] Starting Git detection...');
+  
+  const { existsSync } = require('fs');
+  const { join } = require('path');
+  
+  // Common Git installation paths on Windows (check these FIRST before trying PATH)
+  const commonPaths = [
+    'C:\\Program Files\\Git\\cmd\\git.exe',
+    'C:\\Program Files (x86)\\Git\\cmd\\git.exe',
+    'C:\\Program Files\\Git\\bin\\git.exe',
+    'C:\\Program Files (x86)\\Git\\bin\\git.exe',
+    join(process.env.LOCALAPPDATA || '', 'Programs', 'Git', 'cmd', 'git.exe'),
+    join(process.env.PROGRAMFILES || 'C:\\Program Files', 'Git', 'cmd', 'git.exe'),
+    join(process.env['PROGRAMFILES(X86)'] || 'C:\\Program Files (x86)', 'Git', 'cmd', 'git.exe'),
+  ];
+
+  // Check common installation paths FIRST (more reliable in portable mode)
+  console.log('[findGitPath] Checking', commonPaths.length, 'common paths...');
+  for (const gitPath of commonPaths) {
+    try {
+      console.log('[findGitPath] Checking:', gitPath);
+      if (existsSync(gitPath)) {
+        console.log('[findGitPath] ✓ Found Git at:', gitPath);
+        return gitPath;
+      }
+    } catch (error) {
+      console.log('[findGitPath] Error checking path:', gitPath, '-', error.message);
+      continue;
+    }
+  }
+
+  // If not found in common paths, try PATH as fallback
+  console.log('[findGitPath] Not found in common paths, checking PATH...');
+  try {
+    const { execSync } = require('child_process');
+    execSync('git --version', { stdio: 'ignore' });
+    console.log('[findGitPath] ✓ Git found in PATH');
+    return 'git'; // Git is in PATH
+  } catch (error) {
+    console.log('[findGitPath] Git not in PATH:', error.message);
+  }
+
+  console.log('[findGitPath] ✗ Git not found anywhere');
+  return null;
+}
+
+/**
  * IPC Handler for loading settings
  */
 ipcMain.handle('settings:load', async (event) => {
@@ -523,21 +626,90 @@ ipcMain.handle('settings:load', async (event) => {
  * IPC Handler for checking if Git is installed on the system
  */
 ipcMain.handle('git:checkInstallation', async () => {
+  const debugLogs = []; // Collect logs to send back
+  const log = (msg) => {
+    console.log(msg);
+    debugLogs.push(msg);
+  };
+  
   try {
-    // Dynamically import GitService
-    const GitService = (await import('../src/services/gitService.js')).default;
+    log('[git:checkInstallation] Starting Git detection...');
     
-    // Call the static method to check Git installation
-    const result = await GitService.checkGitInstallation();
-    return result;
+    // Find Git executable path first
+    const gitPath = findGitPath();
+    log('[git:checkInstallation] findGitPath() returned: ' + gitPath);
+    
+    if (!gitPath) {
+      return {
+        success: false,
+        installed: false,
+        version: null,
+        message: 'Git is not installed on this system. Please install Git to use GitHub features.',
+        error: 'Git executable not found',
+        debugLogs: debugLogs
+      };
+    }
+    
+    // Instead of importing GitService, use simple-git directly
+    log('[git:checkInstallation] Importing simple-git...');
+    const simpleGit = (await import('simple-git')).default;
+    log('[git:checkInstallation] simple-git imported successfully');
+    
+    // Create git instance with the found path
+    const gitOptions = gitPath !== 'git' ? { 
+      binary: gitPath,
+      unsafe: {
+        allowUnsafeCustomBinary: true  // Allow paths with spaces like "C:\Program Files\Git\cmd\git.exe"
+      }
+    } : {};
+    log('[git:checkInstallation] Git options: ' + JSON.stringify(gitOptions));
+    
+    const git = simpleGit(gitOptions);
+    log('[git:checkInstallation] Calling git.version()...');
+    
+    // Try to get Git version
+    const version = await git.version();
+    log('[git:checkInstallation] Git version result: ' + JSON.stringify(version));
+    
+    const versionString = version.installed ? `${version.major}.${version.minor}.${version.patch}` : 'unknown';
+    
+    return {
+      success: true,
+      installed: true,
+      version: versionString,
+      gitVersion: version,
+      gitPath: gitPath,
+      message: `Git is installed (version ${versionString})`,
+      debugLogs: debugLogs
+    };
+    
   } catch (error) {
+    log('[git:checkInstallation] ERROR: ' + error.message);
     console.error('Error checking Git installation:', error);
+    
+    // Check if it's a "git not found" error
+    if (error.message && (
+        error.message.includes('spawn git ENOENT') || 
+        error.message.includes('git: command not found') ||
+        error.message.includes('not recognized as an internal or external command'))) {
+      return {
+        success: false,
+        installed: false,
+        version: null,
+        message: 'Git is not installed on this system. Please install Git to use GitHub features.',
+        error: error.message,
+        debugLogs: debugLogs
+      };
+    }
+    
     return {
       success: false,
       installed: false,
       version: null,
       message: 'Failed to check Git installation: ' + error.message,
-      error: error.message
+      error: error.message,
+      debugLogs: debugLogs,
+      errorStack: error.stack
     };
   }
 });
@@ -579,11 +751,15 @@ ipcMain.handle('settings:testConnection', async (event, config) => {
       };
     }
     
+    // Find Git executable path
+    const gitPath = findGitPath();
+    
     // Create GitService instance
     const gitService = new GitService(fullConfig.projectPath, {
       username: fullConfig.username,
       token: fullConfig.token,
-      repoUrl: fullConfig.repoUrl
+      repoUrl: fullConfig.repoUrl,
+      gitPath: gitPath
     });
     
     // Test the connection
@@ -619,11 +795,15 @@ ipcMain.handle('git:getStatus', async (event) => {
       };
     }
     
+    // Find Git executable path
+    const gitPath = findGitPath();
+    
     // Create GitService instance
     const gitService = new GitService(config.projectPath, {
       username: config.username,
       token: config.token,
-      repoUrl: config.repoUrl
+      repoUrl: config.repoUrl,
+      gitPath: gitPath
     });
     
     // Get the status
@@ -653,6 +833,33 @@ ipcMain.handle('git:clone', async (event, targetPath, repoUrl, username, token) 
     console.log('Username:', username);
     console.log('Token provided:', token ? 'YES (length: ' + token.length + ')' : 'NO');
     
+    // If no token is provided, try to get it from stored config
+    if (!token) {
+      console.log('No token provided, attempting to retrieve from stored config...');
+      try {
+        const { getConfigService } = await import('../src/services/configService.js');
+        const configService = getConfigService();
+        const storedConfig = configService.getConfigWithToken();
+        
+        if (storedConfig && storedConfig.token) {
+          token = storedConfig.token;
+          console.log('Retrieved token from stored config (length: ' + token.length + ')');
+        } else {
+          console.error('No token found in stored config');
+          return {
+            success: false,
+            message: 'GitHub token is required to clone the repository. Please provide a valid token.'
+          };
+        }
+      } catch (error) {
+        console.error('Failed to retrieve stored token:', error);
+        return {
+          success: false,
+          message: 'GitHub token is required to clone the repository. Please provide a valid token.'
+        };
+      }
+    }
+    
     const simpleGit = (await import('simple-git')).default;
     
     // Parse repository URL to extract owner and repo
@@ -671,6 +878,18 @@ ipcMain.handle('git:clone', async (event, targetPath, repoUrl, username, token) 
     const authenticatedUrl = `https://${username}:${token}@github.com/${owner}/${repo}.git`;
 
     console.log(`Cloning repository to: ${targetPath}`);
+    
+    // Find Git executable path
+    const gitPath = findGitPath();
+    console.log('Using Git path:', gitPath);
+    
+    // Configure simple-git with custom Git path if found
+    const gitOptions = gitPath && gitPath !== 'git' ? { 
+      binary: gitPath,
+      unsafe: {
+        allowUnsafeCustomBinary: true  // Allow paths with spaces
+      }
+    } : {};
 
     // Check if target path exists
     const pathExists = await fs.pathExists(targetPath);
@@ -680,47 +899,66 @@ ipcMain.handle('git:clone', async (event, targetPath, repoUrl, username, token) 
       const files = await fs.readdir(targetPath);
       const nonHiddenFiles = files.filter(f => !f.startsWith('.'));
       
-      if (nonHiddenFiles.length === 0) {
-        // Directory exists but is empty - use init + remote + pull approach
-        console.log('Directory exists but is empty, using init + pull approach');
+      if (nonHiddenFiles.length > 0) {
+        // Directory exists and has files - ask user if they want to delete
+        console.log('Directory is not empty, asking user for confirmation');
         
-        const git = simpleGit(targetPath);
+        const result = await dialog.showMessageBox({
+          type: 'warning',
+          title: 'Directory Not Empty',
+          message: 'The selected folder is not empty',
+          detail: `The folder "${targetPath}" contains ${nonHiddenFiles.length} item(s). Do you want to delete all contents and continue?`,
+          buttons: ['Delete and Continue', 'Cancel'],
+          defaultId: 1, // Default to Cancel for safety
+          cancelId: 1
+        });
         
-        // Initialize repository
-        await git.init();
-        console.log('Git initialized');
+        if (result.response === 1) {
+          // User clicked Cancel
+          return {
+            success: false,
+            message: 'Clone operation cancelled by user.'
+          };
+        }
         
-        // Add remote
-        await git.addRemote('origin', authenticatedUrl);
-        console.log('Remote added');
-        
-        // Fetch all branches
-        await git.fetch('origin');
-        console.log('Fetched from origin');
-        
-        // Get the default branch name
-        const branches = await git.branch(['-r']);
-        const defaultBranch = branches.all.find(b => b.includes('origin/main')) ? 'main' : 'master';
-        console.log(`Using branch: ${defaultBranch}`);
-        
-        // Set up tracking and pull
-        await git.checkoutBranch(defaultBranch, `origin/${defaultBranch}`);
-        console.log('Checked out branch');
-        
-      } else {
-        // Directory exists and has files
-        return {
-          success: false,
-          message: 'Directory is not empty. Please choose an empty directory.'
-        };
+        // User clicked "Delete and Continue" - remove all contents
+        console.log('User confirmed deletion, removing directory contents');
+        await fs.emptyDir(targetPath);
+        console.log('Directory emptied successfully');
       }
+      
+      // Directory is now empty - use init + remote + pull approach
+      console.log('Directory is empty, using init + pull approach');
+      
+      const git = simpleGit({ ...gitOptions, baseDir: targetPath });
+      
+      // Initialize repository
+      await git.init();
+      console.log('Git initialized');
+      
+      // Add remote
+      await git.addRemote('origin', authenticatedUrl);
+      console.log('Remote added');
+      
+      // Fetch all branches
+      await git.fetch('origin');
+      console.log('Fetched from origin');
+      
+      // Get the default branch name
+      const branches = await git.branch(['-r']);
+      const defaultBranch = branches.all.find(b => b.includes('origin/main')) ? 'main' : 'master';
+      console.log(`Using branch: ${defaultBranch}`);
+      
+      // Set up tracking and pull
+      await git.checkoutBranch(defaultBranch, `origin/${defaultBranch}`);
+      console.log('Checked out branch');
     } else {
       // Directory doesn't exist - create parent and use normal clone
       const parentDir = path.dirname(targetPath);
       await fs.ensureDir(parentDir);
       
       console.log('Cloning to new directory');
-      await simpleGit().clone(authenticatedUrl, targetPath);
+      await simpleGit(gitOptions).clone(authenticatedUrl, targetPath);
     }
 
     console.log('Repository cloned successfully');
@@ -775,11 +1013,15 @@ ipcMain.handle('git:publish', async (event, commitMessage = null, files = null) 
       };
     }
     
+    // Find Git executable path
+    const gitPath = findGitPath();
+    
     // Create GitService instance
     const gitService = new GitService(config.projectPath, {
       username: config.username,
       token: config.token,
-      repoUrl: config.repoUrl
+      repoUrl: config.repoUrl,
+      gitPath: gitPath
     });
     
     // Execute the publish workflow with optional selective files
@@ -813,10 +1055,14 @@ ipcMain.handle('git:restoreFile', async (event, filePath) => {
       };
     }
     
+    // Find Git executable path
+    const gitPath = findGitPath();
+    
     const gitService = new GitService(config.projectPath, {
       username: config.username,
       token: config.token,
-      repoUrl: config.repoUrl
+      repoUrl: config.repoUrl,
+      gitPath: gitPath
     });
     
     const result = await gitService.restoreFile(filePath);
@@ -849,10 +1095,14 @@ ipcMain.handle('git:undoProductChange', async (event, productChange) => {
       };
     }
     
+    // Find Git executable path
+    const gitPath = findGitPath();
+    
     const gitService = new GitService(config.projectPath, {
       username: config.username,
       token: config.token,
-      repoUrl: config.repoUrl
+      repoUrl: config.repoUrl,
+      gitPath: gitPath
     });
     
     const result = await gitService.undoProductChange(productChange);

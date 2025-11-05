@@ -81,6 +81,16 @@ function Settings({ onBackToMain }) {
     try {
       const result = await window.electron.checkGitInstallation();
       
+      // Log debug info if available
+      if (result.debugLogs) {
+        console.log('=== GIT DETECTION DEBUG LOGS ===');
+        result.debugLogs.forEach(log => console.log(log));
+        console.log('=== END DEBUG LOGS ===');
+      }
+      
+      // Log the full result
+      console.log('Full Git detection result:', result);
+      
       setIsGitInstalled(result.installed);
       setGitVersion(result.version);
       
@@ -91,6 +101,15 @@ function Settings({ onBackToMain }) {
           type: 'warning'
         });
         console.warn('Git is not installed. GitHub features may not work properly.');
+        
+        // Show detailed debug info
+        if (result.debugLogs) {
+          console.error('Git detection failed. Debug info:', {
+            gitPathFromFind: result.gitPathFromFind,
+            error: result.error,
+            message: result.message
+          });
+        }
       } else {
         // Git is installed
         console.log('Git is installed:', result.version);
@@ -283,12 +302,11 @@ function Settings({ onBackToMain }) {
       setStatus({ message: 'Cloning repository from GitHub...', type: 'info' });
       showInfo('Cloning repository. This may take a moment...');
 
-      // Get the token (either from form or existing)
-      const tokenToUse = formData.token !== '••••••••' ? formData.token : null;
+      // Get the token (either from form or let backend use stored token)
+      // If token is masked, pass null and backend will retrieve the stored token
+      const tokenToUse = (formData.token && formData.token !== '••••••••') ? formData.token : null;
       
-      if (!tokenToUse) {
-        throw new Error('GitHub token is required to clone the repository');
-      }
+      console.log('Attempting to clone repository. Token provided:', tokenToUse ? 'YES' : 'NO (will use stored)');
 
       const cloneResult = await window.electron.cloneRepository(
         configToSave.projectPath,
