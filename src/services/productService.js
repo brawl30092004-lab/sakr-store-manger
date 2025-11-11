@@ -235,6 +235,47 @@ class ProductService {
     // Use addProduct to generate a new ID and save
     return await this.addProduct(duplicatedProduct);
   }
+
+  /**
+   * Rename a category for all products
+   * Updates the category field for all products that match the old category name
+   * @param {string} oldCategory - The current category name to be replaced
+   * @param {string} newCategory - The new category name
+   * @returns {Promise<Array>} Updated products array
+   * @throws {Error} If validation fails or no products found with the old category
+   */
+  async renameCategoryForAllProducts(oldCategory, newCategory) {
+    const products = await this.loadProducts();
+    
+    // Find all products with the old category
+    const productsToUpdate = products.filter(p => p.category === oldCategory);
+    
+    if (productsToUpdate.length === 0) {
+      throw new Error(`No products found with category "${oldCategory}"`);
+    }
+    
+    // Validate the new category name using the validation service
+    const { validateProductCategory } = await import('./productValidation.js');
+    const validation = validateProductCategory(newCategory);
+    
+    if (!validation.valid) {
+      throw new Error(`Invalid category name: ${validation.error}`);
+    }
+    
+    // Update all products with the new category
+    const updatedProducts = products.map(product => {
+      if (product.category === oldCategory) {
+        return {
+          ...product,
+          category: newCategory
+        };
+      }
+      return product;
+    });
+    
+    await this.saveProducts(updatedProducts);
+    return updatedProducts;
+  }
 }
 
 export default ProductService;

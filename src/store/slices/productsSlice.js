@@ -167,6 +167,30 @@ export const duplicateProduct = createAsyncThunk(
 );
 
 /**
+ * Async thunk to rename a category for all products
+ */
+export const renameCategory = createAsyncThunk(
+  'products/renameCategory',
+  async ({ oldCategory, newCategory }, { getState, rejectWithValue }) => {
+    try {
+      const state = getState();
+      const projectPath = state.settings.projectPath;
+      const dataSource = state.settings.dataSource || 'local';
+      
+      if (!projectPath) {
+        throw new Error('Project path is not set');
+      }
+
+      const productService = new ProductService(projectPath, dataSource);
+      const updatedProducts = await productService.renameCategoryForAllProducts(oldCategory, newCategory);
+      return updatedProducts;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
  * Products Slice - Manages product data state
  */
 const productsSlice = createSlice({
@@ -375,6 +399,22 @@ const productsSlice = createSlice({
       .addCase(duplicateProduct.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to duplicate product';
+      });
+
+    // Handle renameCategory
+    builder
+      .addCase(renameCategory.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(renameCategory.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload;
+        state.hasUnsavedChanges = true;
+      })
+      .addCase(renameCategory.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to rename category';
       });
   },
 });
