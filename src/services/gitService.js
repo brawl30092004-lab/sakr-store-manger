@@ -965,7 +965,7 @@ class GitService {
 
   /**
    * Publishes all changes to GitHub
-   * Executes the full workflow: pull, commit, and push
+   * Executes the full workflow: stash (if needed), pull, pop stash, commit, and push
    * @param {string} commitMessage - Custom commit message (optional)
    * @param {Array<string>} files - Optional array of specific files to commit (if null, commits all changes)
    * @returns {Promise<Object>} - Result object with success status and detailed information
@@ -973,17 +973,46 @@ class GitService {
   async publishChanges(commitMessage = null, files = null) {
     const startTime = Date.now();
     const results = {
+      stash: null,
       pull: null,
+      stashPop: null,
       commit: null,
       push: null
     };
 
     try {
-      // Step 1: Pull latest changes
-      console.log('Step 1/3: Pulling latest changes...');
+      // Step 0: Check if we have local uncommitted changes
+      const status = await this.getStatus();
+      const hasLocalChanges = !status.isClean;
+
+      // Step 1: If we have local changes, stash them before pulling
+      if (hasLocalChanges) {
+        console.log('Step 1a: Stashing local changes...');
+        try {
+          await this.git.stash(['push', '-u', '-m', 'Auto-stash before pull']);
+          results.stash = { success: true, stashed: true };
+          console.log('Local changes stashed successfully');
+        } catch (error) {
+          console.error('Failed to stash changes:', error);
+          results.stash = { success: false, error: error.message };
+        }
+      }
+
+      // Step 2: Pull latest changes
+      console.log('Step 1b: Pulling latest changes...');
       results.pull = await this.pullLatestChanges();
 
       if (!results.pull.success) {
+        // If pull failed and we stashed changes, try to restore them
+        if (results.stash?.stashed) {
+          console.log('Pull failed, restoring stashed changes...');
+          try {
+            await this.git.stash(['pop']);
+          } catch (popError) {
+            console.error('Failed to restore stashed changes:', popError);
+          }
+        }
+
         // Check if this is a conflict error - return special conflict status
         if (results.pull.error === 'Merge conflicts detected' || 
             (results.pull.message && results.pull.message.includes('conflict'))) {
@@ -1009,8 +1038,47 @@ class GitService {
         };
       }
 
-      // Step 2: Commit changes
-      console.log('Step 2/3: Committing changes...');
+      // Step 3: If we stashed changes, pop them back and handle potential conflicts
+      if (results.stash?.stashed) {
+        console.log('Step 2: Restoring stashed changes...');
+        try {
+          await this.git.stash(['pop']);
+          results.stashPop = { success: true };
+          console.log('Stashed changes restored successfully');
+        } catch (error) {
+          console.error('Conflict when restoring stashed changes:', error);
+          
+          // Check if this is a merge conflict from stash pop
+          if (error.message.includes('conflict') || error.message.includes('CONFLICT')) {
+            // Get conflict details
+            const conflictDetails = await this.getConflictDetails();
+            
+            return {
+              success: false,
+              hasConflict: true,
+              error: 'Merge conflicts detected',
+              message: 'Your local changes conflict with changes from the store',
+              conflictDetails,
+              step: 'stash_pop',
+              results,
+              needsResolution: true
+            };
+          }
+          
+          // Other stash pop errors
+          results.stashPop = { success: false, error: error.message };
+          return {
+            success: false,
+            error: error.message,
+            message: `Failed to restore local changes: ${error.message}`,
+            step: 'stash_pop',
+            results
+          };
+        }
+      }
+
+      // Step 4: Commit changes
+      console.log('Step 3: Committing changes...');
       results.commit = await this.commitChanges(commitMessage, files);
 
       if (!results.commit.success) {
@@ -1032,8 +1100,8 @@ class GitService {
         };
       }
 
-      // Step 3: Push to GitHub
-      console.log('Step 3/3: Pushing to GitHub...');
+      // Step 5: Push to GitHub
+      console.log('Step 4: Pushing to store...');
       results.push = await this.pushToGitHub();
 
       if (!results.push.success) {

@@ -549,9 +549,15 @@ Use this template to record your test results:
 ```markdown
 ## Test Results - [Date]
 
+needs changing : on first start the Data Source Not Found dialoge shows which doesnt have the github option
+
+all emojies needs changing to vectors 
+
+
+
 ### Test 1: Basic Publish
-- Status: ✅ PASS / ❌ FAIL
-- Notes: 
+- Status: ✅ PASS
+- Notes: as intended
 
 ### Test 2: Simple Conflict
 - Status: ✅ PASS / ❌ FAIL
