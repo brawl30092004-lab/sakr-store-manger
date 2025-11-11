@@ -1,6 +1,6 @@
 {
   "name": "sakr-store-manager",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "A desktop application for managing product catalogs with Git integration",
   "main": "electron/main.cjs",
   "type": "module",
