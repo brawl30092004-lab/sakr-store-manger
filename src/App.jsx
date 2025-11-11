@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback, lazy, Suspense } from 
 import { useDispatch, useSelector } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 import { Minus, Maximize2, X, Home, Package, Plus, Save, Upload, Settings, Github, Keyboard, BarChart3 } from 'lucide-react';
-import { loadProducts, bulkRemoveNewBadge, bulkRemoveDiscount, bulkDeleteProducts, bulkApplyDiscount, bulkMakeNew, saveProducts } from './store/slices/productsSlice';
+import { loadProducts, bulkRemoveNewBadge, bulkRemoveDiscount, bulkDeleteProducts, bulkApplyDiscount, bulkMakeNew, bulkImprovePricing, saveProducts } from './store/slices/productsSlice';
 import { setProjectPath } from './store/slices/settingsSlice';
 import { attachKeyboardShortcuts } from './services/keyboardShortcuts';
 import { showSuccess, showError } from './services/toastService';
@@ -290,6 +290,11 @@ function App() {
     setActiveMenu(null);
   };
 
+  const handleBulkImprovePricing = () => {
+    setBulkOperationDialog({ isOpen: true, type: 'improvePricing' });
+    setActiveMenu(null);
+  };
+
   const handleBulkOperationConfirm = async (selectedProductIds, discountPercentage) => {
     try {
       const { type } = bulkOperationDialog;
@@ -351,6 +356,59 @@ function App() {
           const updatedProducts5 = products.filter(product => !selectedProductIds.includes(product.id));
           await dispatch(saveProducts(updatedProducts5)).unwrap();
           showSuccess(`Successfully deleted ${selectedProductIds.length} product(s)`);
+          break;
+        case 'improvePricing':
+          dispatch(bulkImprovePricing(selectedProductIds));
+          // Calculate optimized products to save
+          const updatedProducts6 = products.map(product => {
+            if (!selectedProductIds.includes(product.id) || product.price <= 0) {
+              return product;
+            }
+
+            const { price, discountedPrice, discount } = product;
+            
+            if (!discount) {
+              // NON-DISCOUNTED: Apply Charm Pricing
+              let newPrice;
+              if (price < 1) {
+                newPrice = Math.ceil(price * 100 - 1) / 100;
+              } else if (price >= 9999) {
+                newPrice = 9999.99;
+              } else {
+                newPrice = Math.ceil(price) - 0.01;
+              }
+              return { ...product, price: parseFloat(newPrice.toFixed(2)) };
+            } else {
+              // DISCOUNTED: Apply Anchor + Charm Pricing
+              const newPrice = Math.ceil(price);
+              let newDiscounted;
+              if (discountedPrice < 1) {
+                newDiscounted = Math.ceil(discountedPrice * 100 - 1) / 100;
+              } else if (discountedPrice >= 9999) {
+                newDiscounted = 9999.99;
+              } else {
+                newDiscounted = Math.ceil(discountedPrice) - 0.01;
+              }
+              
+              if (newDiscounted >= newPrice) {
+                const fixedPrice = Math.ceil(price) - 0.01;
+                return { 
+                  ...product,
+                  discount: false, 
+                  price: parseFloat(fixedPrice.toFixed(2)),
+                  discountedPrice: 0
+                };
+              }
+              
+              return {
+                ...product,
+                price: newPrice,
+                discountedPrice: parseFloat(newDiscounted.toFixed(2))
+              };
+            }
+          });
+          await dispatch(saveProducts(updatedProducts6)).unwrap();
+          showSuccess(`Successfully optimized pricing for ${selectedProductIds.length} product(s)`);
           break;
       }
     } catch (error) {
@@ -559,6 +617,11 @@ function App() {
               </div>
               <div className="menu-option" onClick={handleBulkRemoveNewBadge}>
                 <span>Bulk Remove "New"</span>
+              </div>
+              <div className="menu-divider"></div>
+              <div className="menu-section-label">Pricing Operations</div>
+              <div className="menu-option" onClick={handleBulkImprovePricing}>
+                <span>Bulk Improve Pricing</span>
               </div>
               <div className="menu-divider"></div>
               <div className="menu-section-label">Danger Zone</div>
@@ -969,6 +1032,14 @@ function App() {
             category: 'Bulk Operations',
             keywords: ['bulk', 'delete', 'remove', 'multiple'],
             action: handleBulkDeleteProducts
+          },
+          {
+            id: 'bulk-improve-pricing',
+            label: 'Bulk Improve Pricing',
+            icon: <Package size={16} />,
+            category: 'Bulk Operations',
+            keywords: ['bulk', 'pricing', 'optimize', 'psychological', 'charm', '99'],
+            action: handleBulkImprovePricing
           },
           // Settings & Tools
           {

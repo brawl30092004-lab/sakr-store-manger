@@ -297,6 +297,82 @@ const productsSlice = createSlice({
       });
       state.hasUnsavedChanges = true;
     },
+    bulkImprovePricing: (state, action) => {
+      const productIds = action.payload; // Array of product IDs
+      if (!state.items || !Array.isArray(state.items)) {
+        console.error('state.items is not an array:', state.items);
+        return;
+      }
+      state.items = state.items.map(product => {
+        if (!productIds.includes(product.id)) {
+          return product;
+        }
+
+        const { price, discountedPrice, discount } = product;
+        
+        // Skip invalid prices
+        if (price <= 0) {
+          return product;
+        }
+
+        if (!discount) {
+          // NON-DISCOUNTED: Apply Charm Pricing (.99 format)
+          let newPrice;
+          
+          // Special case: prices below 1
+          if (price < 1) {
+            newPrice = Math.ceil(price * 100 - 1) / 100; // 0.50 → 0.49
+          }
+          // Special case: 4-digit prices (9999+)
+          else if (price >= 9999) {
+            newPrice = 9999.99;
+          }
+          // Standard: Round UP, subtract 0.01
+          else {
+            newPrice = Math.ceil(price) - 0.01;
+          }
+          
+          return { 
+            ...product, 
+            price: parseFloat(newPrice.toFixed(2))
+          };
+        } else {
+          // DISCOUNTED: Apply Anchor + Charm Pricing
+          
+          // Original price: Round UP to whole number (high anchor)
+          const newPrice = Math.ceil(price);
+          
+          // Discounted price: Apply charm pricing
+          let newDiscounted;
+          if (discountedPrice < 1) {
+            newDiscounted = Math.ceil(discountedPrice * 100 - 1) / 100;
+          } else if (discountedPrice >= 9999) {
+            newDiscounted = 9999.99;
+          } else {
+            newDiscounted = Math.ceil(discountedPrice) - 0.01;
+          }
+          
+          // Validate: Discount must still be valid
+          if (newDiscounted >= newPrice) {
+            // Invalid discount - remove it and apply standard charm pricing
+            const fixedPrice = Math.ceil(price) - 0.01;
+            return { 
+              ...product,
+              discount: false, 
+              price: parseFloat(fixedPrice.toFixed(2)),
+              discountedPrice: 0
+            };
+          }
+          
+          return {
+            ...product,
+            price: newPrice,
+            discountedPrice: parseFloat(newDiscounted.toFixed(2))
+          };
+        }
+      });
+      state.hasUnsavedChanges = true;
+    },
     clearError: (state) => {
       state.error = null;
     },
@@ -429,6 +505,7 @@ export const {
   bulkDeleteProducts,
   bulkApplyDiscount,
   bulkMakeNew,
+  bulkImprovePricing,
   clearError,
   resetUnsavedChanges,
 } = productsSlice.actions;

@@ -20,6 +20,55 @@ const BulkOperationsDialog = ({ isOpen, onClose, products, operationType, onConf
         return products.filter(p => !p.isNew); // Show only products that are not new
       case 'deleteProducts':
         return products; // Show all products for deletion
+      case 'improvePricing':
+        // Only show products that need pricing optimization
+        return products.filter(p => {
+          const { price, discountedPrice, discount } = p;
+          
+          // Skip invalid prices
+          if (price <= 0) return false;
+          
+          if (!discount) {
+            // NON-DISCOUNTED: Show if price does NOT end in .99 or .49 (for prices < 1)
+            const cents = Math.round((price % 1) * 100);
+            
+            if (price < 1) {
+              // For prices below 1, should end in .49
+              return cents !== 49;
+            } else if (price >= 10000) {
+              // Prices >= 10000 need to become 9999.99
+              return true;
+            } else if (price >= 9999) {
+              // Check if it's already 9999.99
+              return Math.abs(price - 9999.99) > 0.001;
+            } else {
+              // Regular prices: should end in .99
+              return cents !== 99;
+            }
+          } else {
+            // DISCOUNTED: Check if pricing needs optimization
+            const priceCents = Math.round((price % 1) * 100);
+            const discountCents = Math.round((discountedPrice % 1) * 100);
+            
+            // Original price should be a whole number (ends in .00)
+            const needsPriceRounding = priceCents !== 0;
+            
+            // Discounted price should end in .99 or .49 (if < 1)
+            let needsDiscountOptimization;
+            if (discountedPrice < 1) {
+              needsDiscountOptimization = discountCents !== 49;
+            } else if (discountedPrice >= 9999) {
+              needsDiscountOptimization = Math.abs(discountedPrice - 9999.99) > 0.001;
+            } else {
+              needsDiscountOptimization = discountCents !== 99;
+            }
+            
+            // Invalid discount check
+            const hasInvalidDiscount = discountedPrice >= price;
+            
+            return needsPriceRounding || needsDiscountOptimization || hasInvalidDiscount;
+          }
+        });
       default:
         return products;
     }
@@ -62,6 +111,13 @@ const BulkOperationsDialog = ({ isOpen, onClose, products, operationType, onConf
           description: 'Select products to delete:',
           confirmText: 'Delete Selected',
           emptyMessage: 'No products available.'
+        };
+      case 'improvePricing':
+        return {
+          title: 'Bulk Improve Pricing',
+          description: 'Select products to optimize with psychological pricing (e.g., $499.99):',
+          confirmText: 'Optimize Pricing',
+          emptyMessage: 'All products already have optimal pricing! 🎉'
         };
       default:
         return {
