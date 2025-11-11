@@ -20,24 +20,22 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
 ## 📋 Prerequisites
 
 ### What You Need:
-1. **Two GitHub accounts** (or one account with two repos)
-   - Account A: Your main testing account
-   - Account B: Clone target account (you mentioned you'll clone to another account)
+1. **One GitHub account** with one repository
+   - Your existing GitHub account
 
-2. **Two devices/VMs** (or same device with two different project folders)
-   - Device 1: Primary workstation
-   - Device 2: Secondary workstation (or different folder on same device)
+2. **One device** with Sakr Store Manager installed
+   - You'll make changes both in the app (local) and directly on GitHub (web)
 
-3. **GitHub Repository Setup:**
+3. **Web Browser** 
+   - To edit files directly on GitHub and create conflicts
+
+4. **GitHub Repository Setup:**
    ```
-   1. Create a new repository on Account A
-   2. Initialize with README.md
-   3. Clone to Device 1
-   4. Set up Sakr Store Manager on Device 1
-   5. Add initial products (3-5 products)
-   6. Publish to GitHub
-   7. Clone same repo to Device 2
-   8. Set up Sakr Store Manager on Device 2
+   1. Use your existing repository (or create a new one)
+   2. Set up Sakr Store Manager connected to this repo
+   3. Add initial products (3-5 products)
+   4. Publish to GitHub
+   5. Now you're ready to test by editing on GitHub web and in the app
    ```
 
 ---
@@ -56,7 +54,7 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
 7. Copy the repository URL: https://github.com/YOUR_USERNAME/sakr-store-test.git
 ```
 
-### Step 2: Device 1 Setup (Primary Workstation)
+### Step 2: Sakr Store Manager Setup
 ```
 1. Open Sakr Store Manager
 2. Go to Settings (Ctrl+,)
@@ -65,13 +63,13 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
    - Repository URL: https://github.com/YOUR_USERNAME/sakr-store-test.git
    - Username: YOUR_GITHUB_USERNAME
    - Personal Access Token: (generate from GitHub Settings → Developer settings → Personal access tokens)
-   - Local Project Path: C:\SakrStore\Device1 (or your preferred path)
+   - Local Project Path: (your preferred path, e.g., C:\SakrStore)
 5. Click "Test Connection" - should show ✓ success
 6. Click "Save Settings"
 7. App will clone the repository
 ```
 
-### Step 3: Add Initial Test Data (Device 1)
+### Step 3: Add Initial Test Data
 ```
 1. Click "Add Product" (Ctrl+N)
 2. Add 3 products:
@@ -100,69 +98,74 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
 6. Wait for success toast: "Published to store successfully!"
 ```
 
-### Step 4: Device 2 Setup (Secondary Workstation)
+### Step 4: Verify on GitHub
 ```
-1. Open NEW instance of Sakr Store Manager (different folder or VM)
-2. Go to Settings
-3. Select Data Source: "GitHub Repository"
-4. Fill in SAME repository details:
-   - Repository URL: https://github.com/YOUR_USERNAME/sakr-store-test.git
-   - Username: YOUR_GITHUB_USERNAME
-   - Personal Access Token: (same or new token)
-   - Local Project Path: C:\SakrStore\Device2 (DIFFERENT path)
-5. Click "Test Connection" - should show ✓ success
-6. Click "Save Settings"
-7. App will clone the repository
-8. You should see the 3 products from Device 1
+1. Open your browser
+2. Go to: https://github.com/YOUR_USERNAME/sakr-store-test
+3. Navigate to: data/products.json
+4. You should see your 3 products in JSON format
+5. Keep this browser tab open - you'll use it to create conflicts!
 ```
 
 ---
 
 ## 🧪 Test Scenarios
 
-### Test 1: Basic Publish (No Conflicts)
-**Goal:** Verify normal publish workflow works correctly
+### Test 1: Basic Publish and Sync (No Conflicts)
+**Goal:** Verify normal publish and sync workflow works correctly
 
 **Steps:**
-1. On Device 1:
+1. In Sakr Store Manager:
    - Edit "Test Laptop" → Change price to $1099.99
    - Click "Publish to Store"
    - Enter commit message: "Updated laptop price"
    - ✅ **Expected:** Success toast, status bar clears
 
-2. On Device 2:
-   - Click sync button (or wait for auto-check)
+2. On GitHub (browser):
+   - Refresh the repository page
+   - Go to data/products.json
+   - ✅ **Expected:** "Test Laptop" price shows 1099.99 in the JSON
+
+3. Make a change on GitHub:
+   - Click the pencil icon (Edit) on products.json
+   - Find "Coffee Maker" and change price from 79.99 to 89.99
+   - Scroll down, enter commit message: "Updated coffee maker price"
+   - Click "Commit changes"
+
+4. Back in Sakr Store Manager:
+   - Click sync button (🔄) or wait for notification
    - ✅ **Expected:** Notification: "1 new change(s) available from your store"
    - Click "Get Updates"
    - ✅ **Expected:** "Updates synced from your store successfully"
-   - Verify "Test Laptop" now shows $1099.99
+   - Verify "Coffee Maker" now shows $89.99
 
 **Pass Criteria:**
-- ✅ Publish successful on Device 1
-- ✅ Notification appears on Device 2
-- ✅ Sync successful on Device 2
-- ✅ Price updated correctly
+- ✅ Publish successful from app
+- ✅ Changes visible on GitHub
+- ✅ Changes made on GitHub sync to app
+- ✅ Prices updated correctly in both directions
 
 ---
 
 ### Test 2: Simple Conflict (Same Product, Different Fields)
-**Goal:** Test conflict resolution when two devices edit different fields of the same product
+**Goal:** Test conflict resolution when GitHub and local edit different fields of the same product
 
 **Steps:**
-1. On Device 1:
-   - Edit "Office Chair"
-   - Change price: $199.99 → $249.99
-   - DON'T PUBLISH YET
-
-2. On Device 2:
-   - Edit "Office Chair" (same product)
+1. On GitHub (browser):
+   - Navigate to data/products.json
+   - Click Edit (pencil icon)
+   - Find "Office Chair"
    - Change description: "Ergonomic office chair" → "Premium ergonomic office chair with lumbar support"
-   - Click "Publish to Store"
-   - Enter message: "Updated chair description"
-   - ✅ **Expected:** Success (Device 2 publishes first)
+   - Commit changes: "Updated chair description"
+   - ✅ **Expected:** Commit successful
 
-3. On Device 1:
-   - Now click "Publish to Store"
+2. In Sakr Store Manager (WITHOUT syncing first):
+   - Edit "Office Chair" (same product)
+   - Change price: $199.99 → $249.99
+   - DON'T click sync! Go directly to "Publish to Store"
+   
+3. Publish from app:
+   - Click "Publish to Store"
    - ✅ **Expected:** Conflict dialog appears!
    
    **Verify Conflict Dialog:**
@@ -174,7 +177,7 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
      * Price: $199.99 (Store) → $249.99 (Your Version)
      * Description: "Premium ergonomic..." (Store) → "Ergonomic office chair" (Your Version)
    
-4. On Device 1 - Resolve Conflict:
+4. Resolve Conflict:
    - Choose: "💻 Use My Version" (keep $249.99 price)
    - ✅ **Expected:** 
      - Toast: "Conflict resolved! Using your version."
@@ -183,57 +186,61 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
      - Dialog closes automatically
      - Status bar clears
 
-5. On Device 2:
-   - Sync to get Device 1's changes
-   - ✅ **Expected:** "Office Chair" shows $249.99 but keeps original description (Device 1 won)
+5. Verify on GitHub:
+   - Refresh products.json on GitHub
+   - ✅ **Expected:** "Office Chair" shows price 249.99 (your local change won)
+   - Description is "Ergonomic office chair" (GitHub change was overwritten)
 
 **Pass Criteria:**
 - ✅ Conflict detected and dialog shown
 - ✅ Product-level details displayed correctly
 - ✅ Field-by-field comparison shown
 - ✅ Resolution successful with auto-publish continuation
-- ✅ Changes synced to other device
+- ✅ Changes reflected on GitHub
 
 ---
 
 ### Test 3: Complex Conflict (Same Product, Same Field)
-**Goal:** Test when both devices edit the exact same field
+**Goal:** Test when both GitHub and local edit the exact same field
 
 **Steps:**
-1. On Device 1:
-   - Edit "Coffee Maker"
-   - Change price: $79.99 → $89.99
-   - DON'T PUBLISH
+1. On GitHub (browser):
+   - Edit products.json
+   - Find "Coffee Maker"
+   - Change price: 89.99 → 69.99
+   - Commit: "Coffee maker sale price"
+   - ✅ **Expected:** Commit successful
 
-2. On Device 2:
+2. In Sakr Store Manager (WITHOUT syncing):
    - Edit "Coffee Maker" (same product)
-   - Change price: $79.99 → $69.99 (different value!)
-   - Publish to Store
-   - Message: "Coffee maker sale price"
-   - ✅ **Expected:** Success
-
-3. On Device 1:
-   - Click "Publish to Store"
+   - Change price: $89.99 → $99.99 (different value!)
+   - DON'T sync! Click "Publish to Store"
+   
+3. Attempt to publish:
    - ✅ **Expected:** Conflict dialog appears
    
    **Verify Conflict Details:**
    - Shows "Coffee Maker"
    - Price conflict:
-     * Current Store: $69.99
-     * Your Version: $89.99
+     * Current Store (GitHub): $69.99
+     * Your Version: $99.99
    - Clear visual distinction between versions
 
-4. Test Resolution Option A - Use Store Version:
+4. Test Resolution Option A - Keep Store Version:
    - Click "☁️ Keep Store Version"
    - ✅ **Expected:**
      - Toast: "Conflict resolved! Using store version."
      - Toast: "Successfully published to store!"
-     - "Coffee Maker" price becomes $69.99 (reverted)
+     - "Coffee Maker" price in app becomes $69.99 (reverted to GitHub's value)
      - Status bar clears
+
+5. Verify on GitHub:
+   - Refresh products.json
+   - ✅ **Expected:** "Coffee Maker" price is still 69.99 (GitHub version won)
 
 **Pass Criteria:**
 - ✅ Same-field conflict detected
-- ✅ Both versions shown clearly
+- ✅ Both versions shown clearly (GitHub vs Local)
 - ✅ "Keep Store Version" discards local changes correctly
 - ✅ No errors or stuck states
 
@@ -243,7 +250,11 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
 **Goal:** Verify user can cancel out of conflict without breaking git state
 
 **Steps:**
-1. Create another conflict (use any product, any field)
+1. Create another conflict:
+   - On GitHub: Edit "Test Laptop" price to $999.99
+   - In app (without sync): Edit "Test Laptop" description to "Updated description"
+   - Try to publish from app
+
 2. When conflict dialog appears:
    - Click "❌ Cancel" button
    - ✅ **Expected:**
@@ -255,7 +266,8 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
 
 3. Verify git state:
    - Status bar should show changes
-   - Can make more edits
+   - Can make more edits to products
+   - Can try clicking sync instead
    - Next publish attempt should work normally
 
 **Pass Criteria:**
@@ -270,28 +282,33 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
 **Goal:** Test when multiple products have conflicts simultaneously
 
 **Steps:**
-1. On Device 1:
-   - Edit "Test Laptop" → Change description
-   - Edit "Office Chair" → Change price
-   - DON'T PUBLISH
+1. On GitHub:
+   - Edit products.json
+   - Change "Test Laptop" price to $1200
+   - Change "Office Chair" description to "Updated on GitHub"
+   - Commit changes
+   - ✅ **Expected:** Commit successful
 
-2. On Device 2:
-   - Edit "Test Laptop" → Change price (different field than Device 1)
-   - Edit "Office Chair" → Change description (different field than Device 1)
-   - Publish to Store
-   - ✅ **Expected:** Success
-
-3. On Device 1:
+2. In app (WITHOUT syncing):
+   - Edit "Test Laptop" → Change description to "Gaming laptop"
+   - Edit "Office Chair" → Change price to $299.99
    - Click "Publish to Store"
-   - ✅ **Expected:** Conflict dialog shows:
+
+3. Conflict dialog should appear:
+   - ✅ **Expected:** Dialog shows:
      - "2 product(s) have conflicting changes"
      - Both "Test Laptop" and "Office Chair" listed
-     - Each shows their specific field conflicts
+     - Each shows their specific field conflicts:
+       * Test Laptop: price conflict (GitHub: $1200 vs Your: unchanged) + description (GitHub: unchanged vs Your: "Gaming laptop")
+       * Office Chair: description conflict + price conflict
      - All conflicts in one scrollable dialog
 
 4. Resolve:
-   - Choose "Use My Version"
+   - Choose "💻 Use My Version"
    - ✅ **Expected:** Both products resolve, publish succeeds
+
+5. Verify on GitHub:
+   - ✅ **Expected:** Both products show your local changes
 
 **Pass Criteria:**
 - ✅ Multiple conflicts shown together
@@ -302,35 +319,42 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
 ---
 
 ### Test 6: Conflict with Add/Delete Operations
-**Goal:** Test conflicts when products are added/deleted on different devices
+**Goal:** Test conflicts when products are added/deleted
 
 **Steps:**
-1. On Device 1:
-   - Add new product "Wireless Mouse" (price: $29.99)
-   - DON'T PUBLISH
+1. On GitHub:
+   - Edit products.json
+   - Manually delete the entire "Coffee Maker" product object (remove the whole {...} block)
+   - Commit: "Deleted coffee maker"
+   - ✅ **Expected:** Commit successful
 
-2. On Device 2:
-   - Delete "Coffee Maker"
-   - Publish to Store
-   - ✅ **Expected:** Success
-
-3. On Device 1:
+2. In app (WITHOUT syncing):
+   - Add new product "Wireless Mouse":
+     * Category: "Electronics"
+     * Price: $29.99
+     * Description: "Wireless optical mouse"
    - Click "Publish to Store"
+
+3. Conflict detection:
    - ✅ **Expected:** 
-     - Conflict detected (products.json changed)
-     - Shows file-level conflict if no product-level parsing possible
-     - OR shows "Wireless Mouse" as new (Store: none, Your: $29.99)
+     - Conflict detected (products.json changed on both sides)
+     - Dialog shows conflict
+     - May show file-level conflict if product-level parsing can't handle deletion
 
 4. Resolve:
-   - Choose "Use My Version"
+   - Choose "💻 Use My Version"
    - ✅ **Expected:** 
-     - "Wireless Mouse" added to store
-     - "Coffee Maker" stays deleted (was already deleted on Device 2)
+     - "Wireless Mouse" gets published
+     - "Coffee Maker" reappears (because your local version still had it)
+
+5. Verify on GitHub:
+   - Check products.json
+   - ✅ **Expected:** Shows your version (Mouse added, Coffee Maker back)
 
 **Pass Criteria:**
 - ✅ Add/delete conflicts handled
-- ✅ Resolution doesn't break products.json
-- ✅ Both devices end up consistent
+- ✅ Resolution doesn't break products.json structure
+- ✅ No JSON syntax errors
 
 ---
 
@@ -338,31 +362,38 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
 **Goal:** Test that syncing before publishing prevents conflicts
 
 **Steps:**
-1. On Device 2:
-   - Edit "Test Laptop" → Change price
-   - Publish to Store
+1. On GitHub:
+   - Edit products.json
+   - Change "Test Laptop" price to $1500
+   - Commit changes
 
-2. On Device 1:
+2. In app:
    - DON'T sync yet
-   - Edit "Test Laptop" → Change description
-   - Status bar shows notification: "Updates available from store"
-   - Click "Get Updates" BEFORE publishing
+   - Edit "Test Laptop" → Change description to "Professional laptop"
+   - Status bar may show notification: "Updates available from store"
+   - Click "Get Updates" (🔄 sync button) BEFORE publishing
    - ✅ **Expected:** 
-     - Sync pulls Device 2's price change
-     - Local description change is preserved (git merge)
+     - Sync pulls GitHub's price change ($1500)
+     - Your local description change is preserved (git merge works)
      - Now both changes are combined locally
+     - "Test Laptop" shows: $1500 (from GitHub) + "Professional laptop" (your change)
 
-3. On Device 1:
+3. Now publish:
    - Click "Publish to Store"
    - ✅ **Expected:** 
      - NO conflict (because we synced first)
      - Publish successful
-     - Both changes now on store
+     - Both changes now on GitHub
+
+4. Verify on GitHub:
+   - Check products.json
+   - ✅ **Expected:** "Test Laptop" has both changes (price $1500 + new description)
 
 **Pass Criteria:**
 - ✅ Sync notification works
 - ✅ Sync before publish prevents conflict
 - ✅ Both changes merged successfully
+- ✅ Best practice workflow demonstrated
 
 ---
 
@@ -420,19 +451,27 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
 **Goal:** Test that multiple rapid publishes don't break git state
 
 **Steps:**
-1. On Device 1:
+1. In app:
    - Edit "Test Laptop" → Change price to $1000
    - Click "Publish to Store"
-   - IMMEDIATELY edit "Office Chair" → Change price to $200
-   - Click "Publish to Store" again (while first is still processing)
+   - IMMEDIATELY (while toast is still showing) edit "Office Chair" → Change price to $200
+   - Quickly click "Publish to Store" again (while first is still processing)
    - ✅ **Expected:**
-     - Second publish should either queue or show error
+     - Second publish should either:
+       * Wait until first completes, then run
+       * Show error: "Publish in progress"
+       * Button is disabled during first publish
      - No git corruption
      - Both changes eventually published
 
+2. Verify on GitHub:
+   - Check products.json
+   - ✅ **Expected:** Both changes are there (or at least the first one)
+
 **Pass Criteria:**
-- ✅ Concurrent publish attempts handled
+- ✅ Concurrent publish attempts handled gracefully
 - ✅ No git state corruption
+- ✅ Clear UI feedback (button disabled or error shown)
 - ✅ All changes eventually published
 
 ---
@@ -441,19 +480,24 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
 **Goal:** Test interaction between publish and sync operations
 
 **Steps:**
-1. On Device 2: Make changes and publish
-2. On Device 1:
-   - Click sync button
-   - WHILE sync is running, try to click "Publish to Store"
+1. On GitHub: Make a change to any product and commit
+2. In app:
+   - Click sync button (🔄)
+   - WHILE sync is running (loading spinner visible), try to click "Publish to Store"
    - ✅ **Expected:**
-     - Publish button disabled during sync
-     - OR error message: "Sync in progress"
-     - After sync completes, publish works
+     - Publish button should be disabled during sync
+     - OR error message: "Sync in progress, please wait"
+     - No action taken until sync completes
+
+3. After sync completes:
+   - Make a local edit
+   - Try "Publish to Store"
+   - ✅ **Expected:** Works normally
 
 **Pass Criteria:**
 - ✅ Can't publish during sync
-- ✅ Clear UI feedback
-- ✅ No race conditions
+- ✅ Clear UI feedback (disabled button or error)
+- ✅ No race conditions or git corruption
 
 ---
 
@@ -462,27 +506,39 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
 
 **Steps:**
 1. Create intentional mess:
-   - Cancel several conflict resolutions
-   - Leave merge in progress
-   - Close app abruptly (Alt+F4) during conflict
+   - Create a conflict (GitHub edit + local edit)
+   - When conflict dialog appears, click Cancel
+   - Create another conflict immediately
+   - Click Cancel again
+   - Close app abruptly (Alt+F4) while conflict dialog is open
 
 2. Restart app:
    - ✅ **Expected:**
-     - App detects unfinished merge
-     - Shows option to "Reset and discard conflicts"
+     - App starts normally OR shows recovery message
+     - If stuck in merge state, shows option to "Abort merge"
      - OR automatically aborts merge on startup
+     - Products still visible and editable
 
-3. Use Settings → "Reset Repository":
-   - In Settings, look for reset/restore option
+3. Use Settings → Reset/Restore:
+   - Open Settings
+   - Look for any "Reset Repository" or "Restore from Store" option
    - ✅ **Expected:**
-     - Option to "Restore from Store" (hard reset)
-     - Discards all local changes
-     - Downloads fresh copy from store
+     - Option to do hard reset (discard all local changes)
+     - Downloads fresh copy from GitHub
+     - Or reconnect by re-entering settings
+
+4. If no explicit reset option, test manual recovery:
+   - Delete local project folder
+   - Go to Settings
+   - Re-enter same repository URL
+   - Save settings
+   - ✅ **Expected:** Fresh clone downloads successfully
 
 **Pass Criteria:**
-- ✅ Recovery options available
-- ✅ Can get back to clean state
-- ✅ No permanent corruption
+- ✅ App doesn't crash on startup after messy state
+- ✅ Recovery options available (manual or automatic)
+- ✅ Can get back to clean working state
+- ✅ No permanent corruption or data loss on GitHub
 
 ---
 
