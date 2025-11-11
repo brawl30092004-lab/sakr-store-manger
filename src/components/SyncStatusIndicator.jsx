@@ -60,7 +60,7 @@ function SyncStatusIndicator() {
         
         // Show notification if there are new changes
         if (result.hasRemoteChanges && result.behindBy > 0) {
-          showInfo(`${result.behindBy} new change(s) available on GitHub. Click sync to update.`, {
+          showInfo(`${result.behindBy} new change(s) available from your store. Click sync to update.`, {
             autoClose: 5000
           });
         }
@@ -97,7 +97,7 @@ function SyncStatusIndicator() {
    */
   const handleSync = async () => {
     setIsSyncing(true);
-    setSyncStatus('Syncing from GitHub...');
+    setSyncStatus('Syncing from store...');
 
     try {
       const result = await window.electron.pullManual();
@@ -111,9 +111,9 @@ function SyncStatusIndicator() {
         setSyncStatus(null);
         
         if (result.changes > 0) {
-          showSuccess(`Synced ${result.changes} change(s) from GitHub`);
+          showSuccess(`Synced ${result.changes} change(s) from store`);
         } else {
-          showSuccess('Already up to date with GitHub');
+          showSuccess('Already up to date with store');
         }
 
         // Refresh remote changes status
@@ -136,7 +136,7 @@ function SyncStatusIndicator() {
     } catch (error) {
       console.error('Sync error:', error);
       setSyncStatus(null);
-      showError('Failed to sync from GitHub');
+      showError('Failed to sync from store');
     } finally {
       setIsSyncing(false);
     }
@@ -186,11 +186,11 @@ function SyncStatusIndicator() {
           className={`sync-button ${isSyncing ? 'syncing' : ''} ${remoteChanges?.hasRemoteChanges ? 'has-updates' : ''}`}
           onClick={handleSync}
           disabled={isSyncing}
-          title="Pull changes from GitHub"
+          title="Pull latest changes from your online store"
         >
           <span className="sync-icon">🔄</span>
           <span className="sync-text">
-            {isSyncing ? 'Syncing...' : remoteChanges?.hasRemoteChanges ? 'Update' : 'Sync'}
+            {isSyncing ? 'Syncing...' : remoteChanges?.hasRemoteChanges ? 'Get Updates' : 'Sync'}
           </span>
         </button>
 

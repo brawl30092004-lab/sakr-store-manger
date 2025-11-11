@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { showSuccess, showError, showLoading, dismissToast, ToastMessages } from '../services/toastService';
 import ChangesSummaryDialog from './ChangesSummaryDialog';
+import ConflictResolutionDialog from './ConflictResolutionDialog';
+import useConflictHandler from '../hooks/useConflictHandler';
 import './StatusBar.css';
 
 function StatusBar() {
@@ -17,6 +19,18 @@ function StatusBar() {
   const [publishError, setPublishError] = useState(null);
   const [showSummaryDialog, setShowSummaryDialog] = useState(false);
   const statusCheckInterval = useRef(null);
+  
+  // Conflict handling hook
+  const {
+    showConflictDialog,
+    isResolving,
+    handleConflictResolved,
+    handleConflictCancelled,
+    checkAndHandleConflict
+  } = useConflictHandler(async () => {
+    // Callback after conflict resolution and successful publish
+    await checkGitStatus();
+  });
 
   // Check git status on component mount and set up periodic checks
   useEffect(() => {
@@ -97,13 +111,20 @@ function StatusBar() {
     const toastId = showLoading(ToastMessages.GITHUB_PUSHING);
     
     try {
-      console.log('Publishing changes to GitHub...');
+      console.log('Publishing changes to store...');
       
       // Call the publish API with optional commit message and files
       const result = await window.electron.publishToGitHub(commitMessage, files);
       
       // Dismiss loading toast
       dismissToast(toastId);
+      
+      // Check if this is a conflict error
+      if (checkAndHandleConflict(result, commitMessage, files)) {
+        // Conflict detected - dialog will be shown by the hook
+        console.log('Merge conflict detected, showing resolution dialog');
+        return;
+      }
       
       if (result.success) {
         // Success - show notification
@@ -112,9 +133,9 @@ function StatusBar() {
         // Refresh git status to update the UI
         await checkGitStatus();
       } else {
-        // Failed - show error
+        // Failed - show error (not a conflict)
         setPublishError(result.message || 'Failed to publish changes');
-        showError(result.message || 'Failed to publish changes to GitHub');
+        showError(result.message || 'Failed to publish changes to store');
       }
     } catch (error) {
       console.error('Failed to publish:', error);
@@ -134,7 +155,7 @@ function StatusBar() {
         <div className="status-message">
           <span className={`status-indicator ${gitStatus.hasChanges ? 'changes' : 'ready'}`}></span>
           <span className="status-text">
-            {isPublishing ? 'Publishing changes to GitHub...' : (
+            {isPublishing ? 'Publishing changes to store...' : (
               gitStatus.hasChanges ? (
                 gitStatus.productChanges && gitStatus.productChanges.length > 0 ? (
                   `${gitStatus.productChanges.length} product${gitStatus.productChanges.length !== 1 ? 's' : ''} changed`
@@ -174,7 +195,7 @@ function StatusBar() {
             className={`publish-btn ${isPublishing ? 'publishing' : ''}`}
             disabled={!gitStatus.hasChanges || isPublishing}
             onClick={() => handlePublish()}
-            title={gitStatus.hasChanges ? 'Publish all changes to GitHub' : 'No changes to publish'}
+            title={gitStatus.hasChanges ? 'Publish all changes to your online store' : 'No changes to publish'}
           >
             {isPublishing ? (
               <>
@@ -182,7 +203,7 @@ function StatusBar() {
                 Publishing...
               </>
             ) : (
-              'Publish to GitHub'
+              'Publish to Store'
             )}
           </button>
         </div>
@@ -193,6 +214,13 @@ function StatusBar() {
         onClose={() => setShowSummaryDialog(false)}
         gitStatus={gitStatus}
         onPublish={handlePublish}
+      />
+      
+      <ConflictResolutionDialog
+        isOpen={showConflictDialog}
+        onClose={handleConflictCancelled}
+        onResolved={handleConflictResolved}
+        isResolving={isResolving}
       />
     </>
   );

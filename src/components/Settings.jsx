@@ -419,7 +419,7 @@ function Settings({ onBackToMain }) {
               message: 'Checking what\'s missing...'
             });
             
-            showInfo('Restoring missing files from GitHub...');
+            showInfo('Restoring missing files from your store...');
             const restored = await window.electron.resetRepoToRemote(configToSave.projectPath);
             
             if (!restored.success) {
@@ -435,7 +435,7 @@ function Settings({ onBackToMain }) {
             
             setTimeout(() => {
               setProgressState({ isVisible: false, stage: 'checking', currentStep: null, completedSteps: [], message: '' });
-              showSuccess('Files restored from GitHub ✓');
+              showSuccess('Files restored from your store ✓');
             }, 1000);
             
           } else if (choice === 'fresh') {
@@ -486,9 +486,9 @@ function Settings({ onBackToMain }) {
           
           if (choice === 'switch') {
             // Update remote URL
-            showInfo('Updating GitHub connection...');
+            showInfo('Updating store connection...');
             await window.electron.updateGitRemote(configToSave.projectPath, configToSave.repoUrl);
-            showSuccess('Remote URL updated ✓');
+            showSuccess('Store connection updated ✓');
             return { success: true };
           } else if (choice === 'reclone') {
             // Delete and re-clone
@@ -507,10 +507,10 @@ function Settings({ onBackToMain }) {
         stage: 'downloading',
         currentStep: 'connecting',
         completedSteps: [],
-        message: 'Connecting to GitHub...'
+        message: 'Connecting to your store...'
       });
       
-      showInfo('Downloading repository from GitHub...');
+      showInfo('Downloading repository from your store...');
       
       const tokenToUse = (formData.token && formData.token !== '••••••••') ? formData.token : null;
       
@@ -913,7 +913,7 @@ function Settings({ onBackToMain }) {
             onClick={handleTestConnection}
             disabled={isTesting || isLoading || isCloning || dataSource === 'local'}
             className="btn btn-test"
-            title={dataSource === 'local' ? 'Connection test is only available for GitHub mode' : ''}
+            title={dataSource === 'local' ? 'Connection test is only available for Store mode' : ''}
           >
             {isTesting ? 'Testing...' : 'Test Connection'}
           </button>

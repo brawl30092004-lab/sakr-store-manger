@@ -377,3 +377,190 @@
     max-width: 100%;
   }
 }
+
+/* Product-Level Conflict Styles */
+
+.product-conflicts {
+  margin-top: 20px;
+}
+
+.product-conflict-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.product-conflict-item:last-child {
+  margin-bottom: 0;
+}
+
+.product-conflict-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.product-icon {
+  font-size: 20px;
+}
+
+.product-conflict-header strong {
+  color: #fff;
+  font-size: 16px;
+  flex: 1;
+}
+
+.conflict-count {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.field-conflicts {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field-conflict {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.field-name {
+  color: #64b5f6;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.field-comparison {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.field-version {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.github-version {
+  border-left: 3px solid #ffc107;
+}
+
+.local-version {
+  border-left: 3px solid #4caf50;
+}
+
+.version-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.github-version .version-label {
+  color: #ffc107;
+}
+
+.local-version .version-label {
+  color: #4caf50;
+}
+
+.version-value {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.field-separator {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* Responsive adjustments for product conflicts */
+@media (max-width: 768px) {
+  .field-comparison {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .field-separator {
+    display: none;
+  }
+
+  .product-conflict-header {
+    flex-wrap: wrap;
+  }
+
+  .conflict-count {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* Animation for product conflict items */
+.product-conflict-item {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Highlight effect on hover */
+.field-conflict:hover {
+  background: rgba(0, 0, 0, 0.3);
+  transition: background 0.2s ease;
+}
+
+.field-version:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  transition: border-color 0.2s ease;
+}
+
+/* Better scrollbar for product conflicts */
+.conflict-dialog-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.conflict-dialog-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.conflict-dialog-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.conflict-dialog-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

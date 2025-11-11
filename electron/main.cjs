@@ -1575,6 +1575,82 @@ ipcMain.handle('git:resolveConflict', async (event, resolution, files) => {
   }
 });
 
+/**
+ * IPC Handler for continuing publish after conflict resolution
+ */
+ipcMain.handle('git:continuePublish', async (event, commitMessage = null, files = null) => {
+  try {
+    const { getConfigService } = await import('../src/services/configService.js');
+    const GitService = (await import('../src/services/gitService.js')).default;
+    
+    const configService = getConfigService();
+    const config = configService.getConfigWithToken();
+    
+    if (!config || !config.projectPath) {
+      return {
+        success: false,
+        message: 'No project path configured'
+      };
+    }
+    
+    const gitPath = findGitPath();
+    const gitService = new GitService(config.projectPath, {
+      username: config.username,
+      token: config.token,
+      repoUrl: config.repoUrl,
+      gitPath: gitPath
+    });
+    
+    const result = await gitService.continuePublishAfterResolution(commitMessage, files);
+    return result;
+  } catch (error) {
+    console.error('Error continuing publish:', error);
+    return {
+      success: false,
+      message: `Failed to continue publish: ${error.message}`,
+      error: error.message
+    };
+  }
+});
+
+/**
+ * IPC Handler for checking potential conflicts before publish
+ */
+ipcMain.handle('git:checkPotentialConflicts', async (event) => {
+  try {
+    const { getConfigService } = await import('../src/services/configService.js');
+    const GitService = (await import('../src/services/gitService.js')).default;
+    
+    const configService = getConfigService();
+    const config = configService.getConfigWithToken();
+    
+    if (!config || !config.projectPath) {
+      return {
+        success: false,
+        message: 'No project path configured'
+      };
+    }
+    
+    const gitPath = findGitPath();
+    const gitService = new GitService(config.projectPath, {
+      username: config.username,
+      token: config.token,
+      repoUrl: config.repoUrl,
+      gitPath: gitPath
+    });
+    
+    const result = await gitService.checkForPotentialConflicts();
+    return result;
+  } catch (error) {
+    console.error('Error checking potential conflicts:', error);
+    return {
+      success: false,
+      message: `Failed to check for conflicts: ${error.message}`,
+      error: error.message
+    };
+  }
+});
+
 // Auto-Updater Configuration and Handlers
 
 /**

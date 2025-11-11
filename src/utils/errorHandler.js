@@ -16,16 +16,16 @@ const ERROR_MESSAGES = {
   EEXIST: "File or folder already exists.",
   ENOSPC: "No space left on device.",
   
-  // GitHub Errors
-  AUTHENTICATION_FAILED: "GitHub authentication failed. Check your token.",
-  AUTH_FAILED: "GitHub authentication failed. Check your token.",
-  UNAUTHORIZED: "GitHub authentication failed. Check your token.",
-  FORBIDDEN: "Access forbidden. Check your GitHub permissions.",
+  // Store Sync Errors
+  AUTHENTICATION_FAILED: "Store authentication failed. Check your token.",
+  AUTH_FAILED: "Store authentication failed. Check your token.",
+  UNAUTHORIZED: "Store authentication failed. Check your token.",
+  FORBIDDEN: "Access forbidden. Check your store permissions.",
   NOT_FOUND: "Repository not found. Check your repository settings.",
-  CONFLICT: "Your changes conflict with remote changes. Please resolve manually or pull changes.",
-  MERGE_CONFLICT: "Your changes conflict with remote changes. Please resolve manually or pull changes.",
-  NETWORK_ERROR: "Cannot connect to GitHub. Please check your internet connection.",
-  RATE_LIMIT: "GitHub rate limit exceeded. Please try again later.",
+  CONFLICT: "Your local changes conflict with the current store version. Please choose which version to keep.",
+  MERGE_CONFLICT: "Your local changes conflict with the current store version. Please choose which version to keep.",
+  NETWORK_ERROR: "Cannot connect to your online store. Please check your internet connection.",
+  RATE_LIMIT: "Store rate limit exceeded. Please try again later.",
   
   // Image Errors
   FILE_TOO_LARGE: "Image file is too large (max 10 MB).",
@@ -39,13 +39,13 @@ const ERROR_MESSAGES = {
   INVALID_FORMAT: "Invalid format. Please check your input.",
   
   // Git Errors
-  GIT_NOT_INSTALLED: "Git is not installed. Please install Git to use GitHub features.",
-  GIT_NOT_FOUND: "Git is not installed. Please install Git to use GitHub features.",
-  GIT_NOT_INITIALIZED: "Git repository not initialized. Please initialize in Settings.",
-  GIT_OPERATION_FAILED: "Git operation failed. Please try again.",
-  PUSH_FAILED: "Failed to push to GitHub. Check your connection and permissions.",
-  PULL_FAILED: "Failed to pull from GitHub. Check your connection.",
-  COMMIT_FAILED: "Failed to commit changes. Please try again.",
+  GIT_NOT_INSTALLED: "Git is not installed. Please install Git to use store sync features.",
+  GIT_NOT_FOUND: "Git is not installed. Please install Git to use store sync features.",
+  GIT_NOT_INITIALIZED: "Store repository not initialized. Please configure in Settings.",
+  GIT_OPERATION_FAILED: "Store sync operation failed. Please try again.",
+  PUSH_FAILED: "Failed to publish to your store. Check your connection and permissions.",
+  PULL_FAILED: "Failed to get updates from your store. Check your connection.",
+  COMMIT_FAILED: "Failed to save changes. Please try again.",
   
   // General Errors
   UNEXPECTED_ERROR: "An unexpected error occurred. Please try again.",
@@ -92,7 +92,7 @@ export function getUserFriendlyError(error) {
     return ERROR_MESSAGES.EPERM;
   }
 
-  // GitHub authentication errors
+  // Store authentication errors
   if (messageLower.includes('authentication failed') || 
       messageLower.includes('auth failed') ||
       messageLower.includes('bad credentials')) {
@@ -114,7 +114,7 @@ export function getUserFriendlyError(error) {
     return ERROR_MESSAGES.NETWORK_ERROR;
   }
 
-  // GitHub merge conflicts
+  // Store merge conflicts
   if (messageLower.includes('merge conflict') || 
       messageLower.includes('conflict')) {
     return ERROR_MESSAGES.MERGE_CONFLICT;

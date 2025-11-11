@@ -75,10 +75,10 @@ These are different repositories!`,
   },
   
   localChangesConflict: {
-    title: '🔄 Update Available from GitHub',
-    getMessage: (changedFiles) => `There are new changes on GitHub, but you also have changes on this computer that haven't been saved to GitHub yet.
+    title: '🔄 Update Available from Store',
+    getMessage: (changedFiles) => `There are new changes on your store, but you also have changes on this computer that haven't been saved yet.
 
-Your local changes:
+Your changes:
 ${changedFiles.map(f => `  📝 ${f}`).join('\n')}
 
 How should we handle this?`,
@@ -88,7 +88,7 @@ How should we handle this?`,
         id: 'commit-first',
         icon: '💾',
         title: 'Save My Changes First',
-        description: 'Upload your local changes to GitHub, then download the updates',
+        description: 'Upload your changes to the store, then download the updates',
         note: 'Keeps your work safe',
         recommended: true
       },
@@ -96,7 +96,7 @@ How should we handle this?`,
         id: 'discard',
         icon: '📥',
         title: 'Download Updates (Discard Mine)',
-        description: 'Throw away your local changes and download from GitHub',
+        description: 'Throw away your changes and download from the store',
         warning: 'Your recent changes will be permanently lost!',
         destructive: true
       },

@@ -183,13 +183,13 @@ export const ToastMessages = {
   PRODUCT_UPDATED: 'Product updated successfully.',
   PRODUCT_LOADED: 'Products loaded successfully.',
   
-  // GitHub operations
-  GITHUB_PUBLISHED: 'Published to GitHub!',
-  GITHUB_CONNECTED: 'Connected to GitHub successfully.',
-  GITHUB_DISCONNECTED: 'Disconnected from GitHub.',
-  GITHUB_PULLING: 'Pulling changes from GitHub...',
-  GITHUB_PULLED: 'Changes pulled from GitHub successfully.',
-  GITHUB_PUSHING: 'Publishing to GitHub...',
+  // Store sync operations
+  GITHUB_PUBLISHED: 'Published to store successfully!',
+  GITHUB_CONNECTED: 'Connected to your online store successfully.',
+  GITHUB_DISCONNECTED: 'Disconnected from your online store.',
+  GITHUB_PULLING: 'Getting updates from your store...',
+  GITHUB_PULLED: 'Updates synced from your store successfully.',
+  GITHUB_PUSHING: 'Publishing to your store...',
   
   // Image operations
   IMAGE_UPLOADED: 'Image uploaded successfully.',

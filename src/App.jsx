@@ -17,6 +17,8 @@ import Breadcrumbs from './components/Breadcrumbs';
 import FloatingActionButtons from './components/FloatingActionButtons';
 import CommandPalette from './components/CommandPalette';
 import WelcomeScreen from './components/WelcomeScreen';
+import ConflictResolutionDialog from './components/ConflictResolutionDialog';
+import useConflictHandler from './hooks/useConflictHandler';
 import './App.css';
 
 // Lazy load heavy components
@@ -40,6 +42,19 @@ function App() {
   
   // Refs for keyboard shortcut handlers
   const mainContentRef = useRef(null);
+  
+  // Conflict handling hook
+  const {
+    showConflictDialog,
+    isResolving,
+    handleConflictResolved,
+    handleConflictCancelled,
+    checkAndHandleConflict
+  } = useConflictHandler(async () => {
+    // Callback after conflict resolution - reload products
+    dispatch(loadProducts());
+    showSuccess('Products reloaded after conflict resolution');
+  });
 
   // Check if this is the user's first time using the app
   useEffect(() => {
@@ -451,8 +466,21 @@ function App() {
       if (gitStatus.hasChanges) {
         const message = prompt('Enter commit message:', 'Update products');
         if (message) {
-          await window.electron.publishToGitHub(message);
-          showSuccess('Successfully published to GitHub');
+          const result = await window.electron.publishToGitHub(message);
+          
+          // Check if this is a conflict error
+          if (checkAndHandleConflict(result, message)) {
+            // Conflict detected - dialog will be shown by the hook
+            console.log('Merge conflict detected during menu publish');
+            setActiveMenu(null);
+            return;
+          }
+          
+          if (result.success) {
+            showSuccess('Successfully published to GitHub');
+          } else {
+            showError('Failed to publish: ' + result.message);
+          }
         }
       } else {
         showSuccess('No changes to publish');
@@ -697,7 +725,7 @@ function App() {
             <div className="menu-dropdown">
               <div className="menu-section-label">Publishing</div>
               <div className="menu-option" onClick={handlePublishToGitHub}>
-                <span>Publish to GitHub</span>
+                <span>Publish to Store</span>
                 <span className="shortcut">Ctrl+P</span>
               </div>
               <div className="menu-divider"></div>
@@ -822,7 +850,7 @@ function App() {
               <div className="shortcut-section">
                 <h3>Publishing</h3>
                 <div className="shortcut-row">
-                  <span>Publish to GitHub</span>
+                  <span>Publish to Store</span>
                   <kbd>Ctrl+P</kbd>
                 </div>
               </div>
@@ -1052,11 +1080,11 @@ function App() {
           },
           {
             id: 'github-publish',
-            label: 'Publish to GitHub',
+            label: 'Publish to Store',
             icon: <Github size={16} />,
             shortcut: 'Ctrl+P',
             category: 'Tools',
-            keywords: ['github', 'publish', 'push', 'upload'],
+            keywords: ['store', 'publish', 'push', 'upload', 'sync'],
             action: handlePublishToGitHub
           },
           {
@@ -1094,6 +1122,13 @@ function App() {
             action: handleShowAbout
           }
         ]}
+      />
+
+      <ConflictResolutionDialog
+        isOpen={showConflictDialog}
+        onClose={handleConflictCancelled}
+        onResolved={handleConflictResolved}
+        isResolving={isResolving}
       />
 
       <StatusBar />

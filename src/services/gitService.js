@@ -984,6 +984,22 @@ class GitService {
       results.pull = await this.pullLatestChanges();
 
       if (!results.pull.success) {
+        // Check if this is a conflict error - return special conflict status
+        if (results.pull.error === 'Merge conflicts detected' || 
+            (results.pull.message && results.pull.message.includes('conflict'))) {
+          return {
+            success: false,
+            hasConflict: true,
+            error: results.pull.error,
+            message: results.pull.message,
+            conflicts: results.pull.conflicts,
+            step: 'pull',
+            results,
+            needsResolution: true
+          };
+        }
+        
+        // Other errors (network, auth, etc.)
         return {
           success: false,
           error: results.pull.error,
@@ -1053,6 +1069,80 @@ class GitService {
   }
 
   /**
+   * Continues publishing after conflict resolution
+   * Only executes commit and push steps (assumes pull already done)
+   * @param {string} commitMessage - Commit message
+   * @param {Array<string>} files - Optional array of specific files to commit
+   * @returns {Promise<Object>} - Result object
+   */
+  async continuePublishAfterResolution(commitMessage = null, files = null) {
+    const startTime = Date.now();
+    const results = {
+      commit: null,
+      push: null
+    };
+
+    try {
+      // Step 1: Commit changes
+      console.log('Step 1/2: Committing changes after conflict resolution...');
+      results.commit = await this.commitChanges(commitMessage, files);
+
+      if (!results.commit.success) {
+        // If there are no changes to commit, it's not really an error
+        if (results.commit.error === 'No changes to commit') {
+          return {
+            success: true,
+            message: 'Already up to date. No changes to publish.',
+            results
+          };
+        }
+
+        return {
+          success: false,
+          error: results.commit.error,
+          message: results.commit.message,
+          step: 'commit',
+          results
+        };
+      }
+
+      // Step 2: Push to GitHub
+      console.log('Step 2/2: Pushing to GitHub...');
+      results.push = await this.pushToGitHub();
+
+      if (!results.push.success) {
+        return {
+          success: false,
+          error: results.push.error,
+          message: results.push.message,
+          step: 'push',
+          results
+        };
+      }
+
+      // Success!
+      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+      return {
+        success: true,
+        message: `Successfully published changes to GitHub in ${duration}s`,
+        duration,
+        commitMessage: results.commit.commitMessage,
+        branch: results.push.branch,
+        filesCommitted: results.commit.filesCommitted,
+        results
+      };
+    } catch (error) {
+      console.error('Continue publish workflow failed:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: `Publish workflow failed: ${error.message}`,
+        results
+      };
+    }
+  }
+
+  /**
    * Checks if there are new changes on the remote repository
    * Compares local HEAD with remote HEAD without pulling
    * @param {string} branch - Branch name (defaults to current branch)
@@ -1101,6 +1191,72 @@ class GitService {
         success: false,
         error: error.message,
         message: `Failed to check for remote changes: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Checks if a merge would cause conflicts without actually merging
+   * Uses git merge --no-commit --no-ff to simulate merge
+   * @param {string} branch - Branch name (defaults to current branch)
+   * @returns {Promise<Object>} - Result with potential conflict information
+   */
+  async checkForPotentialConflicts(branch = null) {
+    try {
+      // Get current branch if not specified
+      if (!branch) {
+        const status = await this.git.status();
+        branch = status.current;
+      }
+
+      console.log(`Checking for potential conflicts with origin/${branch}...`);
+
+      // First, fetch to ensure we have latest remote refs
+      await this.git.fetch('origin');
+
+      // Check if there are local changes
+      const status = await this.git.status();
+      const hasLocalChanges = status.files.length > 0;
+
+      // Check if remote is ahead
+      const remoteCheck = await this.checkForRemoteChanges(branch);
+      if (!remoteCheck.hasRemoteChanges) {
+        return {
+          success: true,
+          hasLocalChanges,
+          hasRemoteChanges: false,
+          potentialConflicts: false,
+          message: 'No remote changes detected'
+        };
+      }
+
+      // If both local and remote have changes, there might be conflicts
+      if (hasLocalChanges && remoteCheck.aheadBy > 0 && remoteCheck.behindBy > 0) {
+        // Both sides have changes - potential conflict
+        return {
+          success: true,
+          hasLocalChanges,
+          hasRemoteChanges: true,
+          potentialConflicts: true,
+          diverged: true,
+          message: 'Local and remote branches have diverged - conflicts possible',
+          warning: 'Publishing may encounter merge conflicts. Consider pulling first.'
+        };
+      }
+
+      return {
+        success: true,
+        hasLocalChanges,
+        hasRemoteChanges: remoteCheck.hasRemoteChanges,
+        potentialConflicts: false,
+        message: 'No conflicts expected'
+      };
+    } catch (error) {
+      console.error('Failed to check for potential conflicts:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: `Failed to check for conflicts: ${error.message}`
       };
     }
   }
@@ -1169,6 +1325,86 @@ class GitService {
   }
 
   /**
+   * Parses products.json to find specific product-level conflicts
+   * @param {string} localContent - Local version content
+   * @param {string} remoteContent - Remote version content
+   * @returns {Array} - Array of product conflicts with field-level details
+   */
+  parseProductConflicts(localContent, remoteContent) {
+    try {
+      const localProducts = JSON.parse(localContent);
+      const remoteProducts = JSON.parse(remoteContent);
+      const conflicts = [];
+
+      // Create maps for quick lookup
+      const localMap = new Map(localProducts.map(p => [p.id, p]));
+      const remoteMap = new Map(remoteProducts.map(p => [p.id, p]));
+
+      // Find products that exist in both but differ
+      for (const [id, localProduct] of localMap) {
+        const remoteProduct = remoteMap.get(id);
+        
+        if (!remoteProduct) continue; // Product only exists locally
+        
+        const fieldConflicts = [];
+        
+        // Compare each field
+        const fieldsToCheck = ['name', 'price', 'description', 'category', 'stock', 'isNew', 'discount'];
+        
+        for (const field of fieldsToCheck) {
+          const localValue = localProduct[field];
+          const remoteValue = remoteProduct[field];
+          
+          // Check if values differ
+          if (JSON.stringify(localValue) !== JSON.stringify(remoteValue)) {
+            fieldConflicts.push({
+              field,
+              fieldLabel: this.getFieldLabel(field),
+              localValue,
+              remoteValue,
+              isDifferent: true
+            });
+          }
+        }
+        
+        // If there are field conflicts, add this product to conflicts list
+        if (fieldConflicts.length > 0) {
+          conflicts.push({
+            productId: id,
+            productName: localProduct.name || remoteProduct.name || `Product ${id}`,
+            localProduct,
+            remoteProduct,
+            fieldConflicts
+          });
+        }
+      }
+      
+      return conflicts;
+    } catch (error) {
+      console.error('Failed to parse product conflicts:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Gets user-friendly label for product field
+   * @param {string} field - Field name
+   * @returns {string} - User-friendly label
+   */
+  getFieldLabel(field) {
+    const labels = {
+      name: 'Product Name',
+      price: 'Price',
+      description: 'Description',
+      category: 'Category',
+      stock: 'Stock Quantity',
+      isNew: 'New Badge',
+      discount: 'Discount'
+    };
+    return labels[field] || field;
+  }
+
+  /**
    * Handles merge conflicts by providing resolution options
    * @returns {Promise<Object>} - Conflict details with resolution options
    */
@@ -1188,6 +1424,7 @@ class GitService {
 
       // Get details for products.json conflicts (most common)
       const conflicts = [];
+      let productConflicts = [];
       
       for (const file of conflictedFiles) {
         try {
@@ -1207,6 +1444,11 @@ class GitService {
             console.log('Could not get remote version of', file);
           }
 
+          // If this is products.json, parse for product-level conflicts
+          if (file.includes('products.json') && localVersion && remoteVersion) {
+            productConflicts = this.parseProductConflicts(localVersion, remoteVersion);
+          }
+
           conflicts.push({
             file,
             localVersion,
@@ -1222,7 +1464,11 @@ class GitService {
         hasConflicts: true,
         conflictedFiles,
         conflicts,
-        message: `${conflictedFiles.length} file(s) have conflicts`
+        productConflicts, // Detailed product-level conflicts
+        hasProductConflicts: productConflicts.length > 0,
+        message: productConflicts.length > 0 
+          ? `${productConflicts.length} product(s) have conflicts`
+          : `${conflictedFiles.length} file(s) have conflicts`
       };
     } catch (error) {
       console.error('Failed to get conflict details:', error);

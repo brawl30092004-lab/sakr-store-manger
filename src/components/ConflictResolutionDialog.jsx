@@ -6,10 +6,13 @@ import './ConflictResolutionDialog.css';
  * ConflictResolutionDialog - User-friendly dialog for resolving merge conflicts
  * Provides simple options: Keep Local, Keep Remote, or Cancel
  */
-function ConflictResolutionDialog({ isOpen, onClose, onResolved }) {
+function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: externalIsResolving = false }) {
   const [conflictDetails, setConflictDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
+  
+  // Use external isResolving if provided (from hook), otherwise use internal state
+  const resolving = externalIsResolving || isResolving;
 
   useEffect(() => {
     if (isOpen) {
@@ -44,6 +47,17 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved }) {
    * Resolve conflict by choosing a version
    */
   const handleResolve = async (resolution) => {
+    // If using external resolution handler, just call it
+    if (externalIsResolving !== false) {
+      if (resolution === 'cancel') {
+        onClose();
+      } else {
+        onResolved(resolution);
+      }
+      return;
+    }
+    
+    // Otherwise use internal resolution logic (for backward compatibility with SyncStatusIndicator)
     setIsResolving(true);
     
     try {
@@ -54,7 +68,7 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved }) {
         result = await window.electron.resolveConflict('abort');
         
         if (result.success) {
-          showInfo('Merge cancelled. Your local changes are preserved.');
+          showInfo('Merge cancelled. Your changes are preserved.');
           onClose();
         } else {
           showError('Failed to cancel merge: ' + result.message);
@@ -94,7 +108,9 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved }) {
           <div className="conflict-icon">⚠️</div>
           <h2>Merge Conflict Detected</h2>
           <p className="conflict-subtitle">
-            Changes on GitHub conflict with your local changes
+            {externalIsResolving !== false 
+              ? 'Cannot publish: changes on your store conflict with your local changes'
+              : 'Changes on your store conflict with your local changes'}
           </p>
         </div>
 
@@ -107,47 +123,99 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved }) {
           ) : conflictDetails && conflictDetails.hasConflicts ? (
             <>
               <div className="conflict-info">
-                <p className="conflict-description">
-                  <strong>{conflictDetails.conflictedFiles?.length || 0} file(s)</strong> have conflicting changes
-                  between your local copy and GitHub.
-                </p>
-                
-                {conflictDetails.conflictedFiles && conflictDetails.conflictedFiles.length > 0 && (
-                  <div className="conflicted-files">
-                    <p className="files-label">Conflicted files:</p>
-                    <ul>
-                      {conflictDetails.conflictedFiles.map((file, index) => (
-                        <li key={index}>
-                          <span className="file-icon">📄</span>
-                          {file}
-                        </li>
+                {conflictDetails.hasProductConflicts && conflictDetails.productConflicts?.length > 0 ? (
+                  <>
+                    <p className="conflict-description">
+                      <strong>{conflictDetails.productConflicts.length} product(s)</strong> have conflicting changes
+                      between your local version and the current store.
+                    </p>
+                    
+                    <div className="product-conflicts">
+                      {conflictDetails.productConflicts.map((product, pIndex) => (
+                        <div key={pIndex} className="product-conflict-item">
+                          <div className="product-conflict-header">
+                            <span className="product-icon">📦</span>
+                            <strong>{product.productName}</strong>
+                            <span className="conflict-count">{product.fieldConflicts.length} field(s) differ</span>
+                          </div>
+                          
+                          <div className="field-conflicts">
+                            {product.fieldConflicts.map((field, fIndex) => (
+                              <div key={fIndex} className="field-conflict">
+                                <div className="field-name">{field.fieldLabel}:</div>
+                                <div className="field-comparison">
+                                  <div className="field-version github-version">
+                                    <div className="version-label">🌐 Current Store (GitHub)</div>
+                                    <div className="version-value">
+                                      {field.field === 'price' ? `$${field.remoteValue}` : 
+                                       field.field === 'isNew' ? (field.remoteValue ? 'Yes' : 'No') :
+                                       field.field === 'discount' ? `${field.remoteValue}%` :
+                                       field.remoteValue || '(empty)'}
+                                    </div>
+                                  </div>
+                                  <div className="field-separator">→</div>
+                                  <div className="field-version local-version">
+                                    <div className="version-label">💻 Your Version</div>
+                                    <div className="version-value">
+                                      {field.field === 'price' ? `$${field.localValue}` :
+                                       field.field === 'isNew' ? (field.localValue ? 'Yes' : 'No') :
+                                       field.field === 'discount' ? `${field.localValue}%` :
+                                       field.localValue || '(empty)'}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       ))}
-                    </ul>
-                  </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="conflict-description">
+                      <strong>{conflictDetails.conflictedFiles?.length || 0} file(s)</strong> have conflicting changes
+                      between your local copy and GitHub.
+                    </p>
+                    
+                    {conflictDetails.conflictedFiles && conflictDetails.conflictedFiles.length > 0 && (
+                      <div className="conflicted-files">
+                        <p className="files-label">Conflicted files:</p>
+                        <ul>
+                          {conflictDetails.conflictedFiles.map((file, index) => (
+                            <li key={index}>
+                              <span className="file-icon">📄</span>
+                              {file}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
               <div className="conflict-explanation">
-                <h3>What do you want to do?</h3>
-                <p>Choose how to resolve the conflict:</p>
+                <h3>Which version do you want to keep?</h3>
+                <p>Choose how to resolve {conflictDetails.hasProductConflicts ? 'these product conflicts' : 'the conflict'}:</p>
               </div>
 
               <div className="conflict-options">
                 <div className="conflict-option">
                   <div className="option-icon local">💻</div>
                   <div className="option-content">
-                    <h4>Keep My Local Changes</h4>
-                    <p>Keep your local version and discard changes from GitHub</p>
-                    <p className="option-note">✓ Recommended if you made recent changes</p>
+                    <h4>Use My Version</h4>
+                    <p>Keep your changes and update the store with your version</p>
+                    <p className="option-note">✓ Recommended if you just made edits</p>
                   </div>
                 </div>
 
                 <div className="conflict-option">
                   <div className="option-icon remote">☁️</div>
                   <div className="option-content">
-                    <h4>Use GitHub Version</h4>
-                    <p>Discard your local changes and use the version from GitHub</p>
-                    <p className="option-note">⚠️ Your local changes will be lost</p>
+                    <h4>Keep Store Version</h4>
+                    <p>Discard your changes and keep what's currently on the store</p>
+                    <p className="option-note">⚠️ Your edits will be lost</p>
                   </div>
                 </div>
 
@@ -155,8 +223,8 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved }) {
                   <div className="option-icon cancel">🚫</div>
                   <div className="option-content">
                     <h4>Cancel</h4>
-                    <p>Abort the sync and keep everything as is</p>
-                    <p className="option-note">ℹ️ You can try again later</p>
+                    <p>Abort and don't publish anything right now</p>
+                    <p className="option-note">ℹ️ You can try again later or manually resolve</p>
                   </div>
                 </div>
               </div>
@@ -172,32 +240,41 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved }) {
           <button
             className="conflict-btn conflict-btn-local"
             onClick={() => handleResolve('local')}
-            disabled={isResolving || isLoading}
+            disabled={resolving || isLoading}
+            title="Keep your changes and publish them to the store"
           >
-            {isResolving ? 'Resolving...' : '💻 Keep Local'}
+            {resolving ? 'Resolving...' : '💻 Use My Version'}
           </button>
           
           <button
             className="conflict-btn conflict-btn-remote"
             onClick={() => handleResolve('remote')}
-            disabled={isResolving || isLoading}
+            disabled={resolving || isLoading}
+            title="Discard your changes and keep the current store version"
           >
-            {isResolving ? 'Resolving...' : '☁️ Use GitHub'}
+            {resolving ? 'Resolving...' : '☁️ Keep Store Version'}
           </button>
           
           <button
             className="conflict-btn conflict-btn-cancel"
             onClick={() => handleResolve('cancel')}
-            disabled={isResolving}
+            disabled={resolving}
+            title="Cancel this operation and try again later"
           >
             Cancel
           </button>
         </div>
 
         <div className="conflict-dialog-footer">
-          <p className="conflict-help">
-            💡 <strong>Tip:</strong> If you're unsure, click Cancel and contact your team to coordinate.
-          </p>
+          {resolving ? (
+            <p className="conflict-help resolving">
+              🔄 <strong>Resolving conflict and publishing...</strong> This may take a moment.
+            </p>
+          ) : (
+            <p className="conflict-help">
+              💡 <strong>Tip:</strong> If you're unsure, click Cancel and contact your team to coordinate.
+            </p>
+          )}
         </div>
       </div>
     </div>
