@@ -1,4 +1,4 @@
-import { generateNextProductId, validateProduct } from './productValidation.js';
+import { generateNextProductId, validateProduct, validateProductCategory } from './productValidation.js';
 import { deleteProductImages, deleteProductImage } from './imageService.js';
 
 
@@ -255,7 +255,6 @@ class ProductService {
     }
     
     // Validate the new category name using the validation service
-    const { validateProductCategory } = await import('./productValidation.js');
     const validation = validateProductCategory(newCategory);
     
     if (!validation.valid) {
