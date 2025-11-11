@@ -1,0 +1,284 @@
+/* User Decision Dialog Styles */
+
+.user-decision-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.user-decision-dialog {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.dialog-header {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dialog-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.3;
+}
+
+.dialog-body {
+  padding: 24px;
+}
+
+.dialog-message {
+  margin-bottom: 24px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #374151;
+}
+
+.dialog-message p {
+  margin: 0 0 12px 0;
+  white-space: pre-wrap;
+}
+
+.dialog-message p:last-child {
+  margin-bottom: 0;
+}
+
+.dialog-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dialog-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.dialog-option:hover {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.dialog-option.recommended {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.dialog-option.recommended:hover {
+  border-color: #059669;
+  background: #dcfce7;
+}
+
+.dialog-option.destructive {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.dialog-option.destructive:hover {
+  border-color: #d97706;
+  background: #fef3c7;
+}
+
+.option-icon {
+  font-size: 32px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.option-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.option-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge-recommended {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #10b981;
+  color: white;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.option-description {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.option-note {
+  font-size: 13px;
+  color: #059669;
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: #d1fae5;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.option-warning {
+  font-size: 13px;
+  color: #d97706;
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: #fef3c7;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .user-decision-dialog {
+    background: #1f2937;
+  }
+
+  .dialog-header {
+    border-bottom-color: #374151;
+  }
+
+  .dialog-header h2 {
+    color: #f9fafb;
+  }
+
+  .dialog-message {
+    color: #d1d5db;
+  }
+
+  .dialog-option {
+    background: #111827;
+    border-color: #374151;
+  }
+
+  .dialog-option:hover {
+    background: #1e3a5f;
+    border-color: #3b82f6;
+  }
+
+  .dialog-option.recommended {
+    background: #064e3b;
+    border-color: #10b981;
+  }
+
+  .dialog-option.recommended:hover {
+    background: #065f46;
+  }
+
+  .dialog-option.destructive {
+    background: #78350f;
+    border-color: #f59e0b;
+  }
+
+  .dialog-option.destructive:hover {
+    background: #92400e;
+  }
+
+  .option-title {
+    color: #f9fafb;
+  }
+
+  .option-description {
+    color: #9ca3af;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .user-decision-dialog {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .dialog-header {
+    padding: 20px 20px 12px;
+  }
+
+  .dialog-header h2 {
+    font-size: 20px;
+  }
+
+  .dialog-body {
+    padding: 20px;
+  }
+
+  .dialog-message {
+    font-size: 14px;
+  }
+
+  .dialog-option {
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .option-icon {
+    font-size: 28px;
+  }
+
+  .option-title {
+    font-size: 15px;
+  }
+
+  .option-description {
+    font-size: 13px;
+  }
+}

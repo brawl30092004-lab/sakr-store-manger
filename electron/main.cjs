@@ -222,6 +222,21 @@ ipcMain.handle('fs:checkProjectPath', async (event, projectPath) => {
 });
 
 /**
+ * Empty a directory (delete all contents but keep the folder)
+ */
+ipcMain.handle('fs:emptyDirectory', async (event, dirPath) => {
+  try {
+    console.log('Emptying directory:', dirPath);
+    await fs.emptyDir(dirPath);
+    console.log('Directory emptied successfully');
+    return { success: true };
+  } catch (error) {
+    console.error('Error emptying directory:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+/**
  * Create empty products.json file at the specified path
  */
 ipcMain.handle('fs:createEmptyProducts', async (event, projectPath) => {
@@ -823,6 +838,194 @@ ipcMain.handle('git:getStatus', async (event) => {
 });
 
 /**
+ * IPC Handler for validating repository integrity
+ * Checks if required files exist in the repository
+ */
+ipcMain.handle('git:validateRepoIntegrity', async (event, projectPath) => {
+  try {
+    console.log('Validating repository integrity at:', projectPath);
+    
+    const requiredFiles = ['products.json'];
+    const missingFiles = [];
+    
+    for (const file of requiredFiles) {
+      const filePath = path.join(projectPath, file);
+      const exists = await fs.pathExists(filePath);
+      if (!exists) {
+        missingFiles.push(file);
+      }
+    }
+    
+    const hasGitFolder = await fs.pathExists(path.join(projectPath, '.git'));
+    
+    return {
+      success: true,
+      hasRequiredFiles: missingFiles.length === 0,
+      missingFiles,
+      hasGit: hasGitFolder
+    };
+  } catch (error) {
+    console.error('Error validating repository integrity:', error);
+    return { 
+      success: false, 
+      hasRequiredFiles: false, 
+      error: error.message 
+    };
+  }
+});
+
+/**
+ * IPC Handler for validating remote URL matches configured URL
+ */
+ipcMain.handle('git:validateGitRemote', async (event, projectPath, expectedUrl) => {
+  try {
+    console.log('Validating git remote at:', projectPath);
+    console.log('Expected URL:', expectedUrl);
+    
+    const simpleGit = (await import('simple-git')).default;
+    const gitPath = findGitPath();
+    const gitOptions = gitPath && gitPath !== 'git' ? { 
+      binary: gitPath,
+      unsafe: { allowUnsafeCustomBinary: true }
+    } : {};
+    
+    const git = simpleGit({ ...gitOptions, baseDir: projectPath });
+    
+    // Get remotes
+    const remotes = await git.getRemotes(true);
+    const origin = remotes.find(r => r.name === 'origin');
+    
+    if (!origin) {
+      return {
+        success: false,
+        matches: false,
+        message: 'No remote named "origin" found'
+      };
+    }
+    
+    // Function to clean URL (remove credentials, .git suffix, trailing slashes)
+    const cleanUrl = (url) => {
+      if (!url) return '';
+      
+      // Remove credentials from URL (username:token@)
+      let cleaned = url.replace(/https?:\/\/[^@]+@/, 'https://');
+      
+      // Remove .git suffix
+      cleaned = cleaned.replace(/\.git$/, '');
+      
+      // Remove trailing slashes
+      cleaned = cleaned.replace(/\/$/, '');
+      
+      return cleaned.toLowerCase();
+    };
+    
+    const rawCurrentUrl = origin.refs.fetch || origin.refs.push;
+    const currentUrl = cleanUrl(rawCurrentUrl);
+    const expected = cleanUrl(expectedUrl);
+    
+    console.log('Current URL (cleaned):', currentUrl);
+    console.log('Expected URL (cleaned):', expected);
+    
+    const matches = currentUrl === expected || 
+                   currentUrl.includes(expected) || 
+                   expected.includes(currentUrl);
+    
+    return {
+      success: true,
+      matches,
+      currentUrl: currentUrl, // Return cleaned URL without credentials
+      expectedUrl: expected   // Return cleaned expected URL
+    };
+  } catch (error) {
+    console.error('Error validating git remote:', error);
+    return { 
+      success: false, 
+      matches: false, 
+      error: error.message 
+    };
+  }
+});
+
+/**
+ * IPC Handler for resetting repository to remote state
+ * Used to restore deleted files
+ */
+ipcMain.handle('git:resetRepoToRemote', async (event, projectPath) => {
+  try {
+    console.log('Resetting repository to remote state:', projectPath);
+    
+    const simpleGit = (await import('simple-git')).default;
+    const gitPath = findGitPath();
+    const gitOptions = gitPath && gitPath !== 'git' ? { 
+      binary: gitPath,
+      unsafe: { allowUnsafeCustomBinary: true }
+    } : {};
+    
+    const git = simpleGit({ ...gitOptions, baseDir: projectPath });
+    
+    // Fetch latest from remote
+    await git.fetch('origin');
+    
+    // Get default branch
+    const branches = await git.branch(['-r']);
+    const defaultBranch = branches.all.find(b => b.includes('origin/main')) ? 'main' : 'master';
+    
+    console.log(`Resetting to origin/${defaultBranch}`);
+    
+    // Hard reset to remote branch (restores deleted files)
+    await git.reset(['--hard', `origin/${defaultBranch}`]);
+    
+    // Clean untracked files and directories
+    await git.clean('f', ['-d']);
+    
+    return { 
+      success: true, 
+      message: 'Repository restored from GitHub' 
+    };
+  } catch (error) {
+    console.error('Error resetting repository:', error);
+    return { 
+      success: false, 
+      message: error.message 
+    };
+  }
+});
+
+/**
+ * IPC Handler for updating git remote URL
+ */
+ipcMain.handle('git:updateGitRemote', async (event, projectPath, newUrl) => {
+  try {
+    console.log('Updating git remote URL:', projectPath, '->', newUrl);
+    
+    const simpleGit = (await import('simple-git')).default;
+    const gitPath = findGitPath();
+    const gitOptions = gitPath && gitPath !== 'git' ? { 
+      binary: gitPath,
+      unsafe: { allowUnsafeCustomBinary: true }
+    } : {};
+    
+    const git = simpleGit({ ...gitOptions, baseDir: projectPath });
+    
+    // Update origin remote URL
+    await git.remote(['set-url', 'origin', newUrl]);
+    
+    console.log('Remote URL updated successfully');
+    
+    return { 
+      success: true, 
+      message: 'Remote URL updated successfully' 
+    };
+  } catch (error) {
+    console.error('Error updating git remote:', error);
+    return { 
+      success: false, 
+      message: error.message 
+    };
+  }
+});
+
+/**
  * IPC Handler for cloning GitHub repository
  */
 ipcMain.handle('git:clone', async (event, targetPath, repoUrl, username, token) => {
@@ -1150,6 +1353,108 @@ ipcMain.handle('git:checkRemoteChanges', async (event) => {
     return {
       success: false,
       message: `Failed to check remote changes: ${error.message}`,
+      error: error.message
+    };
+  }
+});
+
+/**
+ * IPC Handler for pulling changes with strategy for local changes
+ * Supports: auto (ask user), stash (save+restore), commit, force (discard)
+ */
+ipcMain.handle('git:pullWithStrategy', async (event, strategy = 'auto') => {
+  try {
+    const { getConfigService } = await import('../src/services/configService.js');
+    
+    const configService = getConfigService();
+    const config = configService.getConfigWithToken();
+    
+    if (!config || !config.projectPath) {
+      return {
+        success: false,
+        message: 'No project path configured'
+      };
+    }
+    
+    const simpleGit = (await import('simple-git')).default;
+    const gitPath = findGitPath();
+    const gitOptions = gitPath && gitPath !== 'git' ? { 
+      binary: gitPath,
+      unsafe: { allowUnsafeCustomBinary: true }
+    } : {};
+    
+    const git = simpleGit({ ...gitOptions, baseDir: config.projectPath });
+    
+    // Check for uncommitted changes
+    const status = await git.status();
+    const changedFiles = [...status.modified, ...status.not_added, ...status.created];
+    
+    if (status.isClean()) {
+      // No local changes - simple pull
+      await git.pull();
+      return { 
+        success: true, 
+        message: 'Pulled latest changes from GitHub' 
+      };
+    }
+    
+    // Has local changes - handle based on strategy
+    switch (strategy) {
+      case 'stash':
+        // Save, pull, restore
+        await git.stash(['push', '-m', 'Auto-stash before pull']);
+        await git.pull();
+        try {
+          await git.stash(['pop']);
+          return { 
+            success: true, 
+            message: 'Pulled and restored your local changes' 
+          };
+        } catch {
+          return { 
+            success: true, 
+            hasConflict: true,
+            message: 'Pulled, but your changes conflict with updates. Please review.' 
+          };
+        }
+        
+      case 'commit':
+        // Commit first, then pull
+        await git.add('./*');
+        await git.commit('Auto-save: Local changes before sync');
+        await git.pull();
+        return { 
+          success: true, 
+          message: 'Saved your changes and pulled updates' 
+        };
+        
+      case 'force':
+        // Discard local, match remote
+        await git.fetch('origin');
+        const branches = await git.branch(['-r']);
+        const defaultBranch = branches.all.find(b => b.includes('origin/main')) ? 'main' : 'master';
+        await git.reset(['--hard', `origin/${defaultBranch}`]);
+        return { 
+          success: true, 
+          message: 'Pulled latest (your local changes were discarded)',
+          localChangesDiscarded: true 
+        };
+        
+      case 'auto':
+      default:
+        // Ask user what to do
+        return {
+          success: false,
+          needsUserDecision: true,
+          changedFiles,
+          message: 'You have local changes. How should we proceed?'
+        };
+    }
+  } catch (error) {
+    console.error('Error pulling with strategy:', error);
+    return {
+      success: false,
+      message: `Failed to pull: ${error.message}`,
       error: error.message
     };
   }

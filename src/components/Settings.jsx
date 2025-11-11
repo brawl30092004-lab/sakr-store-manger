@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { setProjectPath } from '../store/slices/settingsSlice';
-import { showSuccess, showError, showInfo, ToastMessages } from '../services/toastService';
+import { showSuccess, showError, showInfo, showWarning, ToastMessages } from '../services/toastService';
 import DataSourceSelector from './DataSourceSelector';
 import GitInstallDialog from './GitInstallDialog';
+import UserDecisionDialog from './UserDecisionDialog';
+import SetupProgress from './SetupProgress';
 import './Settings.css';
 
 /**
@@ -37,6 +39,17 @@ function Settings({ onBackToMain }) {
   const [isGitInstalled, setIsGitInstalled] = useState(null); // null = not checked, true = installed, false = not installed
   const [showGitInstallDialog, setShowGitInstallDialog] = useState(false);
   const [gitVersion, setGitVersion] = useState(null);
+  
+  // New state for user-friendly dialogs and progress
+  const [forceClone, setForceClone] = useState(false);
+  const [dialogState, setDialogState] = useState({ isOpen: false, type: null, data: null });
+  const [progressState, setProgressState] = useState({ 
+    isVisible: false, 
+    stage: 'checking', 
+    currentStep: null, 
+    completedSteps: [], 
+    message: '' 
+  });
 
   // Scroll to top on mount
   useEffect(() => {
@@ -172,14 +185,34 @@ function Settings({ onBackToMain }) {
    */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Prevent spaces in username field
+    if (name === 'username') {
+      const sanitizedValue = value.replace(/\s/g, '');
+      setFormData(prev => ({
+        ...prev,
+        [name]: sanitizedValue
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
 
-    // Clear token indicator if user modifies the token field
-    if (name === 'token' && value !== '••••••••') {
+    // Clear token indicator if user actively changes the token field
+    // (not just clicking in it or when it's being set to masked value)
+    if (name === 'token' && value !== '••••••••' && value !== '') {
       setHasExistingToken(false);
+    }
+  };
+
+  /**
+   * Handle focus on token field - select all if masked
+   */
+  const handleTokenFocus = (e) => {
+    if (formData.token === '••••••••') {
+      e.target.select();
     }
   };
 
@@ -287,52 +320,241 @@ function Settings({ onBackToMain }) {
    */
   const handleGitHubSetup = async (configToSave) => {
     try {
-      // Check if the project path already exists and is a git repository
+      // User forced fresh clone - skip all validation
+      if (forceClone) {
+        showInfo('Starting fresh - will delete and re-download repository...');
+        setProgressState({
+          isVisible: true,
+          stage: 'cloning',
+          currentStep: 'preparing',
+          completedSteps: [],
+          message: 'Preparing folder...'
+        });
+        
+        // Empty the directory first
+        await window.electron.fs.emptyDirectory(configToSave.projectPath);
+        
+        setProgressState(prev => ({
+          ...prev,
+          currentStep: 'cloning',
+          completedSteps: ['preparing'],
+          message: 'Downloading repository from GitHub...'
+        }));
+        
+        const tokenToUse = (formData.token && formData.token !== '••••••••') ? formData.token : null;
+        const cloneResult = await window.electron.cloneRepository(
+          configToSave.projectPath,
+          configToSave.repoUrl,
+          configToSave.username,
+          tokenToUse
+        );
+        
+        if (!cloneResult.success) {
+          throw new Error(cloneResult.message || 'Failed to clone repository');
+        }
+        
+        setProgressState(prev => ({
+          ...prev,
+          currentStep: 'finalizing',
+          completedSteps: ['preparing', 'cloning'],
+          message: 'Finalizing setup...'
+        }));
+        
+        setTimeout(() => {
+          setProgressState({ isVisible: false, stage: 'checking', currentStep: null, completedSteps: [], message: '' });
+          showSuccess('Repository downloaded successfully!');
+        }, 500);
+        
+        return { success: true, cloned: true };
+      }
+      
+      // Normal flow - validate existing repository
+      setProgressState({
+        isVisible: true,
+        stage: 'validating',
+        currentStep: 'checking-files',
+        completedSteps: [],
+        message: 'Checking folder...'
+      });
+      
       const pathCheck = await window.electron.fs.checkProjectPath(configToSave.projectPath);
       
+      // Path exists with .git folder - validate it
       if (pathCheck.exists && pathCheck.hasGitRepo) {
-        // Repository already exists, just verify it
-        console.log('Repository already exists at:', configToSave.projectPath);
-        setStatus({ message: 'Using existing repository', type: 'success' });
-        return { success: true, alreadyExists: true };
+        console.log('Repository found at:', configToSave.projectPath);
+        
+        // Step 1: Check if required files exist
+        const integrity = await window.electron.validateRepoIntegrity(configToSave.projectPath);
+        
+        setProgressState(prev => ({
+          ...prev,
+          currentStep: 'checking-remote',
+          completedSteps: ['checking-files'],
+          message: 'Verifying GitHub connection...'
+        }));
+        
+        if (!integrity.hasRequiredFiles) {
+          // Files are missing - ask user what to do
+          setProgressState({ isVisible: false, stage: 'checking', currentStep: null, completedSteps: [], message: '' });
+          
+          const choice = await new Promise((resolve) => {
+            setDialogState({
+              isOpen: true,
+              type: 'missingFiles',
+              data: integrity.missingFiles,
+              onChoice: (choice) => {
+                setDialogState({ isOpen: false, type: null, data: null });
+                resolve(choice);
+              }
+            });
+          });
+          
+          if (choice === 'restore') {
+            // Restore from GitHub
+            setProgressState({
+              isVisible: true,
+              stage: 'restoring',
+              currentStep: 'checking',
+              completedSteps: [],
+              message: 'Checking what\'s missing...'
+            });
+            
+            showInfo('Restoring missing files from GitHub...');
+            const restored = await window.electron.resetRepoToRemote(configToSave.projectPath);
+            
+            if (!restored.success) {
+              throw new Error('Failed to restore repository: ' + restored.message);
+            }
+            
+            setProgressState(prev => ({
+              ...prev,
+              currentStep: 'complete',
+              completedSteps: ['checking', 'downloading'],
+              message: 'Files restored successfully'
+            }));
+            
+            setTimeout(() => {
+              setProgressState({ isVisible: false, stage: 'checking', currentStep: null, completedSteps: [], message: '' });
+              showSuccess('Files restored from GitHub ✓');
+            }, 1000);
+            
+          } else if (choice === 'fresh') {
+            // Start completely fresh
+            return await handleGitHubSetup({ ...configToSave, _forceFresh: true });
+          } else {
+            // User cancelled
+            setProgressState({ isVisible: false, stage: 'checking', currentStep: null, completedSteps: [], message: '' });
+            return { success: false, cancelled: true };
+          }
+        }
+        
+        // Step 2: Validate remote URL matches
+        const remoteCheck = await window.electron.validateGitRemote(
+          configToSave.projectPath,
+          configToSave.repoUrl
+        );
+        
+        setProgressState(prev => ({
+          ...prev,
+          currentStep: 'complete',
+          completedSteps: ['checking-files', 'checking-remote'],
+          message: 'Validation complete'
+        }));
+        
+        if (remoteCheck.matches) {
+          // Everything is good!
+          setTimeout(() => {
+            setProgressState({ isVisible: false, stage: 'checking', currentStep: null, completedSteps: [], message: '' });
+            showSuccess('Repository validated ✓');
+          }, 500);
+          return { success: true, alreadyExists: true };
+        } else {
+          // Remote URL mismatch - ask user
+          setProgressState({ isVisible: false, stage: 'checking', currentStep: null, completedSteps: [], message: '' });
+          
+          const choice = await new Promise((resolve) => {
+            setDialogState({
+              isOpen: true,
+              type: 'repoMismatch',
+              data: [remoteCheck.currentUrl, configToSave.repoUrl],
+              onChoice: (choice) => {
+                setDialogState({ isOpen: false, type: null, data: null });
+                resolve(choice);
+              }
+            });
+          });
+          
+          if (choice === 'switch') {
+            // Update remote URL
+            showInfo('Updating GitHub connection...');
+            await window.electron.updateGitRemote(configToSave.projectPath, configToSave.repoUrl);
+            showSuccess('Remote URL updated ✓');
+            return { success: true };
+          } else if (choice === 'reclone') {
+            // Delete and re-clone
+            await window.electron.fs.emptyDirectory(configToSave.projectPath);
+            // Fall through to clone logic below
+          } else {
+            // User cancelled
+            return { success: false, cancelled: true };
+          }
+        }
       }
-
-      // Directory doesn't exist OR exists but is not a git repo - need to clone
-      setIsCloning(true);
-      setStatus({ message: 'Cloning repository from GitHub...', type: 'info' });
-      showInfo('Cloning repository. This may take a moment...');
-
-      // Get the token (either from form or let backend use stored token)
-      // If token is masked, pass null and backend will retrieve the stored token
+      
+      // New path or user chose re-clone - proceed with cloning
+      setProgressState({
+        isVisible: true,
+        stage: 'downloading',
+        currentStep: 'connecting',
+        completedSteps: [],
+        message: 'Connecting to GitHub...'
+      });
+      
+      showInfo('Downloading repository from GitHub...');
+      
       const tokenToUse = (formData.token && formData.token !== '••••••••') ? formData.token : null;
       
-      console.log('Attempting to clone repository. Token provided:', tokenToUse ? 'YES' : 'NO (will use stored)');
-
+      setProgressState(prev => ({
+        ...prev,
+        currentStep: 'downloading',
+        completedSteps: ['connecting'],
+        message: 'Downloading files...'
+      }));
+      
       const cloneResult = await window.electron.cloneRepository(
         configToSave.projectPath,
         configToSave.repoUrl,
         configToSave.username,
         tokenToUse
       );
-
+      
       if (!cloneResult.success) {
         throw new Error(cloneResult.message || 'Failed to clone repository');
       }
-
-      setStatus({ message: 'Repository cloned successfully!', type: 'success' });
-      showSuccess('Repository cloned successfully!');
+      
+      setProgressState(prev => ({
+        ...prev,
+        currentStep: 'organizing',
+        completedSteps: ['connecting', 'downloading'],
+        message: 'Organizing files...'
+      }));
+      
+      setTimeout(() => {
+        setProgressState({ isVisible: false, stage: 'checking', currentStep: null, completedSteps: [], message: '' });
+        showSuccess('Repository downloaded successfully!');
+      }, 500);
       
       return { success: true, cloned: true };
+      
     } catch (error) {
       console.error('GitHub setup failed:', error);
+      setProgressState({ isVisible: false, stage: 'checking', currentStep: null, completedSteps: [], message: '' });
       setStatus({
         message: `GitHub setup failed: ${error.message}`,
         type: 'error'
       });
       showError(error.message);
       return { success: false, error: error.message };
-    } finally {
-      setIsCloning(false);
     }
   };
 
@@ -466,6 +688,23 @@ function Settings({ onBackToMain }) {
 
   return (
     <div className="settings-container" ref={containerRef}>
+      {/* User Decision Dialog */}
+      <UserDecisionDialog 
+        type={dialogState.type}
+        data={dialogState.data}
+        onChoice={dialogState.onChoice}
+        isOpen={dialogState.isOpen}
+      />
+      
+      {/* Setup Progress Indicator */}
+      <SetupProgress 
+        stage={progressState.stage}
+        currentStep={progressState.currentStep}
+        completedSteps={progressState.completedSteps}
+        message={progressState.message}
+        isVisible={progressState.isVisible}
+      />
+      
       {/* Git Installation Dialog */}
       <GitInstallDialog 
         isOpen={showGitInstallDialog}
@@ -590,6 +829,7 @@ function Settings({ onBackToMain }) {
               name="token"
               value={formData.token}
               onChange={handleInputChange}
+              onFocus={handleTokenFocus}
               placeholder="Enter your GitHub PAT"
               className="form-input"
               disabled={dataSource === 'local'}
@@ -637,6 +877,35 @@ function Settings({ onBackToMain }) {
             </small>
           </div>
         </div>
+
+        {dataSource === 'github' && (
+          <div className="advanced-options">
+            <h3>Advanced Options</h3>
+            <div className="force-clone-option">
+              <label className="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  checked={forceClone}
+                  onChange={(e) => setForceClone(e.target.checked)}
+                  disabled={isLoading || isTesting || isCloning}
+                />
+                <span className="checkbox-text">
+                  <strong>Start Fresh (Force Re-download)</strong>
+                  <small>
+                    Check this to delete everything and download the repository again from scratch.
+                    <br />
+                    Use this when:
+                    • Something seems broken
+                    • Files are corrupted
+                    • You want a clean start
+                    <br />
+                    <em>⚠️ All local files will be deleted</em>
+                  </small>
+                </span>
+              </label>
+            </div>
+          </div>
+        )}
 
         <div className="settings-actions">
           <button

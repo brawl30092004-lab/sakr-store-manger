@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('electron', {
   // File System API for products.json
   fs: {
     checkProjectPath: (projectPath) => ipcRenderer.invoke('fs:checkProjectPath', projectPath),
+    emptyDirectory: (dirPath) => ipcRenderer.invoke('fs:emptyDirectory', dirPath),
     createEmptyProducts: (projectPath) => ipcRenderer.invoke('fs:createEmptyProducts', projectPath),
     loadProducts: (projectPath) => ipcRenderer.invoke('fs:loadProducts', projectPath),
     saveProducts: (projectPath, products) => ipcRenderer.invoke('fs:saveProducts', projectPath, products),
@@ -51,9 +52,16 @@ contextBridge.exposeInMainWorld('electron', {
   restoreFile: (filePath) => ipcRenderer.invoke('git:restoreFile', filePath),
   undoProductChange: (productChange) => ipcRenderer.invoke('git:undoProductChange', productChange),
   
+  // Repository validation and management APIs
+  validateRepoIntegrity: (projectPath) => ipcRenderer.invoke('git:validateRepoIntegrity', projectPath),
+  validateGitRemote: (projectPath, expectedUrl) => ipcRenderer.invoke('git:validateGitRemote', projectPath, expectedUrl),
+  resetRepoToRemote: (projectPath) => ipcRenderer.invoke('git:resetRepoToRemote', projectPath),
+  updateGitRemote: (projectPath, newUrl) => ipcRenderer.invoke('git:updateGitRemote', projectPath, newUrl),
+  
   // New sync and conflict resolution APIs
   checkRemoteChanges: () => ipcRenderer.invoke('git:checkRemoteChanges'),
   pullManual: () => ipcRenderer.invoke('git:pullManual'),
+  pullWithStrategy: (strategy) => ipcRenderer.invoke('git:pullWithStrategy', strategy),
   getConflictDetails: () => ipcRenderer.invoke('git:getConflictDetails'),
   resolveConflict: (resolution, files) => ipcRenderer.invoke('git:resolveConflict', resolution, files),
 });
