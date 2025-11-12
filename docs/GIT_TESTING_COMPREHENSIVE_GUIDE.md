@@ -606,16 +606,17 @@ Use this template to record your test results:
 
 ### ✨ What's New in This Version:
 
-### Known UI Improvements Needed:
+### Known Improvements Needed:
 - [ ] On first start, Data Source Not Found dialog should include GitHub option and when the dialog is triggered from the "File" in the menu bar it shows wrong text which is : Data Source Not Found
 The products.json file could not be found at the configured location.
 Would you like to create a new file or browse for an existing one?
-what are the possible improvements
+what are the possible improvements maybe we could replace it with I dialog that redirects the user to settings?
 - [ ] Pressing Enter in edit dialog should "Save and Close"
 - [ ] Consider redesigning conflict dialog with vectors instead of emojis (optional)
 - [ ] Modern lightweight design improvements for the conflict dialog to be a 2 column instead of 1 
 - [ ] Sync flow improvements : the user cant tell whats new in the sync so the sync should have a "view changes" button which should have similar functionality to the other "view changes" (local to github) button next to the publish button but for the things which would go the other way (github to local), redesign is also needed to make sure the addtion looks clean and modern
 - [ ] redesigne welcome screen to be in dark theme and remove the "version" text
+- [ ] add the ability to force reset the app (deletes all the app data) if app crashes presists
 
 ### Test 1: Basic Publish
 - Status: ✅ PASS
@@ -629,45 +630,17 @@ what are the possible improvements
 - Status: ✅ PASS
 - Notes: as intended
 
-### Test 4: Cancel Resolution -------- ⭐ FIXED!
-- Status: ✅ SHOULD PASS (Fixed!)
-- Notes: **FIXED** - Cancel now correctly preserves user's local edits:
-  **Previous Bug:** After cancellation, app lost edited local data and refreshed with GitHub data
-  **Root Cause:** Code was extracting wrong section from conflict markers (between `<<<<<<< HEAD` and `=======` instead of between `=======` and `>>>>>>>`), keeping old committed version instead of user's edits
-  **Fix:** Now correctly extracts user's local edits from the stashed changes section (after `=======` marker) and preserves them when cancel is clicked
-  
-**Expected After Fix:**
-- ✅ Cancel button works without deleting products
-- ✅ All products remain visible in app
-- ✅ Local changes preserved (description edit still there)
-- ✅ products.json is valid JSON (no conflict markers)
-- ✅ Can continue working normally
-- ✅ Status bar shows "1 product changed" correctly
+### Test 4: Cancel Resolution
+- Status: ✅ PASS 
+- Notes: as intended
 
 ### Test 5: Multiple Products 
 - Status: ✅ PASS
 - Notes: as intended
 
 **NEW FEATURE:** Field-level selection!
-- status : Failed
-- notes : this error showed after I chosen Field-level selections and pressed publish :
-{
-  "message": "Cannot read properties of undefined (reading 'toFixed')",
-  "stack": "TypeError: Cannot read properties of undefined (reading 'toFixed')\n    at file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:506:10454\n    at Array.map (<anonymous>)\n    at file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:506:9989\n    at uu (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:39:16998)\n    at Vd (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:1571)\n    at hm (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:45934)\n    at um (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:39727)\n    at dy (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:39655)\n    at Lo (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:39508)\n    at Ja (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:35875)",
-  "componentStack": "\n    at file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:506:6630\n    at div\n    at div\n    at div\n    at BN (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:527:27011)\n    at Hy (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:49:2264)\n    at HN (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:527:47724)",
-  "timestamp": "2025-11-12T23:23:18.869Z",
-  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) sakr-store-manager/3.0.0 Chrome/120.0.6099.291 Electron/28.3.3 Safari/537.36"
-}
-
-after that on app restart this error happens :
-{
-  "message": "Cannot read properties of undefined (reading 'toFixed')",
-  "stack": "TypeError: Cannot read properties of undefined (reading 'toFixed')\n    at file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:506:10454\n    at Array.map (<anonymous>)\n    at file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:506:9989\n    at uu (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:39:16998)\n    at Vd (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:1571)\n    at hm (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:45934)\n    at um (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:39727)\n    at dy (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:39655)\n    at Lo (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:39508)\n    at Ja (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:35875)",
-  "componentStack": "\n    at file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:506:6630\n    at div\n    at div\n    at div\n    at BN (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:527:27011)\n    at Hy (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:49:2264)\n    at HN (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:527:47724)",
-  "timestamp": "2025-11-12T23:23:18.869Z",
-  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) sakr-store-manager/3.0.0 Chrome/120.0.6099.291 Electron/28.3.3 Safari/537.36"
-}
-so the app now is unusable
+- status : PASS
+- notes : as intended
 
 ### Test 6: Add/Delete Conflicts 
 - Status: ✅ PASS 
