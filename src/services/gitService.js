@@ -1495,22 +1495,25 @@ class GitService {
   }
 
   /**
-   * Performs intelligent merge of product changes
+   * Performs intelligent 3-way merge of product changes
    * Combines local and remote changes when they affect different fields
-   * @param {string} localContent - Local products.json content
-   * @param {string} remoteContent - Remote products.json content
+   * @param {string} localContent - Local products.json content (stash/uncommitted changes)
+   * @param {string} remoteContent - Remote products.json content (HEAD/pulled from GitHub)  
+   * @param {string} baseContent - Base products.json content (merge-base/before pull)
    * @returns {Object} - Merge result with merged content
    */
-  smartMergeProducts(localContent, remoteContent) {
+  smartMergeProducts(localContent, remoteContent, baseContent = null) {
     try {
       const localProducts = JSON.parse(localContent);
       const remoteProducts = JSON.parse(remoteContent);
+      const baseProducts = baseContent ? JSON.parse(baseContent) : null;
       const mergedProducts = [];
       const mergeLog = [];
 
       // Create maps for quick lookup
       const localMap = new Map(localProducts.map(p => [p.id, p]));
       const remoteMap = new Map(remoteProducts.map(p => [p.id, p]));
+      const baseMap = baseProducts ? new Map(baseProducts.map(p => [p.id, p])) : null;
       
       // Get all unique product IDs
       const allIds = new Set([...localMap.keys(), ...remoteMap.keys()]);
@@ -1518,6 +1521,7 @@ class GitService {
       for (const id of allIds) {
         const localProduct = localMap.get(id);
         const remoteProduct = remoteMap.get(id);
+        const baseProduct = baseMap ? baseMap.get(id) : null;
 
         if (!localProduct) {
           // Product only exists in remote - use remote version
@@ -1528,36 +1532,45 @@ class GitService {
           mergedProducts.push(localProduct);
           mergeLog.push(`Product ${id} (${localProduct.name}): Added from your version`);
         } else {
-          // Product exists in both - merge fields intelligently
-          const merged = { ...localProduct }; // Start with local as base
+          // Product exists in both - perform intelligent 3-way merge
+          const merged = { ...localProduct }; // Start with local
           const fieldsToCheck = ['name', 'price', 'description', 'category', 'stock', 'isNew', 'discount', 'image'];
           const changedFields = [];
 
           for (const field of fieldsToCheck) {
             const localValue = localProduct[field];
             const remoteValue = remoteProduct[field];
+            const baseValue = baseProduct ? baseProduct[field] : null;
 
-            // If values differ, take the most recent non-empty/non-default value
+            // 3-way merge logic
             if (JSON.stringify(localValue) !== JSON.stringify(remoteValue)) {
-              // Strategy: Keep BOTH changes by preferring defined/changed values
-              // If local has a value and remote doesn't, keep local
-              // If remote has a value and local doesn't, take remote
-              // If BOTH have different values, prefer local (user's intent)
+              // Values differ - need to merge intelligently
               
-              if (remoteValue !== undefined && remoteValue !== null && remoteValue !== '') {
-                // Remote has a value - check if it's actually different from a base
-                if (localValue === undefined || localValue === null || localValue === '') {
-                  // Local is empty, remote has value - take remote
-                  merged[field] = remoteValue;
-                  changedFields.push(`${field}: took store version`);
-                } else {
-                  // Both have values but different - this is a TRUE conflict
-                  // For smart merge, we'll keep local but log it
+              if (baseValue !== null) {
+                // We have base - do proper 3-way merge
+                const localChanged = JSON.stringify(localValue) !== JSON.stringify(baseValue);
+                const remoteChanged = JSON.stringify(remoteValue) !== JSON.stringify(baseValue);
+                
+                if (localChanged && !remoteChanged) {
+                  // Only local changed - use local
                   merged[field] = localValue;
-                  changedFields.push(`${field}: kept your version (${localValue} vs store's ${remoteValue})`);
+                  changedFields.push(`${field}: ${localValue} (your change)`);
+                } else if (remoteChanged && !localChanged) {
+                  // Only remote changed - use remote
+                  merged[field] = remoteValue;
+                  changedFields.push(`${field}: ${remoteValue} (store change)`);
+                } else if (localChanged && remoteChanged) {
+                  // Both changed - prefer local (user's current intent)
+                  merged[field] = localValue;
+                  changedFields.push(`${field}: ${localValue} (conflict, kept yours)`);
                 }
+              } else {
+                // No base - use heuristic: prefer local changes
+                merged[field] = localValue;
+                changedFields.push(`${field}: ${localValue} (your version)`);
               }
             }
+            // If values are the same, merged[field] already has the value
           }
 
           mergedProducts.push(merged);
@@ -1868,27 +1881,85 @@ class GitService {
           console.log('Performing smart merge for products.json...');
           
           try {
-            // Get local and remote versions
-            const localContent = await this.git.show(['HEAD:' + file]);
-            const remoteContent = await this.git.show(['MERGE_HEAD:' + file]);
+            // Get local and remote versions - try multiple refs
+            let localContent = null;
+            let remoteContent = null;
             
-            // Perform smart merge
-            const mergeResult = this.smartMergeProducts(localContent, remoteContent);
-            
-            if (mergeResult.success) {
-              // Write merged content to file
+            // Get local version (HEAD or current file)
+            try {
+              localContent = await this.git.show(['HEAD:' + file]);
+            } catch (e) {
+              console.log('Could not get HEAD version, reading current file');
               const fs = await import('fs/promises');
               const path = await import('path');
               const filePath = path.join(this.projectPath, file);
               
-              await fs.writeFile(filePath, mergeResult.mergedContent, 'utf8');
-              console.log('Smart merge successful:', mergeResult.mergeLog);
+              // Read the conflicted file and extract local version
+              const conflictedContent = await fs.readFile(filePath, 'utf-8');
+              const localMatch = conflictedContent.match(/<<<<<<< (HEAD|Updated upstream|ours)\n([\s\S]*?)\n=======/);
+              if (localMatch) {
+                localContent = localMatch[2];
+              }
+            }
+            
+            // Get remote version - try MERGE_HEAD, then stash, then extract from conflict markers
+            try {
+              remoteContent = await this.git.show(['MERGE_HEAD:' + file]);
+            } catch (e) {
+              try {
+                remoteContent = await this.git.show(['refs/stash@{0}:' + file]);
+                console.log('Got remote content from stash');
+              } catch (e2) {
+                console.log('Could not get remote version from refs, extracting from conflict markers');
+                const fs = await import('fs/promises');
+                const path = await import('path');
+                const filePath = path.join(this.projectPath, file);
+                
+                // Read the conflicted file and extract remote version
+                const conflictedContent = await fs.readFile(filePath, 'utf-8');
+                const remoteMatch = conflictedContent.match(/=======\n([\s\S]*?)\n>>>>>>> /);
+                if (remoteMatch) {
+                  remoteContent = remoteMatch[1];
+                }
+              }
+            }
+            
+            if (localContent && remoteContent) {
+              // Try to get the base/original version for 3-way merge
+              let baseContent = null;
+              try {
+                // Try to get the merge-base (common ancestor)
+                const mergeBase = await this.git.raw(['merge-base', 'HEAD', 'refs/stash@{0}']);
+                if (mergeBase) {
+                  baseContent = await this.git.show([mergeBase.trim() + ':' + file]);
+                  console.log('Got base version from merge-base for 3-way merge');
+                }
+              } catch (e) {
+                console.log('Could not get merge-base, will do 2-way merge:', e.message);
+              }
               
-              // Stage the resolved file
-              await this.git.add(file);
+              // Perform smart merge
+              const mergeResult = this.smartMergeProducts(localContent, remoteContent, baseContent);
+              
+              if (mergeResult.success) {
+                // Write merged content to file
+                const fs = await import('fs/promises');
+                const path = await import('path');
+                const filePath = path.join(this.projectPath, file);
+                
+                await fs.writeFile(filePath, mergeResult.mergedContent, 'utf8');
+                console.log('Smart merge successful:', mergeResult.mergeLog);
+                
+                // Stage the resolved file
+                await this.git.add(file);
+              } else {
+                // Smart merge failed, fall back to local version
+                console.error('Smart merge failed, using local version:', mergeResult.error);
+                await this.git.raw(['checkout', '--ours', file]);
+                await this.git.add(file);
+              }
             } else {
-              // Smart merge failed, fall back to local version
-              console.error('Smart merge failed, using local version:', mergeResult.error);
+              console.error('Could not get both versions for smart merge, falling back to local');
               await this.git.raw(['checkout', '--ours', file]);
               await this.git.add(file);
             }
