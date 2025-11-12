@@ -102,7 +102,6 @@ function WelcomeScreen({ onGetStarted }) {
           <button className="welcome-btn-primary" onClick={onGetStarted}>
             Get Started
           </button>
-          <p className="welcome-version">Version 1.0.0</p>
         </div>
       </div>
     </div>
