@@ -584,63 +584,98 @@ all emojies needs changing to vectors
 
 pressing enter in the edit dialog should "save and close"
 
+redesigne of the conflict dialog
+
 ### Test 1: Basic Publish
 - Status: ✅ PASS
 - Notes: as intended
 
 ### Test 2: Simple Conflict
 - Status: ✅ PASS
-- Notes: as intended - UI issue found 
-
-
-Visual Error: The UI labels and the data they display are mismatched.
-
-Detailed Observation:
-
-The column labeled "CURRENT STORE (GITHUB)" (Left/Yellow) is actually displaying the Local/User data .
-
-The column labeled "YOUR VERSION" (Right/Green) is actually displaying the Remote/Store data .
-its reversed in naming 
+- Notes: as intended
 
 ### Test 3: Complex Conflict
-- Status: ✅ PASS / ❌ FAIL
-- Notes:
+- Status: ✅ PASS
+- Notes: as intended
 
 ### Test 4: Cancel Resolution
-- Status: ✅ PASS / ❌ FAIL
-- Notes:
+- Status: ❌ FAIL
+- Notes: Failed to cancel merge: Failed to resolve conflicts: fatal: There is no merge to abort (MERGE_HEAD missing).
 
 ### Test 5: Multiple Products
-- Status: ✅ PASS / ❌ FAIL
-- Notes:
+- Status: ❌ FAIL
+- Notes: one time when I clicked "publish to github" it got me this error
+Failed to pull latest changes: Updating a5a7190..329abf7
+From https://github.com/brawl30092004-lab/Sakr-Store-test-Git
+* branch main -> FETCH_HEAD
+error: Your local changes to the following files would be overwritten by merge:
+products.json
+Please commit your changes or stash them before you merge.
+Aborting
+
+but after that it worked correctly until I clicked "use local" it kept the github version and vise versa on clicking "keep store"
+
+addition idea : the user can select each catagory separately so for example 
+local price = 69.99 | github Price = 99.99
+local stock = 10 | github stock = 15
+the user can select what to keep separately not just (smart - only local or only github) for all
 
 ### Test 6: Add/Delete Conflicts
-- Status: ✅ PASS / ❌ FAIL
-- Notes:
+- Status: ❌ FAIL
+- Notes: it worked correctly until I clicked "use local" it kept the github version and vise versa on clicking "keep store" 
+
+it just said 1 file(s) have conflicting changes between your local copy and GitHub.
+CONFLICTED FILES:
+📄 products.json
+
+it didnt inform the user what exactly is wrong 
+one product deleted from github
+and one added locally
 
 ### Test 7: Sync Before Publish
-- Status: ✅ PASS / ❌ FAIL
-- Notes:
+- Status: ❌ FAIL
+- Notes: Pull failed after 3 attempts: Updating a0618a9..627a68e
+From https://github.com/brawl30092004-lab/Sakr-Store-test-Git
+* branch main -> FETCH_HEAD
+error: Your local changes to the following files would be overwritten by merge:
+products.json
+Please commit your changes or stash them before you merge.
+Aborting
+
+
+this error also appeared :
+
+Publish failed: Failed to commit changes: fatal: Unable to create 'E:/Sakr Store test git/Data/.git/index.lock': File exists.
+
+Another git process seems to be running in this repository, e.g.
+an editor opened by 'git commit'. Please make sure all processes
+are terminated then try again. If it still fails, a git process
+may have crashed in this repository earlier:
+remove the file manually to continue.
 
 ### Test 8: Auth Failure
-- Status: ✅ PASS / ❌ FAIL
-- Notes:
+- Status: ✅ PASS
+- Notes: as intended
+
+we just need to auto validate the PAT using the logic in "test connection" button before saving settings
 
 ### Test 9: Network Failure
-- Status: ✅ PASS / ❌ FAIL
-- Notes:
+- Status: ✅ PASS 
+- Notes: we just need to improve the error 
+Failed to pull latest changes: fatal: unable to access 'https://github.com/brawl30092004-lab/Sakr-Store-test-Git.git/': Could not resolve host: github.com
+to inform the user to make sure he have internet connection
 
 ### Test 10: Rapid Publishes
-- Status: ✅ PASS / ❌ FAIL
-- Notes:
+- Status: didnt test
+- Notes: we need to make sure Button is disabled during first publish until it finshes
 
 ### Test 11: Publish During Sync
-- Status: ✅ PASS / ❌ FAIL
-- Notes:
+- Status: didnt test
+- Notes: we need to make sure Button is disabled during sync until it finshes
 
 ### Test 12: Recovery
-- Status: ✅ PASS / ❌ FAIL
-- Notes:
+- Status: ✅ PASS
+- Notes: as intended
 
 ---
 
