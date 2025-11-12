@@ -549,7 +549,7 @@ Use this template to record your test results:
 ```markdown
 ## Test Results - [Date]
 
-needs changing : on first start the Data Source Not Found dialoge shows which doesnt have the github option
+needs changing : on first start the Data Source Not Found dialog shows which doesnt have the github option
 
 all emojies needs changing to vectors 
 

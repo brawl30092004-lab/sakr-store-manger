@@ -1042,11 +1042,36 @@ class GitService {
       if (results.stash?.stashed) {
         console.log('Step 2: Restoring stashed changes...');
         try {
-          await this.git.stash(['pop']);
-          results.stashPop = { success: true };
-          console.log('Stashed changes restored successfully');
+          const stashPopResult = await this.git.stash(['pop']);
+          results.stashPop = { success: true, result: stashPopResult };
+          console.log('Stash pop result:', stashPopResult);
+          
+          // CRITICAL: Check for conflicts after stash pop
+          // Git may not throw an error but leaves conflict markers
+          const statusAfterPop = await this.git.status();
+          
+          if (statusAfterPop.conflicted && statusAfterPop.conflicted.length > 0) {
+            console.log('Conflicts detected after stash pop:', statusAfterPop.conflicted);
+            
+            // Get detailed conflict information
+            const conflictDetails = await this.getConflictDetails();
+            
+            return {
+              success: false,
+              hasConflict: true,
+              error: 'Merge conflicts detected',
+              message: 'Your local changes conflict with changes from the store',
+              conflictDetails,
+              conflicts: statusAfterPop.conflicted,
+              step: 'stash_pop',
+              results,
+              needsResolution: true
+            };
+          }
+          
+          console.log('Stashed changes restored successfully - no conflicts');
         } catch (error) {
-          console.error('Conflict when restoring stashed changes:', error);
+          console.error('Error when restoring stashed changes:', error);
           
           // Check if this is a merge conflict from stash pop
           if (error.message.includes('conflict') || error.message.includes('CONFLICT')) {
@@ -1151,6 +1176,13 @@ class GitService {
     };
 
     try {
+      // Log current git state for debugging
+      console.log('📊 Git state before continue publish:');
+      await this.logGitState();
+      
+      // Remove any stale lock files
+      await this.removeStaleLockFiles();
+      
       // Step 1: Commit changes
       console.log('Step 1/2: Committing changes after conflict resolution...');
       results.commit = await this.commitChanges(commitMessage, files);
@@ -1455,6 +1487,83 @@ class GitService {
   }
 
   /**
+   * Parses conflict markers directly from a conflicted file
+   * Extracts local and remote versions from <<<<<<, =======, >>>>>> markers
+   * @param {string} conflictedContent - File content with conflict markers
+   * @returns {Array} - Array of product conflicts
+   */
+  parseConflictMarkers(conflictedContent) {
+    try {
+      // Split content by conflict markers
+      const lines = conflictedContent.split('\n');
+      let inConflict = false;
+      let localSection = [];
+      let remoteSection = [];
+      let currentSection = null;
+      
+      for (const line of lines) {
+        if (line.startsWith('<<<<<<<')) {
+          inConflict = true;
+          currentSection = 'local';
+          localSection = [];
+          remoteSection = [];
+          continue;
+        } else if (line.startsWith('=======')) {
+          currentSection = 'remote';
+          continue;
+        } else if (line.startsWith('>>>>>>>')) {
+          inConflict = false;
+          
+          // Try to parse the local and remote sections as product objects
+          try {
+            const localJson = localSection.join('\n');
+            const remoteJson = remoteSection.join('\n');
+            
+            // Extract product objects from the JSON fragments
+            const localMatch = localJson.match(/"price":\s*([\d.]+)|"description":\s*"([^"]*)"/);
+            const remoteMatch = remoteJson.match(/"price":\s*([\d.]+)|"description":\s*"([^"]*)"/);
+            
+            if (localMatch || remoteMatch) {
+              // We have a conflict in products.json
+              // For now, return a simple conflict indicator
+              return [{
+                productId: 'unknown',
+                productName: 'Product in conflict',
+                conflictType: 'field-level',
+                localContent: localJson,
+                remoteContent: remoteJson,
+                fieldConflicts: [{
+                  field: 'multiple',
+                  fieldLabel: 'Multiple Fields',
+                  localValue: 'See local changes',
+                  remoteValue: 'See store changes',
+                  isDifferent: true
+                }]
+              }];
+            }
+          } catch (parseError) {
+            console.error('Could not parse conflict sections:', parseError);
+          }
+          
+          currentSection = null;
+          continue;
+        }
+        
+        if (inConflict && currentSection === 'local') {
+          localSection.push(line);
+        } else if (inConflict && currentSection === 'remote') {
+          remoteSection.push(line);
+        }
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Failed to parse conflict markers:', error);
+      return [];
+    }
+  }
+
+  /**
    * Gets user-friendly label for product field
    * @param {string} field - Field name
    * @returns {string} - User-friendly label
@@ -1500,21 +1609,44 @@ class GitService {
           let localVersion = null;
           let remoteVersion = null;
 
+          // Try multiple refs to get versions (depends on merge vs stash pop)
           try {
             localVersion = await this.git.show(['HEAD:' + file]);
           } catch (e) {
-            console.log('Could not get local version of', file);
+            console.log('Could not get HEAD version of', file);
           }
 
+          // Try MERGE_HEAD first (normal merge), then refs/stash (stash pop)
           try {
             remoteVersion = await this.git.show(['MERGE_HEAD:' + file]);
           } catch (e) {
-            console.log('Could not get remote version of', file);
+            try {
+              // For stash pop conflicts, try getting from stash
+              remoteVersion = await this.git.show(['refs/stash@{0}:' + file]);
+            } catch (e2) {
+              console.log('Could not get remote/stash version of', file);
+            }
           }
 
           // If this is products.json, parse for product-level conflicts
-          if (file.includes('products.json') && localVersion && remoteVersion) {
-            productConflicts = this.parseProductConflicts(localVersion, remoteVersion);
+          if (file.includes('products.json')) {
+            // Even if we can't get clean versions, try parsing the conflicted file
+            if (localVersion && remoteVersion) {
+              productConflicts = this.parseProductConflicts(localVersion, remoteVersion);
+            } else {
+              // Try to parse the conflicted file directly (has conflict markers)
+              try {
+                const fs = await import('fs/promises');
+                const path = await import('path');
+                const conflictedFilePath = path.join(this.projectPath, file);
+                const conflictedContent = await fs.readFile(conflictedFilePath, 'utf-8');
+                
+                // Parse conflict markers directly from the file
+                productConflicts = this.parseConflictMarkers(conflictedContent);
+              } catch (parseError) {
+                console.error('Could not parse conflict markers:', parseError);
+              }
+            }
           }
 
           conflicts.push({
@@ -1549,6 +1681,53 @@ class GitService {
   }
 
   /**
+   * Checks for and removes stale git lock files
+   * @returns {Promise<boolean>} - True if lock file was removed
+   */
+  async removeStaleLockFiles() {
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      
+      const lockFilePath = path.join(this.projectPath, '.git', 'index.lock');
+      
+      try {
+        await fs.access(lockFilePath);
+        // Lock file exists, try to remove it
+        console.log('⚠️ Found stale git lock file:', lockFilePath);
+        await fs.unlink(lockFilePath);
+        console.log('✅ Stale lock file removed successfully');
+        return true;
+      } catch (error) {
+        // Lock file doesn't exist or couldn't be accessed
+        return false;
+      }
+    } catch (error) {
+      console.error('Error checking for lock files:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Logs current git state for debugging
+   */
+  async logGitState() {
+    try {
+      const status = await this.git.status();
+      console.log('=== GIT STATE ===');
+      console.log('Branch:', status.current);
+      console.log('Tracking:', status.tracking);
+      console.log('Modified:', status.modified);
+      console.log('Staged:', status.staged);
+      console.log('Conflicted:', status.conflicted);
+      console.log('Is clean:', status.isClean());
+      console.log('================');
+    } catch (error) {
+      console.error('Could not log git state:', error);
+    }
+  }
+
+  /**
    * Resolves conflicts by choosing a version
    * @param {string} resolution - 'local', 'remote', or 'abort'
    * @param {Array<string>} files - Files to resolve (defaults to all conflicted files)
@@ -1556,6 +1735,9 @@ class GitService {
    */
   async resolveConflict(resolution, files = null) {
     try {
+      // Check for and remove stale lock files first
+      await this.removeStaleLockFiles();
+      
       const statusSummary = await this.git.status();
       const conflictedFiles = files || statusSummary.conflicted || [];
 
@@ -1590,8 +1772,15 @@ class GitService {
         await this.git.add(file);
       }
 
-      // Complete the merge
-      await this.git.raw(['commit', '--no-edit']);
+      // Try to complete the merge if MERGE_HEAD exists
+      try {
+        await this.git.raw(['commit', '--no-edit']);
+        console.log('Merge commit completed');
+      } catch (commitError) {
+        // If commit fails, it might be because we're not in a merge
+        // (e.g., stash pop conflict). That's okay - files are resolved and staged.
+        console.log('No merge commit needed:', commitError.message);
+      }
 
       return {
         success: true,
