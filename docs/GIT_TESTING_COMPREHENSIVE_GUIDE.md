@@ -644,7 +644,7 @@ Use this template to record your test results:
 
 **See:** CONFLICT_CANCEL_BUG_FIX.md for detailed technical explanation
 
-### Test 5: Multiple Products
+### Test 5: Multiple Products ------ FIXED!
 - Status: ✅ SHOULD PASS (Fixed!)
 - Notes: **FIXED** - Three issues resolved:
   1. "Overwritten by merge" error - Now properly stashes uncommitted changes before pull
@@ -661,15 +661,24 @@ Use this template to record your test results:
 
 **Expected:** Multi-product conflicts resolved successfully with field-level granularity
 
-### Test 6: Add/Delete Conflicts
-- Status: Fail
-- Notes: {
-  "message": "Cannot read properties of undefined (reading 'length')",
-  "stack": "TypeError: Cannot read properties of undefined (reading 'length')\n    at file:///C:/Users/Ahmed/AppData/Local/Temp/35ObQ30RugsIHOgC1Db1O4FUE9u/resources/app.asar/dist/assets/index-DS75rr9M.js:506:37078\n    at Array.map (<anonymous>)\n    at qu (file:///C:/Users/Ahmed/AppData/Local/Temp/35ObQ30RugsIHOgC1Db1O4FUE9u/resources/app.asar/dist/assets/index-DS75rr9M.js:506:36784)\n    at uu (file:///C:/Users/Ahmed/AppData/Local/Temp/35ObQ30RugsIHOgC1Db1O4FUE9u/resources/app.asar/dist/assets/index-DS75rr9M.js:39:16998)\n    at Ua (file:///C:/Users/Ahmed/AppData/Local/Temp/35ObQ30RugsIHOgC1Db1O4FUE9u/resources/app.asar/dist/assets/index-DS75rr9M.js:41:3139)\n    at hm (file:///C:/Users/Ahmed/AppData/Local/Temp/35ObQ30RugsIHOgC1Db1O4FUE9u/resources/app.asar/dist/assets/index-DS75rr9M.js:41:44737)\n    at um (file:///C:/Users/Ahmed/AppData/Local/Temp/35ObQ30RugsIHOgC1Db1O4FUE9u/resources/app.asar/dist/assets/index-DS75rr9M.js:41:39727)\n    at dy (file:///C:/Users/Ahmed/AppData/Local/Temp/35ObQ30RugsIHOgC1Db1O4FUE9u/resources/app.asar/dist/assets/index-DS75rr9M.js:41:39655)\n    at Lo (file:///C:/Users/Ahmed/AppData/Local/Temp/35ObQ30RugsIHOgC1Db1O4FUE9u/resources/app.asar/dist/assets/index-DS75rr9M.js:41:39508)\n    at Ja (file:///C:/Users/Ahmed/AppData/Local/Temp/35ObQ30RugsIHOgC1Db1O4FUE9u/resources/app.asar/dist/assets/index-DS75rr9M.js:41:35875)",
-  "componentStack": "\n    at qu (file:///C:/Users/Ahmed/AppData/Local/Temp/35ObQ30RugsIHOgC1Db1O4FUE9u/resources/app.asar/dist/assets/index-DS75rr9M.js:506:33682)\n    at EN (file:///C:/Users/Ahmed/AppData/Local/Temp/35ObQ30RugsIHOgC1Db1O4FUE9u/resources/app.asar/dist/assets/index-DS75rr9M.js:506:45547)\n    at div\n    at BN (file:///C:/Users/Ahmed/AppData/Local/Temp/35ObQ30RugsIHOgC1Db1O4FUE9u/resources/app.asar/dist/assets/index-DS75rr9M.js:527:27011)\n    at Hy (file:///C:/Users/Ahmed/AppData/Local/Temp/35ObQ30RugsIHOgC1Db1O4FUE9u/resources/app.asar/dist/assets/index-DS75rr9M.js:49:2264)\n    at HN (file:///C:/Users/Ahmed/AppData/Local/Temp/35ObQ30RugsIHOgC1Db1O4FUE9u/resources/app.asar/dist/assets/index-DS75rr9M.js:527:47724)",
-  "timestamp": "2025-11-12T22:11:53.390Z",
-  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) sakr-store-manager/3.0.0 Chrome/120.0.6099.291 Electron/28.3.3 Safari/537.36"
-}
+### Test 6: Add/Delete Conflicts ----------- FIXED!
+- Status: ✅ SHOULD PASS (Fixed!)
+- Notes: **FIXED** - Three improvements:
+  1. Button behavior fixed (same as Tests 4-5)
+  2. Now shows specific messages:
+     - "Product 'Wireless Mouse' was added locally but doesn't exist on GitHub"
+     - "Product 'Coffee Maker' was deleted on GitHub but still exists locally"
+  3. **React crash fixed:** Added `fieldConflicts` array to add/delete synthetic conflicts
+     - OLD (WRONG): Synthetic conflicts had no `fieldConflicts` property → undefined.length error
+     - NEW (CORRECT): Includes synthetic "existence" field conflict for proper rendering
+     - Added defensive null checks: `fieldConflicts?.length || 0`
+  
+**Expected After Fix:**
+- ✅ Conflict dialog opens without crashing
+- ✅ Shows "1 field(s) differ" for add/delete conflicts
+- ✅ Displays clear message about product being added or deleted
+- ✅ Resolution works correctly
+- ✅ No React errors in console
 
 ### Test 7: Sync Before Publish
 - Status: ✅ SHOULD PASS (Fixed!)

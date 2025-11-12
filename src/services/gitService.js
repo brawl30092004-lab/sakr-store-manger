@@ -1850,7 +1850,14 @@ class GitService {
                       localValue: product,
                       remoteValue: null,
                       message: `Product "${product.name}" was added locally but doesn't exist on GitHub`,
-                      canAutoMerge: true // Can be auto-merged by keeping it
+                      canAutoMerge: true, // Can be auto-merged by keeping it
+                      fieldConflicts: [{
+                        field: 'existence',
+                        fieldLabel: 'Product Existence',
+                        localValue: 'Exists (newly added)',
+                        remoteValue: 'Does not exist',
+                        canAutoMerge: true
+                      }]
                     });
                   }
                   
@@ -1862,7 +1869,14 @@ class GitService {
                       localValue: null,
                       remoteValue: product,
                       message: `Product "${product.name}" was deleted on GitHub but still exists locally`,
-                      canAutoMerge: false // User must decide
+                      canAutoMerge: false, // User must decide
+                      fieldConflicts: [{
+                        field: 'existence',
+                        fieldLabel: 'Product Existence',
+                        localValue: 'Does not exist (deleted)',
+                        remoteValue: 'Exists',
+                        canAutoMerge: false
+                      }]
                     });
                   }
                 }

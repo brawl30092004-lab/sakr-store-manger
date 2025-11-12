@@ -228,7 +228,7 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                           <div className="product-conflict-header">
                             <span className="product-icon">📦</span>
                             <strong>{product.productName}</strong>
-                            <span className="conflict-count">{product.fieldConflicts.length} field(s) differ</span>
+                            <span className="conflict-count">{product.fieldConflicts?.length || 0} field(s) differ</span>
                           </div>
                           
                           {showAdvancedMode && (
@@ -251,7 +251,7 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                           )}
                           
                           <div className="field-conflicts">
-                            {product.fieldConflicts.map((field, fIndex) => (
+                            {(product.fieldConflicts || []).map((field, fIndex) => (
                               <div key={fIndex} className="field-conflict">
                                 <div className="field-name">{field.fieldLabel}:</div>
                                 <div className={`field-comparison ${showAdvancedMode ? 'interactive' : ''}`}>
