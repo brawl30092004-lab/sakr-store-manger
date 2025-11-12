@@ -673,37 +673,9 @@ so the app now is unusable
 - Status: ✅ PASS 
 - Notes: as intended
 
-### Test 7: Sync Before Publish with conflicts --------- FIXED!
-- Status: ✅ SHOULD PASS (Fixed!)
-- Notes: **FIXED** - Major sync workflow improvement:
-  **Previous Issue:** Sync failed with raw git error when user had local uncommitted changes:
-    ```
-    error: Your local changes would be overwritten by merge
-    Please commit your changes or stash them before you merge.
-    Aborting
-    ```
-  
-  **Fix:** Sync now uses the same intelligent workflow as publish button:
-  1. **Auto-stash** uncommitted changes before pull
-  2. Pull remote changes (clean working directory)
-  3. **Auto-restore** stashed changes after pull
-  4. **Detect conflicts** if local and remote changes clash
-  5. **Show conflict dialog** (same as publish button)
-  
-  **Key Changes:**
-  - `pullLatestChanges()` now checks for local changes and stashes them automatically
-  - After pull, automatically pops stash (restores local changes)
-  - If stash pop causes conflicts → shows conflict resolution dialog
-  - Same conflict handling as "Publish to Store" button ✓
-  - User-friendly messages, no raw git errors! ✓
-  
-**Expected After Fix:**
-- ✅ Sync works with uncommitted local changes (auto-stash/pop)
-- ✅ No conflicts (different fields) → Auto-merge succeeds
-- ✅ Conflicts (same field) → Conflict dialog appears
-- ✅ Can resolve conflicts with Smart Merge, Use My Version, or Keep Store Version
-- ✅ NO raw git errors shown to user
-- ✅ Best practice workflow: sync before publish prevents conflicts
+### Test 7: Sync Before Publish with conflicts 
+- Status: ✅ PASS
+- Notes: as intended
 
 ### Test 8: Auth Failure
 - Status: ✅ PASS

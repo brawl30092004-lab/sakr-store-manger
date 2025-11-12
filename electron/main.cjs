@@ -869,6 +869,8 @@ ipcMain.handle('git:validateRepoIntegrity', async (event, projectPath) => {
     return { 
       success: false, 
       hasRequiredFiles: false, 
+      missingFiles: [], // ✅ Always return an array, even on error
+      hasGit: false,
       error: error.message 
     };
   }

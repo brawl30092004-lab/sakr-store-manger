@@ -2150,7 +2150,8 @@ class GitService {
           // Merge based on field selections
           const merged = { id }; // Start with ID
           
-          const fieldsToMerge = ['name', 'price', 'description', 'category', 'stock', 'isNew', 'discount', 'image'];
+          // All fields that need to be merged (complete product schema)
+          const fieldsToMerge = ['name', 'price', 'description', 'category', 'stock', 'isNew', 'discount', 'discountedPrice', 'image', 'images'];
           
           for (const field of fieldsToMerge) {
             if (selections.hasOwnProperty(field)) {

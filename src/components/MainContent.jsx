@@ -293,11 +293,11 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters, onFilterToggl
                 <div className="product-price">
                   {product.discount ? (
                     <>
-                      <span className="price-original">EGP {product.price.toFixed(2)}</span>
-                      <span className="price-discounted">EGP {product.discountedPrice.toFixed(2)}</span>
+                      <span className="price-original">EGP {product.price != null ? Number(product.price).toFixed(2) : '0.00'}</span>
+                      <span className="price-discounted">EGP {product.discountedPrice != null ? Number(product.discountedPrice).toFixed(2) : '0.00'}</span>
                     </>
                   ) : (
-                    <span className="price">EGP {product.price.toFixed(2)}</span>
+                    <span className="price">EGP {product.price != null ? Number(product.price).toFixed(2) : '0.00'}</span>
                   )}
                 </div>
 

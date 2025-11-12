@@ -7,12 +7,19 @@ import './UserDecisionDialog.css';
 const dialogConfigs = {
   missingFiles: {
     title: '⚠️ Files Are Missing',
-    getMessage: (missingFiles) => `We found a problem:
+    getMessage: (missingFiles) => {
+      // Defensive check: ensure missingFiles is an array
+      const filesList = Array.isArray(missingFiles) && missingFiles.length > 0
+        ? missingFiles.map(f => `  ✗ ${f}`).join('\n')
+        : '  ✗ Required files are missing';
+      
+      return `We found a problem:
 
 The folder you selected appears to have missing files:
-${missingFiles.map(f => `  ✗ ${f}`).join('\n')}
+${filesList}
 
-It looks like the files were deleted, but the connection to GitHub is still there (in a hidden folder).`,
+It looks like the files were deleted, but the connection to GitHub is still there (in a hidden folder).`;
+    },
     
     options: [
       {
@@ -76,12 +83,19 @@ These are different repositories!`,
   
   localChangesConflict: {
     title: '🔄 Update Available from Store',
-    getMessage: (changedFiles) => `There are new changes on your store, but you also have changes on this computer that haven't been saved yet.
+    getMessage: (changedFiles) => {
+      // Defensive check: ensure changedFiles is an array
+      const filesList = Array.isArray(changedFiles) && changedFiles.length > 0
+        ? changedFiles.map(f => `  📝 ${f}`).join('\n')
+        : '  📝 Local files have been modified';
+      
+      return `There are new changes on your store, but you also have changes on this computer that haven't been saved yet.
 
 Your changes:
-${changedFiles.map(f => `  📝 ${f}`).join('\n')}
+${filesList}
 
-How should we handle this?`,
+How should we handle this?`;
+    },
     
     options: [
       {

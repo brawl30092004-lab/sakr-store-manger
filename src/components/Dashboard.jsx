@@ -321,12 +321,12 @@ function Dashboard({ onNavigateToProducts }) {
                     <div className="activity-meta">
                       <span className="activity-category">{product.category || 'No category'}</span>
                       <span className="activity-separator">•</span>
-                      <span className="activity-price">{product.price.toFixed(2)} EGP</span>
+                      <span className="activity-price">{product.price != null ? Number(product.price).toFixed(2) : '0.00'} EGP</span>
                       {product.discount && (
                         <>
                           <span className="activity-separator">•</span>
                           <span className="activity-discount">
-                            <Tag size={14} /> {product.discountedPrice.toFixed(2)} EGP
+                            <Tag size={14} /> {product.discountedPrice != null ? Number(product.discountedPrice).toFixed(2) : '0.00'} EGP
                           </span>
                         </>
                       )}
