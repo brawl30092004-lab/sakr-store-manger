@@ -613,7 +613,9 @@ Would you like to create a new file or browse for an existing one?
 what are the possible improvements
 - [ ] Pressing Enter in edit dialog should "Save and Close"
 - [ ] Consider redesigning conflict dialog with vectors instead of emojis (optional)
-- [ ] Modern lightweight design improvements (ongoing) 
+- [ ] Modern lightweight design improvements for the conflict dialog to be a 2 column instead of 1 
+- [ ] Sync flow improvements : the user cant tell whats new in the sync so the sync should have a "view changes" button which should have similar functionality to the other "view changes" (local to github) button next to the publish button but for the things which would go the other way (github to local), redesign is also needed to make sure the addtion looks clean and modern
+- [ ] redesigne welcome screen to be in dark theme and remove the "version" text
 
 ### Test 1: Basic Publish
 - Status: ✅ PASS
@@ -627,17 +629,12 @@ what are the possible improvements
 - Status: ✅ PASS
 - Notes: as intended
 
-### Test 4: Cancel Resolution --------- FIXED!
+### Test 4: Cancel Resolution -------- ⭐ FIXED!
 - Status: ✅ SHOULD PASS (Fixed!)
-- Notes: **FIXED** - Critical data loss bug resolved:
-  **Issue:** Clicking cancel deleted all products from the app
-  **Root Cause:** `git reset HEAD file` left conflict markers in products.json, causing JSON parsing to fail and return empty array
-  **Fix:** Now extracts and preserves the LOCAL version (user's changes) by:
-    1. Reading the conflicted file
-    2. Extracting content between `<<<<<<< HEAD` and `=======` (local version)
-    3. Writing clean JSON back (removes conflict markers)
-    4. Then resetting the index
-  **Result:** Products remain intact after cancel, no data loss!
+- Notes: **FIXED** - Cancel now correctly preserves user's local edits:
+  **Previous Bug:** After cancellation, app lost edited local data and refreshed with GitHub data
+  **Root Cause:** Code was extracting wrong section from conflict markers (between `<<<<<<< HEAD` and `=======` instead of between `=======` and `>>>>>>>`), keeping old committed version instead of user's edits
+  **Fix:** Now correctly extracts user's local edits from the stashed changes section (after `=======` marker) and preserves them when cancel is clicked
   
 **Expected After Fix:**
 - ✅ Cancel button works without deleting products
@@ -652,8 +649,25 @@ what are the possible improvements
 - Notes: as intended
 
 **NEW FEATURE:** Field-level selection!
-- status :
-- notes :
+- status : Failed
+- notes : this error showed after I chosen Field-level selections and pressed publish :
+{
+  "message": "Cannot read properties of undefined (reading 'toFixed')",
+  "stack": "TypeError: Cannot read properties of undefined (reading 'toFixed')\n    at file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:506:10454\n    at Array.map (<anonymous>)\n    at file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:506:9989\n    at uu (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:39:16998)\n    at Vd (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:1571)\n    at hm (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:45934)\n    at um (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:39727)\n    at dy (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:39655)\n    at Lo (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:39508)\n    at Ja (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:35875)",
+  "componentStack": "\n    at file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:506:6630\n    at div\n    at div\n    at div\n    at BN (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:527:27011)\n    at Hy (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:49:2264)\n    at HN (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:527:47724)",
+  "timestamp": "2025-11-12T23:23:18.869Z",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) sakr-store-manager/3.0.0 Chrome/120.0.6099.291 Electron/28.3.3 Safari/537.36"
+}
+
+after that on app restart this error happens :
+{
+  "message": "Cannot read properties of undefined (reading 'toFixed')",
+  "stack": "TypeError: Cannot read properties of undefined (reading 'toFixed')\n    at file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:506:10454\n    at Array.map (<anonymous>)\n    at file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:506:9989\n    at uu (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:39:16998)\n    at Vd (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:1571)\n    at hm (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:45934)\n    at um (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:39727)\n    at dy (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:39655)\n    at Lo (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:39508)\n    at Ja (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:41:35875)",
+  "componentStack": "\n    at file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:506:6630\n    at div\n    at div\n    at div\n    at BN (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:527:27011)\n    at Hy (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:49:2264)\n    at HN (file:///C:/Users/Ahmed/AppData/Local/Temp/35OlY2WqBOSf7dXPhTGZbQJJd9L/resources/app.asar/dist/assets/index-JRIhCa-3.js:527:47724)",
+  "timestamp": "2025-11-12T23:23:18.869Z",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) sakr-store-manager/3.0.0 Chrome/120.0.6099.291 Electron/28.3.3 Safari/537.36"
+}
+so the app now is unusable
 
 ### Test 6: Add/Delete Conflicts 
 - Status: ✅ PASS 

@@ -2275,9 +2275,10 @@ class GitService {
               if (content.includes('<<<<<<<') && content.includes('>>>>>>>')) {
                 console.log(`Removing conflict markers from ${file}, keeping local version...`);
                 
-                // Extract the LOCAL version (between <<<<<<< and =======)
-                // This is the user's working directory version before they tried to publish
-                const localVersionMatch = content.match(/<<<<<<< (?:HEAD|Updated upstream|ours)\n([\s\S]*?)\n=======/);
+                // Extract the LOCAL version (between ======= and >>>>>>>)
+                // In a stash conflict, the user's local edits are AFTER the ======= marker
+                // Structure: <<<<<<< HEAD\n(old version)\n=======\n(user's edits)\n>>>>>>> Stashed changes
+                const localVersionMatch = content.match(/=======\n([\s\S]*?)\n>>>>>>> /);
                 
                 if (localVersionMatch) {
                   const localVersion = localVersionMatch[1];
@@ -2286,9 +2287,10 @@ class GitService {
                   await fs.writeFile(filePath, localVersion, 'utf-8');
                   console.log(`Restored local version of ${file} (conflict markers removed)`);
                 } else {
-                  // Fallback: if we can't parse, use git checkout --ours (keeps working tree version)
-                  await this.git.raw(['checkout', '--ours', file]);
-                  console.log(`Used git checkout --ours for ${file}`);
+                  // Fallback: if we can't parse, use git checkout --theirs (keeps stashed version)
+                  // In stash-pop conflicts, --theirs refers to the stashed changes (user's edits)
+                  await this.git.raw(['checkout', '--theirs', file]);
+                  console.log(`Used git checkout --theirs for ${file} (stashed changes)`);
                 }
               } else {
                 console.log(`${file} has no conflict markers, leaving as-is`);
