@@ -276,7 +276,7 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
 ---
 
 ### Test 4: Cancel Conflict Resolution ⭐ FIXED!
-**Goal:** Verify user can cancel out of conflict without breaking git state
+**Goal:** Verify user can cancel out of conflict without breaking git state or losing products
 
 **Steps:**
 1. Create another conflict:
@@ -289,9 +289,11 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
    - ✅ **Expected:**
      - Toast: "Publish cancelled. Your local changes are preserved."
      - Console: "🔄 Refreshing app state after conflict cancellation..."
+     - Console: "Removing conflict markers from data/products.json, keeping local version..."
      - Dialog closes
      - Status bar shows: "1 product changed" (NOT "Ready")
      - Buttons ENABLED (NOT greyed out)
+     - **ALL PRODUCTS STILL VISIBLE** (not deleted!)
      - Can edit more products
      - Can try publish again later
 
@@ -299,7 +301,10 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
    - ✅ Status bar shows changes: "1 product changed"
    - ✅ "Publish to Store" button ENABLED
    - ✅ "View Changes" button ENABLED
+   - ✅ **ALL PRODUCTS VISIBLE** in the app (count should be same as before)
    - ✅ Open products.json → your description change is still there
+   - ✅ Products.json is valid JSON (no `<<<<<<<` or `>>>>>>>` markers)
+   - ✅ "Test Laptop" shows your local description
    - ✅ Price is still your local version (not GitHub's $999.99)
    - ✅ Can make more edits to products
    - ✅ Can try clicking sync instead
@@ -311,14 +316,20 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
    - ❌ Local changes should NOT be lost
    - ❌ File should NOT revert to GitHub version
    - ❌ Conflict should NOT disappear on next publish
+   - ❌ **PRODUCTS SHOULD NOT DISAPPEAR** (this was the critical bug!)
+   - ❌ Products.json should NOT have conflict markers left inside
 
 **Pass Criteria:**
 - ✅ Cancel button works
 - ✅ No git errors
 - ✅ UI refreshes correctly (status + buttons)
 - ✅ Local changes preserved in working directory
+- ✅ **All products remain visible (no data loss!)**
+- ✅ Products.json is clean valid JSON
 - ✅ Can continue working normally
 - ✅ Conflict reappears on retry (as expected)
+
+**Previously Failed:** Products were deleted after cancel (bug now fixed!)
 
 ---
 
@@ -594,15 +605,12 @@ Use this template to record your test results:
 ## Test Results - [Date]
 
 ### ✨ What's New in This Version:
-- **All critical bugs from previous testing have been fixed!**
-- **NEW: Field-level conflict resolution** - Choose individual fields to keep
-- Enhanced error messages (no more raw git errors)
-- Auto-validation of PAT before saving
-- Better handling of uncommitted changes
-- Improved conflict detection for add/delete operations
 
 ### Known UI Improvements Needed:
-- [ ] On first start, Data Source Not Found dialog should include GitHub option
+- [ ] On first start, Data Source Not Found dialog should include GitHub option and when the dialog is triggered from the "File" in the menu bar it shows wrong text which is : Data Source Not Found
+The products.json file could not be found at the configured location.
+Would you like to create a new file or browse for an existing one?
+what are the possible improvements
 - [ ] Pressing Enter in edit dialog should "Save and Close"
 - [ ] Consider redesigning conflict dialog with vectors instead of emojis (optional)
 - [ ] Modern lightweight design improvements (ongoing) 
@@ -619,76 +627,69 @@ Use this template to record your test results:
 - Status: ✅ PASS
 - Notes: as intended
 
-### Test 4: Cancel Resolution ------ FIXED!
+### Test 4: Cancel Resolution --------- FIXED!
 - Status: ✅ SHOULD PASS (Fixed!)
-- Notes: **FIXED** - Critical bug in conflict cancellation resolved! Three issues fixed:
-  1. **UI State Refresh:** Now properly reloads products and refreshes git status after cancel
-  2. **Working Directory Preservation:** Changed from `git checkout HEAD` to `git reset HEAD`
-     - OLD (WRONG): Overwrote local changes with GitHub version
-     - NEW (CORRECT): Unstages conflicts but preserves your local changes
-  3. **Stash Cleanup:** Automatically drops the conflicting stash to clean git state
-  
-**Expected After Cancel:**
-- ✅ Status bar shows: "1 product changed" (NOT "Ready")
-- ✅ Buttons ENABLED: "Publish to Store" and "View Changes"
-- ✅ Local changes PRESERVED in products.json
-- ✅ Console: "🔄 Refreshing app state after conflict cancellation..."
-- ✅ Toast: "Publish cancelled. Your local changes are preserved."
-- ✅ Can publish again → same conflict reappears (as expected)
-
-**What Should NOT Happen:**
-- ❌ Buttons greyed out after cancel
-- ❌ Status showing "Ready" when changes exist
-- ❌ Local file reverting to GitHub version
-- ❌ Conflict disappearing on next publish
-
-**See:** CONFLICT_CANCEL_BUG_FIX.md for detailed technical explanation
-
-### Test 5: Multiple Products ------ FIXED!
-- Status: ✅ SHOULD PASS (Fixed!)
-- Notes: **FIXED** - Three issues resolved:
-  1. "Overwritten by merge" error - Now properly stashes uncommitted changes before pull
-  2. Inverted button behavior - "Use Local" now correctly keeps local, "Keep Store" keeps GitHub
-  3. **Git show syntax error** - Changed from `--theirs:file` to `:3:file` for reading conflict versions
-     - OLD (WRONG): `git show --theirs:products.json` (not supported)
-     - NEW (CORRECT): `git show :3:products.json` (uses git stage numbers)
-  
-**NEW FEATURE TO TEST:** Field-level selection!
-- Click "🎯 Choose Individual Fields (Advanced)" button
-- Select individual fields to keep (e.g., your price + GitHub's stock)
-- Test per-field selection for each product
-- Verify mixed values merge correctly
-
-**Expected:** Multi-product conflicts resolved successfully with field-level granularity
-
-### Test 6: Add/Delete Conflicts ----------- FIXED!
-- Status: ✅ SHOULD PASS (Fixed!)
-- Notes: **FIXED** - Three improvements:
-  1. Button behavior fixed (same as Tests 4-5)
-  2. Now shows specific messages:
-     - "Product 'Wireless Mouse' was added locally but doesn't exist on GitHub"
-     - "Product 'Coffee Maker' was deleted on GitHub but still exists locally"
-  3. **React crash fixed:** Added `fieldConflicts` array to add/delete synthetic conflicts
-     - OLD (WRONG): Synthetic conflicts had no `fieldConflicts` property → undefined.length error
-     - NEW (CORRECT): Includes synthetic "existence" field conflict for proper rendering
-     - Added defensive null checks: `fieldConflicts?.length || 0`
+- Notes: **FIXED** - Critical data loss bug resolved:
+  **Issue:** Clicking cancel deleted all products from the app
+  **Root Cause:** `git reset HEAD file` left conflict markers in products.json, causing JSON parsing to fail and return empty array
+  **Fix:** Now extracts and preserves the LOCAL version (user's changes) by:
+    1. Reading the conflicted file
+    2. Extracting content between `<<<<<<< HEAD` and `=======` (local version)
+    3. Writing clean JSON back (removes conflict markers)
+    4. Then resetting the index
+  **Result:** Products remain intact after cancel, no data loss!
   
 **Expected After Fix:**
-- ✅ Conflict dialog opens without crashing
-- ✅ Shows "1 field(s) differ" for add/delete conflicts
-- ✅ Displays clear message about product being added or deleted
-- ✅ Resolution works correctly
-- ✅ No React errors in console
+- ✅ Cancel button works without deleting products
+- ✅ All products remain visible in app
+- ✅ Local changes preserved (description edit still there)
+- ✅ products.json is valid JSON (no conflict markers)
+- ✅ Can continue working normally
+- ✅ Status bar shows "1 product changed" correctly
 
-### Test 7: Sync Before Publish
+### Test 5: Multiple Products 
+- Status: ✅ PASS
+- Notes: as intended
+
+**NEW FEATURE:** Field-level selection!
+- status :
+- notes :
+
+### Test 6: Add/Delete Conflicts 
+- Status: ✅ PASS 
+- Notes: as intended
+
+### Test 7: Sync Before Publish with conflicts --------- FIXED!
 - Status: ✅ SHOULD PASS (Fixed!)
-- Notes: **FIXED** - Two issues resolved:
-  1. Uncommitted changes now properly stashed before pull (same fix as Test 5)
-  2. index.lock file handled gracefully with user-friendly message:
-     - "Another git operation is in progress. Please wait a moment and try again."
-     - Stale lock files automatically cleaned up
+- Notes: **FIXED** - Major sync workflow improvement:
+  **Previous Issue:** Sync failed with raw git error when user had local uncommitted changes:
+    ```
+    error: Your local changes would be overwritten by merge
+    Please commit your changes or stash them before you merge.
+    Aborting
+    ```
   
-**Expected:** Sync works smoothly, no raw git errors shown to user.
+  **Fix:** Sync now uses the same intelligent workflow as publish button:
+  1. **Auto-stash** uncommitted changes before pull
+  2. Pull remote changes (clean working directory)
+  3. **Auto-restore** stashed changes after pull
+  4. **Detect conflicts** if local and remote changes clash
+  5. **Show conflict dialog** (same as publish button)
+  
+  **Key Changes:**
+  - `pullLatestChanges()` now checks for local changes and stashes them automatically
+  - After pull, automatically pops stash (restores local changes)
+  - If stash pop causes conflicts → shows conflict resolution dialog
+  - Same conflict handling as "Publish to Store" button ✓
+  - User-friendly messages, no raw git errors! ✓
+  
+**Expected After Fix:**
+- ✅ Sync works with uncommitted local changes (auto-stash/pop)
+- ✅ No conflicts (different fields) → Auto-merge succeeds
+- ✅ Conflicts (same field) → Conflict dialog appears
+- ✅ Can resolve conflicts with Smart Merge, Use My Version, or Keep Store Version
+- ✅ NO raw git errors shown to user
+- ✅ Best practice workflow: sync before publish prevents conflicts
 
 ### Test 8: Auth Failure
 - Status: ✅ PASS

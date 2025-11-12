@@ -271,9 +271,9 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                                     )}
                                     <div className="version-label">🌐 Store</div>
                                     <div className="version-value">
-                                      {field.field === 'price' ? `$${field.remoteValue}` : 
+                                      {field.field === 'price' ? `$${field.remoteValue != null ? Number(field.remoteValue).toFixed(2) : '0.00'}` : 
                                        field.field === 'isNew' ? (field.remoteValue ? 'Yes' : 'No') :
-                                       field.field === 'discount' ? `${field.remoteValue}%` :
+                                       field.field === 'discount' ? `${field.remoteValue != null ? field.remoteValue : '0'}%` :
                                        field.remoteValue || '(empty)'}
                                     </div>
                                   </div>
@@ -294,9 +294,9 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                                     )}
                                     <div className="version-label">💻 Your Version</div>
                                     <div className="version-value">
-                                      {field.field === 'price' ? `$${field.localValue}` :
+                                      {field.field === 'price' ? `$${field.localValue != null ? Number(field.localValue).toFixed(2) : '0.00'}` :
                                        field.field === 'isNew' ? (field.localValue ? 'Yes' : 'No') :
-                                       field.field === 'discount' ? `${field.localValue}%` :
+                                       field.field === 'discount' ? `${field.localValue != null ? field.localValue : '0'}%` :
                                        field.localValue || '(empty)'}
                                     </div>
                                   </div>

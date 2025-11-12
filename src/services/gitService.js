@@ -285,19 +285,24 @@ class GitService {
 
           // Price change
           if (oldProduct.price !== newProduct.price) {
-            productChanges.push(`price changed from EGP ${oldProduct.price.toFixed(2)} to EGP ${newProduct.price.toFixed(2)}`);
+            const oldPrice = oldProduct.price != null ? oldProduct.price.toFixed(2) : '0.00';
+            const newPrice = newProduct.price != null ? newProduct.price.toFixed(2) : '0.00';
+            productChanges.push(`price changed from EGP ${oldPrice} to EGP ${newPrice}`);
           }
 
           // Discount change
           if (oldProduct.discount !== newProduct.discount) {
             if (newProduct.discount) {
-              productChanges.push(`discount added (EGP ${newProduct.discountedPrice.toFixed(2)})`);
+              const discountedPrice = newProduct.discountedPrice != null ? newProduct.discountedPrice.toFixed(2) : '0.00';
+              productChanges.push(`discount added (EGP ${discountedPrice})`);
             } else {
               productChanges.push('discount removed');
             }
           } else if (oldProduct.discount && newProduct.discount && 
                      oldProduct.discountedPrice !== newProduct.discountedPrice) {
-            productChanges.push(`discounted price changed from EGP ${oldProduct.discountedPrice.toFixed(2)} to EGP ${newProduct.discountedPrice.toFixed(2)}`);
+            const oldDiscounted = oldProduct.discountedPrice != null ? oldProduct.discountedPrice.toFixed(2) : '0.00';
+            const newDiscounted = newProduct.discountedPrice != null ? newProduct.discountedPrice.toFixed(2) : '0.00';
+            productChanges.push(`discounted price changed from EGP ${oldDiscounted} to EGP ${newDiscounted}`);
           }
 
           // Category change
@@ -732,6 +737,8 @@ class GitService {
    * @returns {Promise<Object>} - Result object with success status and details
    */
   async pullLatestChanges(branch = null) {
+    let stashed = false;
+    
     try {
       // Get current branch if not specified
       if (!branch) {
@@ -740,6 +747,30 @@ class GitService {
       }
 
       console.log(`Pulling latest changes from origin/${branch}...`);
+
+      // Check if we have local uncommitted changes that need to be stashed
+      const status = await this.getStatus();
+      const hasLocalChanges = !status.isClean;
+
+      if (hasLocalChanges) {
+        console.log('🔄 Local uncommitted changes detected. Stashing before pull...');
+        try {
+          // Remove stale lock files before stashing
+          await this.removeStaleLockFiles();
+          
+          await this.git.stash(['push', '-u', '-m', 'Auto-stash before sync']);
+          stashed = true;
+          console.log('✓ Local changes stashed successfully');
+        } catch (stashError) {
+          console.error('Failed to stash changes:', stashError);
+          return {
+            success: false,
+            error: 'Failed to stash local changes',
+            message: 'Cannot sync: Failed to save your local changes temporarily. Please commit or discard your changes and try again.',
+            userMessage: 'Cannot sync while you have unsaved changes. Please publish your changes first, or discard them.'
+          };
+        }
+      }
 
       // Fetch latest changes from remote
       await this.git.fetch('origin');
@@ -751,12 +782,70 @@ class GitService {
 
       // Check for conflicts (with null safety)
       if (pullResult?.summary?.conflicts && pullResult.summary.conflicts.length > 0) {
+        // If we stashed changes, restore them before returning conflict
+        if (stashed) {
+          console.log('⚠️ Conflicts detected during pull. Restoring stashed changes...');
+          try {
+            await this.git.stash(['pop']);
+          } catch (popError) {
+            console.error('Failed to restore stashed changes after conflict:', popError);
+          }
+        }
+        
         return {
           success: false,
           error: 'Merge conflicts detected',
           conflicts: pullResult.summary.conflicts,
+          hasConflict: true,
+          needsResolution: true,
           message: `Merge conflicts found in ${pullResult.summary.conflicts.length} file(s). Please resolve conflicts manually.`
         };
+      }
+
+      // If we stashed changes, pop them back now
+      if (stashed) {
+        console.log('✓ Pull successful. Restoring your local changes...');
+        try {
+          const stashPopResult = await this.git.stash(['pop']);
+          console.log('✓ Local changes restored successfully');
+          
+          // Check if stash pop caused conflicts
+          const statusAfterPop = await this.git.status();
+          if (statusAfterPop.conflicted && statusAfterPop.conflicted.length > 0) {
+            console.log('⚠️ Conflicts detected after restoring your changes');
+            return {
+              success: false,
+              error: 'Merge conflicts detected',
+              hasConflict: true,
+              needsResolution: true,
+              conflicts: statusAfterPop.conflicted,
+              message: 'Your local changes conflict with the updates from GitHub. Please resolve the conflicts.',
+              userMessage: 'Your changes conflict with updates from your store. Please choose which version to keep.'
+            };
+          }
+        } catch (stashPopError) {
+          console.error('Failed to restore stashed changes:', stashPopError);
+          
+          // Check if this is a conflict during stash pop
+          if (stashPopError.message.includes('conflict') || stashPopError.message.includes('CONFLICT')) {
+            const statusAfterError = await this.git.status();
+            return {
+              success: false,
+              error: 'Merge conflicts detected',
+              hasConflict: true,
+              needsResolution: true,
+              conflicts: statusAfterError.conflicted || ['products.json'],
+              message: 'Your local changes conflict with the updates from GitHub. Please resolve the conflicts.',
+              userMessage: 'Your changes conflict with updates from your store. Please choose which version to keep.'
+            };
+          }
+          
+          return {
+            success: false,
+            error: 'Failed to restore local changes',
+            message: `Sync completed but failed to restore your local changes. They are still saved in stash. Error: ${stashPopError.message}`
+          };
+        }
       }
 
       return {
@@ -766,10 +855,22 @@ class GitService {
           : 'Already up to date',
         changes: pullResult?.summary?.changes || 0,
         insertions: pullResult?.summary?.insertions || 0,
-        deletions: pullResult?.summary?.deletions || 0
+        deletions: pullResult?.summary?.deletions || 0,
+        stashed: stashed // Let caller know if we had to stash
       };
     } catch (error) {
       console.error('Failed to pull latest changes:', error);
+      
+      // If we stashed changes before the error, try to restore them
+      if (stashed) {
+        console.log('⚠️ Pull failed. Attempting to restore stashed changes...');
+        try {
+          await this.git.stash(['pop']);
+          console.log('✓ Local changes restored after error');
+        } catch (popError) {
+          console.error('Failed to restore stashed changes after error:', popError);
+        }
+      }
       
       // Check for network errors
       if (error.message.includes('Could not resolve host') || 
@@ -2154,20 +2255,57 @@ class GitService {
           };
         } catch (error) {
           // MERGE_HEAD doesn't exist - this is a stash-pop conflict, not a merge
-          console.log('No active merge found. This is a stash conflict - preserving working directory...');
+          console.log('No active merge found. This is a stash conflict - cleaning up...');
           
-          // For stash conflicts, we need to:
-          // 1. Remove the conflict markers from the index (unstage)
-          // 2. Keep the working directory changes intact (user's local work)
+          // For stash conflicts on cancel, we restore to a clean state:
+          // Strategy: Keep the user's local working directory version (before the conflict)
+          // by using `git checkout --ours` to take the local version and remove conflict markers
           
-          // Reset the index (unstage) but keep working directory
+          const fs = await import('fs/promises');
+          const path = await import('path');
+          
           for (const file of conflictedFiles) {
             try {
-              // Use --mixed reset: updates index from HEAD, keeps working directory as-is
+              const filePath = path.join(this.projectPath, file);
+              
+              // Read the conflicted file
+              const content = await fs.readFile(filePath, 'utf-8');
+              
+              // Check if file has conflict markers
+              if (content.includes('<<<<<<<') && content.includes('>>>>>>>')) {
+                console.log(`Removing conflict markers from ${file}, keeping local version...`);
+                
+                // Extract the LOCAL version (between <<<<<<< and =======)
+                // This is the user's working directory version before they tried to publish
+                const localVersionMatch = content.match(/<<<<<<< (?:HEAD|Updated upstream|ours)\n([\s\S]*?)\n=======/);
+                
+                if (localVersionMatch) {
+                  const localVersion = localVersionMatch[1];
+                  
+                  // Write the local version back (removes conflict markers)
+                  await fs.writeFile(filePath, localVersion, 'utf-8');
+                  console.log(`Restored local version of ${file} (conflict markers removed)`);
+                } else {
+                  // Fallback: if we can't parse, use git checkout --ours (keeps working tree version)
+                  await this.git.raw(['checkout', '--ours', file]);
+                  console.log(`Used git checkout --ours for ${file}`);
+                }
+              } else {
+                console.log(`${file} has no conflict markers, leaving as-is`);
+              }
+              
+              // Now reset the index (unstage) but keep the cleaned working directory file
               await this.git.raw(['reset', 'HEAD', file]);
-              console.log(`Reset ${file} in index, working directory preserved`);
-            } catch (resetError) {
-              console.log(`Could not reset ${file}, it may not exist in HEAD:`, resetError.message);
+              
+            } catch (fileError) {
+              console.log(`Error processing ${file}:`, fileError.message);
+              // Fallback: restore from HEAD completely (lose local changes for this file)
+              try {
+                await this.git.raw(['checkout', 'HEAD', file]);
+                console.log(`Restored ${file} from HEAD as fallback`);
+              } catch (checkoutError) {
+                console.log(`Could not restore ${file}:`, checkoutError.message);
+              }
             }
           }
           

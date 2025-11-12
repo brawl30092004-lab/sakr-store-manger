@@ -124,13 +124,17 @@ function SyncStatusIndicator() {
           window.location.reload();
         }
       } else {
-        // Check if it's a conflict error
-        if (result.error && result.error.includes('conflict')) {
-          setSyncStatus(null);
+        setSyncStatus(null);
+        
+        // Check if it's a conflict that needs resolution
+        if (result.hasConflict || result.needsResolution || 
+            (result.error && result.error.includes('conflict'))) {
+          console.log('🔀 Sync conflict detected, showing resolution dialog...');
           setShowConflictDialog(true);
         } else {
-          setSyncStatus(null);
-          showError(result.message || 'Sync failed');
+          // Other errors (network, auth, etc.)
+          const userMessage = result.userMessage || result.message || 'Sync failed';
+          showError(userMessage);
         }
       }
     } catch (error) {
