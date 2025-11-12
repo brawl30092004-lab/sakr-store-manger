@@ -1434,7 +1434,8 @@ class GitService {
     try {
       const localProducts = JSON.parse(localContent);
       const remoteProducts = JSON.parse(remoteContent);
-      const conflicts = [];
+      const trueConflicts = [];
+      const autoMergeableChanges = [];
 
       // Create maps for quick lookup
       const localMap = new Map(localProducts.map(p => [p.id, p]));
@@ -1447,6 +1448,8 @@ class GitService {
         if (!remoteProduct) continue; // Product only exists locally
         
         const fieldConflicts = [];
+        const localOnlyChanges = [];
+        const remoteOnlyChanges = [];
         
         // Compare each field
         const fieldsToCheck = ['name', 'price', 'description', 'category', 'stock', 'isNew', 'discount'];
@@ -1457,32 +1460,132 @@ class GitService {
           
           // Check if values differ
           if (JSON.stringify(localValue) !== JSON.stringify(remoteValue)) {
+            // This is a change - but is it a TRUE conflict?
+            // For now, we'll treat ANY difference as something to show the user
+            // but we'll categorize them as "mergeable" vs "conflicting"
             fieldConflicts.push({
               field,
               fieldLabel: this.getFieldLabel(field),
               localValue,
               remoteValue,
-              isDifferent: true
+              isDifferent: true,
+              canAutoMerge: false // For now, let user decide
             });
           }
         }
         
         // If there are field conflicts, add this product to conflicts list
         if (fieldConflicts.length > 0) {
-          conflicts.push({
+          trueConflicts.push({
             productId: id,
             productName: localProduct.name || remoteProduct.name || `Product ${id}`,
             localProduct,
             remoteProduct,
-            fieldConflicts
+            fieldConflicts,
+            canAutoMerge: true // All field-level changes CAN be auto-merged
           });
         }
       }
       
-      return conflicts;
+      return trueConflicts;
     } catch (error) {
       console.error('Failed to parse product conflicts:', error);
       return [];
+    }
+  }
+
+  /**
+   * Performs intelligent merge of product changes
+   * Combines local and remote changes when they affect different fields
+   * @param {string} localContent - Local products.json content
+   * @param {string} remoteContent - Remote products.json content
+   * @returns {Object} - Merge result with merged content
+   */
+  smartMergeProducts(localContent, remoteContent) {
+    try {
+      const localProducts = JSON.parse(localContent);
+      const remoteProducts = JSON.parse(remoteContent);
+      const mergedProducts = [];
+      const mergeLog = [];
+
+      // Create maps for quick lookup
+      const localMap = new Map(localProducts.map(p => [p.id, p]));
+      const remoteMap = new Map(remoteProducts.map(p => [p.id, p]));
+      
+      // Get all unique product IDs
+      const allIds = new Set([...localMap.keys(), ...remoteMap.keys()]);
+
+      for (const id of allIds) {
+        const localProduct = localMap.get(id);
+        const remoteProduct = remoteMap.get(id);
+
+        if (!localProduct) {
+          // Product only exists in remote - use remote version
+          mergedProducts.push(remoteProduct);
+          mergeLog.push(`Product ${id} (${remoteProduct.name}): Added from store`);
+        } else if (!remoteProduct) {
+          // Product only exists locally - use local version
+          mergedProducts.push(localProduct);
+          mergeLog.push(`Product ${id} (${localProduct.name}): Added from your version`);
+        } else {
+          // Product exists in both - merge fields intelligently
+          const merged = { ...localProduct }; // Start with local as base
+          const fieldsToCheck = ['name', 'price', 'description', 'category', 'stock', 'isNew', 'discount', 'image'];
+          const changedFields = [];
+
+          for (const field of fieldsToCheck) {
+            const localValue = localProduct[field];
+            const remoteValue = remoteProduct[field];
+
+            // If values differ, take the most recent non-empty/non-default value
+            if (JSON.stringify(localValue) !== JSON.stringify(remoteValue)) {
+              // Strategy: Keep BOTH changes by preferring defined/changed values
+              // If local has a value and remote doesn't, keep local
+              // If remote has a value and local doesn't, take remote
+              // If BOTH have different values, prefer local (user's intent)
+              
+              if (remoteValue !== undefined && remoteValue !== null && remoteValue !== '') {
+                // Remote has a value - check if it's actually different from a base
+                if (localValue === undefined || localValue === null || localValue === '') {
+                  // Local is empty, remote has value - take remote
+                  merged[field] = remoteValue;
+                  changedFields.push(`${field}: took store version`);
+                } else {
+                  // Both have values but different - this is a TRUE conflict
+                  // For smart merge, we'll keep local but log it
+                  merged[field] = localValue;
+                  changedFields.push(`${field}: kept your version (${localValue} vs store's ${remoteValue})`);
+                }
+              }
+            }
+          }
+
+          mergedProducts.push(merged);
+          
+          if (changedFields.length > 0) {
+            mergeLog.push(`Product ${id} (${merged.name}): ${changedFields.join(', ')}`);
+          }
+        }
+      }
+
+      // Sort by ID to maintain consistent order
+      mergedProducts.sort((a, b) => (a.id || 0) - (b.id || 0));
+
+      return {
+        success: true,
+        merged: true,
+        mergedContent: JSON.stringify(mergedProducts, null, 2),
+        mergedProducts,
+        mergeLog,
+        message: `Smart merge completed: ${mergeLog.length} product(s) processed`
+      };
+    } catch (error) {
+      console.error('Smart merge failed:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: `Failed to merge products: ${error.message}`
+      };
     }
   }
 
@@ -1758,18 +1861,52 @@ class GitService {
         };
       }
 
-      // Resolve conflicts by choosing a version
+      // Resolve conflicts by choosing a version or smart merging
       for (const file of conflictedFiles) {
-        if (resolution === 'local') {
+        if (resolution === 'merge' && file.includes('products.json')) {
+          // Smart merge for products.json
+          console.log('Performing smart merge for products.json...');
+          
+          try {
+            // Get local and remote versions
+            const localContent = await this.git.show(['HEAD:' + file]);
+            const remoteContent = await this.git.show(['MERGE_HEAD:' + file]);
+            
+            // Perform smart merge
+            const mergeResult = this.smartMergeProducts(localContent, remoteContent);
+            
+            if (mergeResult.success) {
+              // Write merged content to file
+              const fs = await import('fs/promises');
+              const path = await import('path');
+              const filePath = path.join(this.projectPath, file);
+              
+              await fs.writeFile(filePath, mergeResult.mergedContent, 'utf8');
+              console.log('Smart merge successful:', mergeResult.mergeLog);
+              
+              // Stage the resolved file
+              await this.git.add(file);
+            } else {
+              // Smart merge failed, fall back to local version
+              console.error('Smart merge failed, using local version:', mergeResult.error);
+              await this.git.raw(['checkout', '--ours', file]);
+              await this.git.add(file);
+            }
+          } catch (mergeError) {
+            console.error('Error during smart merge:', mergeError);
+            // Fall back to local version
+            await this.git.raw(['checkout', '--ours', file]);
+            await this.git.add(file);
+          }
+        } else if (resolution === 'local') {
           // Keep local version (ours)
           await this.git.raw(['checkout', '--ours', file]);
+          await this.git.add(file);
         } else if (resolution === 'remote') {
           // Keep remote version (theirs)
           await this.git.raw(['checkout', '--theirs', file]);
+          await this.git.add(file);
         }
-        
-        // Stage the resolved file
-        await this.git.add(file);
       }
 
       // Try to complete the merge if MERGE_HEAD exists

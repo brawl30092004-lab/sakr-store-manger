@@ -147,8 +147,8 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
 
 ---
 
-### Test 2: Simple Conflict (Same Product, Different Fields)
-**Goal:** Test conflict resolution when GitHub and local edit different fields of the same product
+### Test 2: Smart Merge (Same Product, Different Fields) ⭐ NEW!
+**Goal:** Test intelligent auto-merge when GitHub and local edit different fields of the same product
 
 **Steps:**
 1. On GitHub (browser):
@@ -176,32 +176,51 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
    - Shows conflicting fields:
      * Price: $199.99 (Store) → $249.99 (Your Version)
      * Description: "Premium ergonomic..." (Store) → "Ergonomic office chair" (Your Version)
+   - **NEW:** Shows "🔀 Smart Merge (Recommended)" button with glowing animation
    
-4. Resolve Conflict:
-   - Choose: "💻 Use My Version" (keep $249.99 price)
+4. Resolve Conflict with Smart Merge (⭐ RECOMMENDED):
+   - Choose: "� Smart Merge (Recommended)"
    - ✅ **Expected:** 
-     - Toast: "Conflict resolved! Using your version."
+     - Toast: "Conflict resolved! Smart merge successful."
      - Toast: "Continuing publish to store..."
      - Toast: "Successfully published to store!"
      - Dialog closes automatically
      - Status bar clears
+     - **App reloads products automatically**
 
-5. Verify on GitHub:
+5. Verify on GitHub - Best of Both Worlds!:
    - Refresh products.json on GitHub
-   - ✅ **Expected:** "Office Chair" shows price 249.99 (your local change won)
-   - Description is "Ergonomic office chair" (GitHub change was overwritten)
+   - ✅ **Expected:** "Office Chair" shows:
+     * Price: **$249.99** (your local change) ✓
+     * Description: **"Premium ergonomic office chair with lumbar support"** (GitHub's change) ✓
+   - **BOTH changes are kept!** No data loss! 🎉
+
+6. Alternative: Test Manual Resolution Options
+   - Repeat steps 1-3 to create the same conflict again
+   - This time choose "💻 Use My Version"
+   - ✅ **Expected:** 
+     - Only your changes kept (price $249.99)
+     - GitHub's description change lost
+   
+   - OR choose "☁️ Keep Store Version"
+   - ✅ **Expected:** 
+     - Only GitHub's changes kept (new description)
+     - Your price change lost
 
 **Pass Criteria:**
 - ✅ Conflict detected and dialog shown
 - ✅ Product-level details displayed correctly
 - ✅ Field-by-field comparison shown
+- ✅ **Smart Merge button appears and works**
+- ✅ **Smart Merge combines BOTH changes (no data loss)**
 - ✅ Resolution successful with auto-publish continuation
 - ✅ Changes reflected on GitHub
+- ✅ **App shows correct merged data after publish**
 
 ---
 
-### Test 3: Complex Conflict (Same Product, Same Field)
-**Goal:** Test when both GitHub and local edit the exact same field
+### Test 3: True Conflict (Same Product, Same Field, Different Values)
+**Goal:** Test when both GitHub and local edit the exact same field to different values - requires user decision
 
 **Steps:**
 1. On GitHub (browser):
@@ -225,8 +244,17 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
      * Current Store (GitHub): $69.99
      * Your Version: $99.99
    - Clear visual distinction between versions
+   - **Smart Merge button still appears** (will keep your version in this case)
 
-4. Test Resolution Option A - Keep Store Version:
+4. Test Smart Merge (prefers local when truly conflicting):
+   - Click "🔀 Smart Merge"
+   - ✅ **Expected:**
+     - Merges intelligently (keeps local $99.99 since both edited same field)
+     - Toast: "Conflict resolved! Smart merge successful."
+     - "Coffee Maker" price becomes $99.99
+
+5. Alternative: Test Manual Resolution
+   - Repeat steps 1-3 to create conflict again
    - Click "☁️ Keep Store Version"
    - ✅ **Expected:**
      - Toast: "Conflict resolved! Using store version."
@@ -234,14 +262,15 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
      - "Coffee Maker" price in app becomes $69.99 (reverted to GitHub's value)
      - Status bar clears
 
-5. Verify on GitHub:
+6. Verify on GitHub:
    - Refresh products.json
-   - ✅ **Expected:** "Coffee Maker" price is still 69.99 (GitHub version won)
+   - ✅ **Expected:** "Coffee Maker" price matches the resolution you chose
 
 **Pass Criteria:**
 - ✅ Same-field conflict detected
 - ✅ Both versions shown clearly (GitHub vs Local)
-- ✅ "Keep Store Version" discards local changes correctly
+- ✅ Smart Merge handles true conflicts gracefully
+- ✅ Manual resolution options work correctly
 - ✅ No errors or stuck states
 
 ---
@@ -553,7 +582,7 @@ needs changing : on first start the Data Source Not Found dialog shows which doe
 
 all emojies needs changing to vectors 
 
-
+pressing enter in the edit dialog should "save and close"
 
 ### Test 1: Basic Publish
 - Status: ✅ PASS

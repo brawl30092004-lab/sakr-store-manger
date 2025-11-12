@@ -167,6 +167,28 @@
   transform: translateY(-2px);
 }
 
+.conflict-option-recommended {
+  border-color: rgba(156, 39, 176, 0.4);
+  background: rgba(156, 39, 176, 0.05);
+}
+
+.conflict-option-recommended:hover {
+  border-color: rgba(156, 39, 176, 0.6);
+  background: rgba(156, 39, 176, 0.1);
+}
+
+.badge-recommended {
+  display: inline-block;
+  background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  margin-left: 8px;
+  font-weight: 600;
+  animation: pulse 2s ease-in-out infinite;
+}
+
 .option-icon {
   font-size: 40px;
   width: 60px;
@@ -176,6 +198,10 @@
   justify-content: center;
   border-radius: 12px;
   flex-shrink: 0;
+}
+
+.option-icon.merge {
+  background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
 }
 
 .option-icon.local {
@@ -246,6 +272,28 @@
 .conflict-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.conflict-btn-merge {
+  background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+  color: white;
+  max-width: 240px;
+  animation: glow 2s ease-in-out infinite;
+}
+
+.conflict-btn-merge:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7b1fa2 0%, #6a1b9a 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(156, 39, 176, 0.5);
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(156, 39, 176, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(156, 39, 176, 0.6);
+  }
 }
 
 .conflict-btn-local {

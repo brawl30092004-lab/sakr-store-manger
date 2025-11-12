@@ -201,12 +201,23 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
               </div>
 
               <div className="conflict-options">
+                {conflictDetails.hasProductConflicts && conflictDetails.productConflicts?.some(pc => pc.canAutoMerge) && (
+                  <div className="conflict-option conflict-option-recommended">
+                    <div className="option-icon merge">🔀</div>
+                    <div className="option-content">
+                      <h4>Smart Merge <span className="badge-recommended">✨ Recommended</span></h4>
+                      <p>Combine both changes automatically - keep all updates from both sides</p>
+                      <p className="option-note">✓ Best of both worlds - no data loss!</p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="conflict-option">
                   <div className="option-icon local">💻</div>
                   <div className="option-content">
                     <h4>Use My Version</h4>
                     <p>Keep your changes and update the store with your version</p>
-                    <p className="option-note">✓ Recommended if you just made edits</p>
+                    <p className="option-note">⚠️ Store changes will be overwritten</p>
                   </div>
                 </div>
 
@@ -237,6 +248,17 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
         </div>
 
         <div className="conflict-dialog-actions">
+          {conflictDetails?.hasProductConflicts && conflictDetails?.productConflicts?.some(pc => pc.canAutoMerge) && (
+            <button
+              className="conflict-btn conflict-btn-merge"
+              onClick={() => handleResolve('merge')}
+              disabled={resolving || isLoading}
+              title="Intelligently combine both your changes and the store's changes"
+            >
+              {resolving ? 'Merging...' : '🔀 Smart Merge (Recommended)'}
+            </button>
+          )}
+          
           <button
             className="conflict-btn conflict-btn-local"
             onClick={() => handleResolve('local')}
