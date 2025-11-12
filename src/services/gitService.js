@@ -2135,23 +2135,37 @@ class GitService {
             message: 'Merge aborted, returned to previous state'
           };
         } catch (error) {
-          // MERGE_HEAD doesn't exist, no merge in progress
-          // Just reset any conflict markers and clean up
-          console.log('No active merge to abort. Cleaning up conflict state...');
+          // MERGE_HEAD doesn't exist - this is a stash-pop conflict, not a merge
+          console.log('No active merge found. This is a stash conflict - preserving working directory...');
           
-          // Reset conflicted files to HEAD
+          // For stash conflicts, we need to:
+          // 1. Remove the conflict markers from the index (unstage)
+          // 2. Keep the working directory changes intact (user's local work)
+          
+          // Reset the index (unstage) but keep working directory
           for (const file of conflictedFiles) {
             try {
-              await this.git.raw(['checkout', 'HEAD', file]);
+              // Use --mixed reset: updates index from HEAD, keeps working directory as-is
+              await this.git.raw(['reset', 'HEAD', file]);
+              console.log(`Reset ${file} in index, working directory preserved`);
             } catch (resetError) {
-              console.log(`Could not reset ${file}, it may not exist in HEAD`);
+              console.log(`Could not reset ${file}, it may not exist in HEAD:`, resetError.message);
             }
+          }
+          
+          // Clear any stash state
+          try {
+            // Drop the stash that caused the conflict (stash@{0})
+            await this.git.raw(['stash', 'drop']);
+            console.log('Dropped conflicting stash');
+          } catch (dropError) {
+            console.log('No stash to drop or already dropped');
           }
           
           return {
             success: true,
             aborted: true,
-            message: 'Conflict resolution cancelled. Your changes are preserved.'
+            message: 'Conflict resolution cancelled. Your local changes are preserved.'
           };
         }
       }

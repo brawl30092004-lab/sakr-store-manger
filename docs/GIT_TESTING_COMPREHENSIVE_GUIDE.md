@@ -275,7 +275,7 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
 
 ---
 
-### Test 4: Cancel Conflict Resolution
+### Test 4: Cancel Conflict Resolution ⭐ FIXED!
 **Goal:** Verify user can cancel out of conflict without breaking git state
 
 **Steps:**
@@ -287,23 +287,38 @@ This guide covers all git scenarios in the Sakr Store Manager application. We'll
 2. When conflict dialog appears:
    - Click "❌ Cancel" button
    - ✅ **Expected:**
-     - Toast: "Merge cancelled. Your changes are preserved."
+     - Toast: "Publish cancelled. Your local changes are preserved."
+     - Console: "🔄 Refreshing app state after conflict cancellation..."
      - Dialog closes
-     - Status bar still shows changes (not cleared)
+     - Status bar shows: "1 product changed" (NOT "Ready")
+     - Buttons ENABLED (NOT greyed out)
      - Can edit more products
      - Can try publish again later
 
-3. Verify git state:
-   - Status bar should show changes
-   - Can make more edits to products
-   - Can try clicking sync instead
-   - Next publish attempt should work normally
+3. Verify git state and file preservation:
+   - ✅ Status bar shows changes: "1 product changed"
+   - ✅ "Publish to Store" button ENABLED
+   - ✅ "View Changes" button ENABLED
+   - ✅ Open products.json → your description change is still there
+   - ✅ Price is still your local version (not GitHub's $999.99)
+   - ✅ Can make more edits to products
+   - ✅ Can try clicking sync instead
+   - ✅ Next publish attempt → same conflict appears again (correct!)
+
+4. Verify what should NOT happen:
+   - ❌ Buttons should NOT be greyed out after cancel
+   - ❌ Status should NOT show "Ready" when changes exist
+   - ❌ Local changes should NOT be lost
+   - ❌ File should NOT revert to GitHub version
+   - ❌ Conflict should NOT disappear on next publish
 
 **Pass Criteria:**
 - ✅ Cancel button works
 - ✅ No git errors
-- ✅ Can continue working
-- ✅ Changes preserved locally
+- ✅ UI refreshes correctly (status + buttons)
+- ✅ Local changes preserved in working directory
+- ✅ Can continue working normally
+- ✅ Conflict reappears on retry (as expected)
 
 ---
 
@@ -606,7 +621,28 @@ Use this template to record your test results:
 
 ### Test 4: Cancel Resolution
 - Status: ✅ SHOULD PASS (Fixed!)
-- Notes: **FIXED** - Now checks for MERGE_HEAD before aborting. Canceling should work gracefully without errors.
+- Notes: **FIXED** - Critical bug in conflict cancellation resolved! Three issues fixed:
+  1. **UI State Refresh:** Now properly reloads products and refreshes git status after cancel
+  2. **Working Directory Preservation:** Changed from `git checkout HEAD` to `git reset HEAD`
+     - OLD (WRONG): Overwrote local changes with GitHub version
+     - NEW (CORRECT): Unstages conflicts but preserves your local changes
+  3. **Stash Cleanup:** Automatically drops the conflicting stash to clean git state
+  
+**Expected After Cancel:**
+- ✅ Status bar shows: "1 product changed" (NOT "Ready")
+- ✅ Buttons ENABLED: "Publish to Store" and "View Changes"
+- ✅ Local changes PRESERVED in products.json
+- ✅ Console: "🔄 Refreshing app state after conflict cancellation..."
+- ✅ Toast: "Publish cancelled. Your local changes are preserved."
+- ✅ Can publish again → same conflict reappears (as expected)
+
+**What Should NOT Happen:**
+- ❌ Buttons greyed out after cancel
+- ❌ Status showing "Ready" when changes exist
+- ❌ Local file reverting to GitHub version
+- ❌ Conflict disappearing on next publish
+
+**See:** CONFLICT_CANCEL_BUG_FIX.md for detailed technical explanation
 
 ### Test 5: Multiple Products
 - Status: ✅ SHOULD PASS (Fixed!)

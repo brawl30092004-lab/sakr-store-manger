@@ -84,6 +84,14 @@ export function useConflictHandler(onResolved = null) {
       
       if (result.success) {
         showInfo('Publish cancelled. Your local changes are preserved.');
+        
+        // CRITICAL: Call the onResolved callback to refresh app state
+        // This reloads products from disk and refreshes git status
+        // Without this, the UI shows stale state ("Ready" when changes exist)
+        if (onResolved) {
+          console.log('🔄 Refreshing app state after conflict cancellation...');
+          await onResolved('abort', result);
+        }
       } else {
         showError('Failed to cancel: ' + result.message);
       }
@@ -95,7 +103,7 @@ export function useConflictHandler(onResolved = null) {
       setPendingPublishData(null);
       setIsResolving(false);
     }
-  }, []);
+  }, [onResolved]);
 
   /**
    * Checks if publish result contains a conflict and shows dialog
