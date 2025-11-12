@@ -1726,22 +1726,53 @@ class GitService {
           let remoteVersion = null;
 
           // Try multiple refs to get versions (depends on merge vs stash pop)
+          // For stash-pop conflicts:
+          //   - HEAD = what we pulled from GitHub (remote/store version)
+          //   - refs/stash = your uncommitted local changes (local/your version)
+          // For merge conflicts:
+          //   - HEAD = your local committed state (local version)
+          //   - MERGE_HEAD = what we're merging in from GitHub (remote version)
+          
+          let headVersion = null;
+          let mergeHeadVersion = null;
+          let stashVersion = null;
+          
+          // Get HEAD (current state)
           try {
-            localVersion = await this.git.show(['HEAD:' + file]);
+            headVersion = await this.git.show(['HEAD:' + file]);
           } catch (e) {
             console.log('Could not get HEAD version of', file);
           }
 
-          // Try MERGE_HEAD first (normal merge), then refs/stash (stash pop)
+          // Try MERGE_HEAD (normal merge scenario)
           try {
-            remoteVersion = await this.git.show(['MERGE_HEAD:' + file]);
+            mergeHeadVersion = await this.git.show(['MERGE_HEAD:' + file]);
           } catch (e) {
-            try {
-              // For stash pop conflicts, try getting from stash
-              remoteVersion = await this.git.show(['refs/stash@{0}:' + file]);
-            } catch (e2) {
-              console.log('Could not get remote/stash version of', file);
-            }
+            // Not in a merge, might be stash-pop conflict
+          }
+          
+          // Try stash (stash-pop scenario)
+          try {
+            stashVersion = await this.git.show(['refs/stash@{0}:' + file]);
+          } catch (e) {
+            // No stash available
+          }
+          
+          // Determine which is local vs remote based on scenario
+          if (stashVersion) {
+            // Stash-pop conflict: stash = local (your changes), HEAD = remote (GitHub)
+            localVersion = stashVersion;
+            remoteVersion = headVersion;
+            console.log('Using stash-pop conflict versions: local=stash, remote=HEAD');
+          } else if (mergeHeadVersion) {
+            // Merge conflict: HEAD = local, MERGE_HEAD = remote
+            localVersion = headVersion;
+            remoteVersion = mergeHeadVersion;
+            console.log('Using merge conflict versions: local=HEAD, remote=MERGE_HEAD');
+          } else {
+            // Fallback
+            localVersion = headVersion;
+            remoteVersion = null;
           }
 
           // If this is products.json, parse for product-level conflicts

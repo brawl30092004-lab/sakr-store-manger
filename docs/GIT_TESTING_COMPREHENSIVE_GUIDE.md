@@ -589,8 +589,18 @@ pressing enter in the edit dialog should "save and close"
 - Notes: as intended
 
 ### Test 2: Simple Conflict
-- Status: ✅ PASS / ❌ FAIL
-- Notes:
+- Status: ✅ PASS
+- Notes: as intended - UI issue found 
+
+
+Visual Error: The UI labels and the data they display are mismatched.
+
+Detailed Observation:
+
+The column labeled "CURRENT STORE (GITHUB)" (Left/Yellow) is actually displaying the Local/User data .
+
+The column labeled "YOUR VERSION" (Right/Green) is actually displaying the Remote/Store data .
+its reversed in naming 
 
 ### Test 3: Complex Conflict
 - Status: ✅ PASS / ❌ FAIL
