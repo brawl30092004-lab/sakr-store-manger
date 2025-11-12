@@ -691,30 +691,18 @@ Use this template to record your test results:
 **Expected:** Sync works smoothly, no raw git errors shown to user.
 
 ### Test 8: Auth Failure
-- Status: ✅ PASS (Enhanced!)
-- Notes: **ENHANCED** - PAT now auto-validated before saving settings!
-  - Uses same validation logic as "Test Connection" button
-  - Invalid tokens rejected immediately at save time
-  - Prevents saving bad credentials that fail later
+- Status: ✅ PASS
+- Notes: as intended
   
 **Expected:** Cannot save settings with invalid PAT.
 
 ### Test 9: Network Failure
-- Status: ✅ PASS (Enhanced!)
-- Notes: **ENHANCED** - Error messages improved!
-  - Old: "fatal: unable to access... Could not resolve host: github.com"
-  - New: "Cannot connect to GitHub. Please check your internet connection and try again."
-  
-**Expected:** User-friendly error message, no raw git output.
+- Status: ✅ PASS
+- Notes: as intended
 
 ### Test 10: Rapid Publishes
-- Status: ✅ VERIFIED (Already Working!)
-- Notes: **CONFIRMED** - Button already properly disabled!
-  - `disabled={!gitStatus.hasChanges || isPublishing}`
-  - Shows "Publishing..." text during operation
-  - Button re-enables after completion
-  
-**Expected:** Button disabled, no concurrent publishes possible.
+- Status: ✅ PASS
+- Notes: as intended
 
 ### Test 11: Publish During Sync
 - Status: didnt test
