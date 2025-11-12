@@ -64,6 +64,7 @@ contextBridge.exposeInMainWorld('electron', {
   pullWithStrategy: (strategy) => ipcRenderer.invoke('git:pullWithStrategy', strategy),
   getConflictDetails: () => ipcRenderer.invoke('git:getConflictDetails'),
   resolveConflict: (resolution, files) => ipcRenderer.invoke('git:resolveConflict', resolution, files),
+  resolveConflictWithFieldSelections: (fieldSelections) => ipcRenderer.invoke('git:resolveConflictWithFieldSelections', fieldSelections),
   continuePublish: (commitMessage, files) => ipcRenderer.invoke('git:continuePublish', commitMessage, files),
   checkPotentialConflicts: () => ipcRenderer.invoke('git:checkPotentialConflicts'),
 });

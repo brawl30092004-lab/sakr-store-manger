@@ -10,6 +10,9 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
   const [conflictDetails, setConflictDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
+  const [showAdvancedMode, setShowAdvancedMode] = useState(false);
+  const [fieldSelections, setFieldSelections] = useState({});
+  // Format: { productId: { field: useLocal (boolean) } }
   
   // Use external isResolving if provided (from hook), otherwise use internal state
   const resolving = externalIsResolving || isResolving;
@@ -40,6 +43,95 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
       onClose();
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  /**
+   * Initialize default field selections (all local)
+   */
+  useEffect(() => {
+    if (conflictDetails?.productConflicts) {
+      const defaults = {};
+      for (const product of conflictDetails.productConflicts) {
+        defaults[product.productId] = {};
+        for (const field of product.fieldConflicts) {
+          defaults[product.productId][field.field] = true; // Default to local
+        }
+      }
+      setFieldSelections(defaults);
+    }
+  }, [conflictDetails]);
+
+  /**
+   * Toggle field selection (local vs remote)
+   */
+  const toggleFieldSelection = (productId, field) => {
+    setFieldSelections(prev => ({
+      ...prev,
+      [productId]: {
+        ...prev[productId],
+        [field]: !prev[productId]?.[field]
+      }
+    }));
+  };
+
+  /**
+   * Select all fields for a product from one source
+   */
+  const selectAllForProduct = (productId, useLocal) => {
+    const product = conflictDetails.productConflicts.find(p => p.productId === productId);
+    if (!product) return;
+    
+    const newSelections = {};
+    for (const field of product.fieldConflicts) {
+      newSelections[field.field] = useLocal;
+    }
+    
+    setFieldSelections(prev => ({
+      ...prev,
+      [productId]: newSelections
+    }));
+  };
+
+  /**
+   * Resolve with custom field selections
+   */
+  const handleAdvancedResolve = async () => {
+    setIsResolving(true);
+    
+    try {
+      // Convert selections to array format
+      const selections = [];
+      for (const productId in fieldSelections) {
+        for (const field in fieldSelections[productId]) {
+          selections.push({
+            productId,
+            field,
+            useLocal: fieldSelections[productId][field]
+          });
+        }
+      }
+      
+      const result = await window.electron.resolveConflictWithFieldSelections(selections);
+      
+      if (result.success) {
+        showSuccess('Conflict resolved with your custom selections!');
+        
+        // For external handlers (like StatusBar), continue with publish
+        if (externalIsResolving !== false && onResolved) {
+          showInfo('Continuing publish to store...');
+          onResolved('custom'); // Signal custom resolution
+        } else {
+          onClose();
+        }
+      } else {
+        showError('Failed to resolve conflict: ' + result.message);
+      }
+    } catch (error) {
+      console.error('Error resolving with field selections:', error);
+      showError('Failed to resolve conflict');
+    } finally {
+      setIsResolving(false);
     }
   };
 
@@ -139,13 +231,45 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                             <span className="conflict-count">{product.fieldConflicts.length} field(s) differ</span>
                           </div>
                           
+                          {showAdvancedMode && (
+                            <div className="product-actions">
+                              <button 
+                                className="btn-select-all"
+                                onClick={() => selectAllForProduct(product.productId, true)}
+                                disabled={resolving}
+                              >
+                                Use All My Values
+                              </button>
+                              <button 
+                                className="btn-select-all"
+                                onClick={() => selectAllForProduct(product.productId, false)}
+                                disabled={resolving}
+                              >
+                                Use All Store Values
+                              </button>
+                            </div>
+                          )}
+                          
                           <div className="field-conflicts">
                             {product.fieldConflicts.map((field, fIndex) => (
                               <div key={fIndex} className="field-conflict">
                                 <div className="field-name">{field.fieldLabel}:</div>
-                                <div className="field-comparison">
-                                  <div className="field-version github-version">
-                                    <div className="version-label">🌐 Current Store (GitHub)</div>
+                                <div className={`field-comparison ${showAdvancedMode ? 'interactive' : ''}`}>
+                                  <div 
+                                    className={`field-version github-version ${showAdvancedMode && !fieldSelections[product.productId]?.[field.field] ? 'selected' : ''}`}
+                                    onClick={() => showAdvancedMode && toggleFieldSelection(product.productId, field.field)}
+                                    style={{ cursor: showAdvancedMode ? 'pointer' : 'default' }}
+                                  >
+                                    {showAdvancedMode && (
+                                      <input 
+                                        type="radio"
+                                        name={`${product.productId}-${field.field}`}
+                                        checked={!fieldSelections[product.productId]?.[field.field]}
+                                        onChange={() => {}}
+                                        className="field-radio"
+                                      />
+                                    )}
+                                    <div className="version-label">🌐 Store</div>
                                     <div className="version-value">
                                       {field.field === 'price' ? `$${field.remoteValue}` : 
                                        field.field === 'isNew' ? (field.remoteValue ? 'Yes' : 'No') :
@@ -153,8 +277,21 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                                        field.remoteValue || '(empty)'}
                                     </div>
                                   </div>
-                                  <div className="field-separator">→</div>
-                                  <div className="field-version local-version">
+                                  <div className="field-separator">vs</div>
+                                  <div 
+                                    className={`field-version local-version ${showAdvancedMode && fieldSelections[product.productId]?.[field.field] ? 'selected' : ''}`}
+                                    onClick={() => showAdvancedMode && toggleFieldSelection(product.productId, field.field)}
+                                    style={{ cursor: showAdvancedMode ? 'pointer' : 'default' }}
+                                  >
+                                    {showAdvancedMode && (
+                                      <input 
+                                        type="radio"
+                                        name={`${product.productId}-${field.field}`}
+                                        checked={fieldSelections[product.productId]?.[field.field]}
+                                        onChange={() => {}}
+                                        className="field-radio"
+                                      />
+                                    )}
                                     <div className="version-label">💻 Your Version</div>
                                     <div className="version-value">
                                       {field.field === 'price' ? `$${field.localValue}` :
@@ -200,45 +337,74 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                 <p>Choose how to resolve {conflictDetails.hasProductConflicts ? 'these product conflicts' : 'the conflict'}:</p>
               </div>
 
-              <div className="conflict-options">
-                {conflictDetails.hasProductConflicts && conflictDetails.productConflicts?.some(pc => pc.canAutoMerge) && (
-                  <div className="conflict-option conflict-option-recommended">
-                    <div className="option-icon merge">🔀</div>
+              {!showAdvancedMode && (
+                <div className="conflict-options">
+                  {conflictDetails.hasProductConflicts && conflictDetails.productConflicts?.some(pc => pc.canAutoMerge) && (
+                    <div className="conflict-option conflict-option-recommended">
+                      <div className="option-icon merge">🔀</div>
+                      <div className="option-content">
+                        <h4>Smart Merge <span className="badge-recommended">✨ Recommended</span></h4>
+                        <p>Combine both changes automatically - keep all updates from both sides</p>
+                        <p className="option-note">✓ Best of both worlds - no data loss!</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="conflict-option">
+                    <div className="option-icon local">💻</div>
                     <div className="option-content">
-                      <h4>Smart Merge <span className="badge-recommended">✨ Recommended</span></h4>
-                      <p>Combine both changes automatically - keep all updates from both sides</p>
-                      <p className="option-note">✓ Best of both worlds - no data loss!</p>
+                      <h4>Use My Version</h4>
+                      <p>Keep your changes and update the store with your version</p>
+                      <p className="option-note">⚠️ Store changes will be overwritten</p>
                     </div>
                   </div>
-                )}
 
-                <div className="conflict-option">
-                  <div className="option-icon local">💻</div>
-                  <div className="option-content">
-                    <h4>Use My Version</h4>
-                    <p>Keep your changes and update the store with your version</p>
-                    <p className="option-note">⚠️ Store changes will be overwritten</p>
+                  <div className="conflict-option">
+                    <div className="option-icon remote">☁️</div>
+                    <div className="option-content">
+                      <h4>Keep Store Version</h4>
+                      <p>Discard your changes and keep what's currently on the store</p>
+                      <p className="option-note">⚠️ Your edits will be lost</p>
+                    </div>
+                  </div>
+
+                  <div className="conflict-option">
+                    <div className="option-icon cancel">🚫</div>
+                    <div className="option-content">
+                      <h4>Cancel</h4>
+                      <p>Abort and don't publish anything right now</p>
+                      <p className="option-note">ℹ️ You can try again later or manually resolve</p>
+                    </div>
+                  </div>
+                  
+                  <div className="advanced-mode-toggle">
+                    <button 
+                      className="btn-toggle-advanced"
+                      onClick={() => setShowAdvancedMode(true)}
+                      disabled={resolving}
+                    >
+                      🎯 Choose Individual Fields (Advanced)
+                    </button>
+                    <p className="advanced-hint">Select which specific fields to keep from each version</p>
                   </div>
                 </div>
-
-                <div className="conflict-option">
-                  <div className="option-icon remote">☁️</div>
-                  <div className="option-content">
-                    <h4>Keep Store Version</h4>
-                    <p>Discard your changes and keep what's currently on the store</p>
-                    <p className="option-note">⚠️ Your edits will be lost</p>
+              )}
+              
+              {showAdvancedMode && (
+                <div className="advanced-mode-active">
+                  <div className="advanced-mode-header">
+                    <h4>🎯 Custom Field Selection</h4>
+                    <p>Click on any field to choose which version to keep. Selected fields are highlighted.</p>
+                    <button 
+                      className="btn-back-simple"
+                      onClick={() => setShowAdvancedMode(false)}
+                      disabled={resolving}
+                    >
+                      ← Back to Simple Mode
+                    </button>
                   </div>
                 </div>
-
-                <div className="conflict-option">
-                  <div className="option-icon cancel">🚫</div>
-                  <div className="option-content">
-                    <h4>Cancel</h4>
-                    <p>Abort and don't publish anything right now</p>
-                    <p className="option-note">ℹ️ You can try again later or manually resolve</p>
-                  </div>
-                </div>
-              </div>
+              )}
             </>
           ) : (
             <div className="no-conflicts">
@@ -248,43 +414,66 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
         </div>
 
         <div className="conflict-dialog-actions">
-          {conflictDetails?.hasProductConflicts && conflictDetails?.productConflicts?.some(pc => pc.canAutoMerge) && (
-            <button
-              className="conflict-btn conflict-btn-merge"
-              onClick={() => handleResolve('merge')}
-              disabled={resolving || isLoading}
-              title="Intelligently combine both your changes and the store's changes"
-            >
-              {resolving ? 'Merging...' : '🔀 Smart Merge (Recommended)'}
-            </button>
+          {showAdvancedMode ? (
+            <>
+              <button
+                className="conflict-btn conflict-btn-custom"
+                onClick={handleAdvancedResolve}
+                disabled={resolving || isLoading}
+                title="Apply your custom field selections"
+              >
+                {resolving ? 'Applying...' : '✓ Apply Custom Selection'}
+              </button>
+              <button
+                className="conflict-btn conflict-btn-cancel"
+                onClick={() => handleResolve('cancel')}
+                disabled={resolving}
+                title="Cancel this operation and try again later"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              {conflictDetails?.hasProductConflicts && conflictDetails?.productConflicts?.some(pc => pc.canAutoMerge) && (
+                <button
+                  className="conflict-btn conflict-btn-merge"
+                  onClick={() => handleResolve('merge')}
+                  disabled={resolving || isLoading}
+                  title="Intelligently combine both your changes and the store's changes"
+                >
+                  {resolving ? 'Merging...' : '🔀 Smart Merge (Recommended)'}
+                </button>
+              )}
+              
+              <button
+                className="conflict-btn conflict-btn-local"
+                onClick={() => handleResolve('local')}
+                disabled={resolving || isLoading}
+                title="Keep your changes and publish them to the store"
+              >
+                {resolving ? 'Resolving...' : '💻 Use My Version'}
+              </button>
+              
+              <button
+                className="conflict-btn conflict-btn-remote"
+                onClick={() => handleResolve('remote')}
+                disabled={resolving || isLoading}
+                title="Discard your changes and keep the current store version"
+              >
+                {resolving ? 'Resolving...' : '☁️ Keep Store Version'}
+              </button>
+              
+              <button
+                className="conflict-btn conflict-btn-cancel"
+                onClick={() => handleResolve('cancel')}
+                disabled={resolving}
+                title="Cancel this operation and try again later"
+              >
+                Cancel
+              </button>
+            </>
           )}
-          
-          <button
-            className="conflict-btn conflict-btn-local"
-            onClick={() => handleResolve('local')}
-            disabled={resolving || isLoading}
-            title="Keep your changes and publish them to the store"
-          >
-            {resolving ? 'Resolving...' : '💻 Use My Version'}
-          </button>
-          
-          <button
-            className="conflict-btn conflict-btn-remote"
-            onClick={() => handleResolve('remote')}
-            disabled={resolving || isLoading}
-            title="Discard your changes and keep the current store version"
-          >
-            {resolving ? 'Resolving...' : '☁️ Keep Store Version'}
-          </button>
-          
-          <button
-            className="conflict-btn conflict-btn-cancel"
-            onClick={() => handleResolve('cancel')}
-            disabled={resolving}
-            title="Cancel this operation and try again later"
-          >
-            Cancel
-          </button>
         </div>
 
         <div className="conflict-dialog-footer">

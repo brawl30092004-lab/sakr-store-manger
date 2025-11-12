@@ -1576,6 +1576,44 @@ ipcMain.handle('git:resolveConflict', async (event, resolution, files) => {
 });
 
 /**
+ * IPC Handler for resolving conflicts with field-level selections
+ */
+ipcMain.handle('git:resolveConflictWithFieldSelections', async (event, fieldSelections) => {
+  try {
+    const { getConfigService } = await import('../src/services/configService.js');
+    const GitService = (await import('../src/services/gitService.js')).default;
+    
+    const configService = getConfigService();
+    const config = configService.getConfigWithToken();
+    
+    if (!config || !config.projectPath) {
+      return {
+        success: false,
+        message: 'No project path configured'
+      };
+    }
+    
+    const gitPath = findGitPath();
+    const gitService = new GitService(config.projectPath, {
+      username: config.username,
+      token: config.token,
+      repoUrl: config.repoUrl,
+      gitPath: gitPath
+    });
+    
+    const result = await gitService.resolveConflictWithFieldSelections(fieldSelections);
+    return result;
+  } catch (error) {
+    console.error('Error resolving conflict with field selections:', error);
+    return {
+      success: false,
+      message: `Failed to resolve conflict: ${error.message}`,
+      error: error.message
+    };
+  }
+});
+
+/**
  * IPC Handler for continuing publish after conflict resolution
  */
 ipcMain.handle('git:continuePublish', async (event, commitMessage = null, files = null) => {

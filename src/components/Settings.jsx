@@ -617,8 +617,30 @@ function Settings({ onBackToMain }) {
         ...(formData.token !== '••••••••' && { token: formData.token })
       };
 
-      // If GitHub mode, handle repository setup first
+      // If GitHub mode, validate credentials first, then handle repository setup
       if (dataSource === 'github') {
+        // Auto-validate token before proceeding
+        setStatus({ message: 'Validating credentials...', type: 'info' });
+        
+        const configToTest = {
+          ...configToSave,
+          // Use the actual token for validation (not masked)
+          token: formData.token === '••••••••' ? null : formData.token
+        };
+        
+        const testResult = await window.electron.testConnection(configToTest);
+        
+        if (!testResult.success) {
+          setStatus({
+            message: `Authentication failed: ${testResult.message}`,
+            type: 'error'
+          });
+          showError(`Cannot save settings: ${testResult.message}`);
+          setIsLoading(false);
+          return; // Validation failed, don't save settings
+        }
+        
+        // Validation successful, proceed with setup
         const setupResult = await handleGitHubSetup(configToSave);
         if (!setupResult.success) {
           setIsLoading(false);

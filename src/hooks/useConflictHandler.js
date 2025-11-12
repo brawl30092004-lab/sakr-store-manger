@@ -34,8 +34,13 @@ export function useConflictHandler(onResolved = null) {
         return;
       }
 
-      const versionName = resolution === 'local' ? 'your' : 'store';
-      showSuccess(`Conflict resolved! Using ${versionName} version.`);
+      // Show appropriate success message
+      if (resolution === 'custom') {
+        showSuccess('Conflict resolved with your custom selections!');
+      } else {
+        const versionName = resolution === 'local' ? 'your' : 'store';
+        showSuccess(`Conflict resolved! Using ${versionName} version.`);
+      }
 
       // Step 2: Continue with publish (commit + push)
       showInfo('Continuing publish to store...');

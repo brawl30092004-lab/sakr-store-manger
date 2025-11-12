@@ -771,6 +771,28 @@ class GitService {
     } catch (error) {
       console.error('Failed to pull latest changes:', error);
       
+      // Check for network errors
+      if (error.message.includes('Could not resolve host') || 
+          error.message.includes('Failed to connect') ||
+          error.message.includes('unable to access')) {
+        return {
+          success: false,
+          error: 'Network error',
+          message: 'Cannot connect to GitHub. Please check your internet connection and try again.'
+        };
+      }
+      
+      // Check for authentication errors
+      if (error.message.includes('authentication failed') || 
+          error.message.includes('401') ||
+          error.message.includes('403')) {
+        return {
+          success: false,
+          error: 'Authentication failed',
+          message: 'GitHub authentication failed. Please check your Personal Access Token in Settings.'
+        };
+      }
+      
       // Check for merge conflict errors
       if (error.message.includes('conflict') || error.message.includes('CONFLICT')) {
         return {
@@ -847,6 +869,19 @@ class GitService {
       };
     } catch (error) {
       console.error('Failed to commit changes:', error);
+      
+      // Check for index.lock error
+      if (error.message.includes('index.lock') || error.message.includes('Another git process')) {
+        // Try to remove stale lock file
+        await this.removeStaleLockFiles();
+        
+        return {
+          success: false,
+          error: 'Git is busy',
+          message: 'Another git operation is in progress. Please wait a moment and try again. If this persists, try restarting the app.'
+        };
+      }
+      
       return {
         success: false,
         error: error.message,
@@ -989,12 +1024,24 @@ class GitService {
       if (hasLocalChanges) {
         console.log('Step 1a: Stashing local changes...');
         try {
+          // Remove stale lock files before stashing
+          await this.removeStaleLockFiles();
+          
           await this.git.stash(['push', '-u', '-m', 'Auto-stash before pull']);
           results.stash = { success: true, stashed: true };
           console.log('Local changes stashed successfully');
         } catch (error) {
           console.error('Failed to stash changes:', error);
           results.stash = { success: false, error: error.message };
+          
+          // If stash failed, don't proceed with pull as it will fail
+          return {
+            success: false,
+            error: 'Failed to stash local changes',
+            message: `Cannot publish: Failed to save your local changes temporarily. ${error.message}`,
+            step: 'stash',
+            results
+          };
         }
       }
 
@@ -1780,6 +1827,48 @@ class GitService {
             // Even if we can't get clean versions, try parsing the conflicted file
             if (localVersion && remoteVersion) {
               productConflicts = this.parseProductConflicts(localVersion, remoteVersion);
+              
+              // Also detect add/delete operations
+              try {
+                const localProducts = JSON.parse(localVersion);
+                const remoteProducts = JSON.parse(remoteVersion);
+                
+                // Find products added locally but not on GitHub
+                const localIds = new Set(localProducts.map(p => p.id));
+                const remoteIds = new Set(remoteProducts.map(p => p.id));
+                
+                const addedLocally = localProducts.filter(p => !remoteIds.has(p.id));
+                const deletedOnGitHub = remoteProducts.filter(p => !localIds.has(p.id));
+                
+                if (addedLocally.length > 0 || deletedOnGitHub.length > 0) {
+                  // Add synthetic conflict entries for add/delete operations
+                  for (const product of addedLocally) {
+                    productConflicts.push({
+                      productId: product.id,
+                      productName: product.name || 'Unnamed Product',
+                      conflictType: 'added_locally',
+                      localValue: product,
+                      remoteValue: null,
+                      message: `Product "${product.name}" was added locally but doesn't exist on GitHub`,
+                      canAutoMerge: true // Can be auto-merged by keeping it
+                    });
+                  }
+                  
+                  for (const product of deletedOnGitHub) {
+                    productConflicts.push({
+                      productId: product.id,
+                      productName: product.name || 'Unnamed Product',
+                      conflictType: 'deleted_on_github',
+                      localValue: null,
+                      remoteValue: product,
+                      message: `Product "${product.name}" was deleted on GitHub but still exists locally`,
+                      canAutoMerge: false // User must decide
+                    });
+                  }
+                }
+              } catch (parseError) {
+                console.error('Could not parse products for add/delete detection:', parseError);
+              }
             } else {
               // Try to parse the conflicted file directly (has conflict markers)
               try {
@@ -1856,6 +1945,141 @@ class GitService {
   }
 
   /**
+   * Resolves conflicts with custom field-level selections
+   * Allows users to choose which fields to keep from local vs remote for each product
+   * @param {Array<Object>} fieldSelections - Array of {productId, field, useLocal: boolean}
+   * @returns {Promise<Object>} - Resolution result
+   */
+  async resolveConflictWithFieldSelections(fieldSelections) {
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      
+      // Get conflict details first
+      const conflictDetails = await this.getConflictDetails();
+      
+      if (!conflictDetails.hasProductConflicts) {
+        return {
+          success: false,
+          error: 'No product conflicts found',
+          message: 'No product conflicts to resolve with field selections'
+        };
+      }
+      
+      // Parse current conflicted file
+      const productsFilePath = path.join(this.projectPath, 'products.json');
+      const conflictedContent = await fs.readFile(productsFilePath, 'utf-8');
+      
+      // Get clean versions from git
+      let localProducts = [];
+      let remoteProducts = [];
+      
+      // Determine conflict type
+      const mergeHeadPath = path.join(this.projectPath, '.git', 'MERGE_HEAD');
+      let isStashConflict = false;
+      try {
+        await fs.access(mergeHeadPath);
+        isStashConflict = false;
+      } catch {
+        isStashConflict = true;
+      }
+      
+      // Get versions based on conflict type
+      if (isStashConflict) {
+        // Stash conflict: --theirs = local, --ours = remote
+        const localContent = await this.git.show(['--theirs:products.json']);
+        const remoteContent = await this.git.show(['--ours:products.json']);
+        localProducts = JSON.parse(localContent);
+        remoteProducts = JSON.parse(remoteContent);
+      } else {
+        // Merge conflict: --ours = local, --theirs = remote
+        const localContent = await this.git.show(['--ours:products.json']);
+        const remoteContent = await this.git.show(['--theirs:products.json']);
+        localProducts = JSON.parse(localContent);
+        remoteProducts = JSON.parse(remoteContent);
+      }
+      
+      // Create maps for quick lookup
+      const localMap = new Map(localProducts.map(p => [p.id, p]));
+      const remoteMap = new Map(remoteProducts.map(p => [p.id, p]));
+      
+      // Group selections by product
+      const selectionsByProduct = {};
+      for (const selection of fieldSelections) {
+        if (!selectionsByProduct[selection.productId]) {
+          selectionsByProduct[selection.productId] = {};
+        }
+        selectionsByProduct[selection.productId][selection.field] = selection.useLocal;
+      }
+      
+      // Build merged products based on selections
+      const mergedProducts = [];
+      const allIds = new Set([...localMap.keys(), ...remoteMap.keys()]);
+      
+      for (const id of allIds) {
+        const localProduct = localMap.get(id);
+        const remoteProduct = remoteMap.get(id);
+        const selections = selectionsByProduct[id] || {};
+        
+        if (!localProduct) {
+          // Only in remote
+          mergedProducts.push(remoteProduct);
+        } else if (!remoteProduct) {
+          // Only in local
+          mergedProducts.push(localProduct);
+        } else {
+          // Merge based on field selections
+          const merged = { id }; // Start with ID
+          
+          const fieldsToMerge = ['name', 'price', 'description', 'category', 'stock', 'isNew', 'discount', 'image'];
+          
+          for (const field of fieldsToMerge) {
+            if (selections.hasOwnProperty(field)) {
+              // User made a selection for this field
+              merged[field] = selections[field] ? localProduct[field] : remoteProduct[field];
+            } else {
+              // No selection - default to local
+              merged[field] = localProduct[field] !== undefined ? localProduct[field] : remoteProduct[field];
+            }
+          }
+          
+          mergedProducts.push(merged);
+        }
+      }
+      
+      // Write merged content
+      const mergedContent = JSON.stringify(mergedProducts, null, 2);
+      await fs.writeFile(productsFilePath, mergedContent, 'utf-8');
+      
+      // Stage the resolved file
+      await this.git.add('products.json');
+      
+      // Complete the merge if in merge state
+      if (!isStashConflict) {
+        try {
+          await this.git.raw(['commit', '--no-edit']);
+        } catch (commitError) {
+          console.log('No merge commit needed:', commitError.message);
+        }
+      }
+      
+      return {
+        success: true,
+        resolved: true,
+        resolution: 'custom',
+        message: `Resolved conflicts with custom field selections for ${Object.keys(selectionsByProduct).length} product(s)`
+      };
+    } catch (error) {
+      console.error('Failed to resolve with field selections:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: `Failed to resolve conflicts: ${error.message}`
+      };
+    }
+  }
+
+  /**
    * Logs current git state for debugging
    */
   async logGitState() {
@@ -1896,13 +2120,40 @@ class GitService {
       }
 
       if (resolution === 'abort') {
-        // Abort the merge
-        await this.git.raw(['merge', '--abort']);
-        return {
-          success: true,
-          aborted: true,
-          message: 'Merge aborted, returned to previous state'
-        };
+        // Check if we're actually in a merge state before aborting
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        const mergeHeadPath = path.join(this.projectPath, '.git', 'MERGE_HEAD');
+        
+        try {
+          await fs.access(mergeHeadPath);
+          // MERGE_HEAD exists, we can abort the merge
+          await this.git.raw(['merge', '--abort']);
+          return {
+            success: true,
+            aborted: true,
+            message: 'Merge aborted, returned to previous state'
+          };
+        } catch (error) {
+          // MERGE_HEAD doesn't exist, no merge in progress
+          // Just reset any conflict markers and clean up
+          console.log('No active merge to abort. Cleaning up conflict state...');
+          
+          // Reset conflicted files to HEAD
+          for (const file of conflictedFiles) {
+            try {
+              await this.git.raw(['checkout', 'HEAD', file]);
+            } catch (resetError) {
+              console.log(`Could not reset ${file}, it may not exist in HEAD`);
+            }
+          }
+          
+          return {
+            success: true,
+            aborted: true,
+            message: 'Conflict resolution cancelled. Your changes are preserved.'
+          };
+        }
       }
 
       // Resolve conflicts by choosing a version or smart merging
@@ -2001,12 +2252,56 @@ class GitService {
             await this.git.add(file);
           }
         } else if (resolution === 'local') {
-          // Keep local version (ours)
-          await this.git.raw(['checkout', '--ours', file]);
+          // Keep local version
+          // IMPORTANT: Check if this is a merge conflict or stash pop conflict
+          // In merge: --ours = local, --theirs = remote
+          // In stash pop: --ours = remote (what we just pulled), --theirs = local (stashed changes)
+          const fs = await import('fs/promises');
+          const path = await import('path');
+          const mergeHeadPath = path.join(this.projectPath, '.git', 'MERGE_HEAD');
+          
+          let isStashConflict = false;
+          try {
+            await fs.access(mergeHeadPath);
+            // MERGE_HEAD exists, this is a normal merge conflict
+            isStashConflict = false;
+          } catch (error) {
+            // No MERGE_HEAD, this is a stash pop conflict
+            isStashConflict = true;
+          }
+          
+          if (isStashConflict) {
+            // Stash pop conflict: --theirs = local changes (what we want)
+            await this.git.raw(['checkout', '--theirs', file]);
+          } else {
+            // Normal merge: --ours = local changes (what we want)
+            await this.git.raw(['checkout', '--ours', file]);
+          }
           await this.git.add(file);
         } else if (resolution === 'remote') {
-          // Keep remote version (theirs)
-          await this.git.raw(['checkout', '--theirs', file]);
+          // Keep remote version (GitHub)
+          // IMPORTANT: Check if this is a merge conflict or stash pop conflict
+          const fs = await import('fs/promises');
+          const path = await import('path');
+          const mergeHeadPath = path.join(this.projectPath, '.git', 'MERGE_HEAD');
+          
+          let isStashConflict = false;
+          try {
+            await fs.access(mergeHeadPath);
+            // MERGE_HEAD exists, this is a normal merge conflict
+            isStashConflict = false;
+          } catch (error) {
+            // No MERGE_HEAD, this is a stash pop conflict
+            isStashConflict = true;
+          }
+          
+          if (isStashConflict) {
+            // Stash pop conflict: --ours = remote changes (what we want)
+            await this.git.raw(['checkout', '--ours', file]);
+          } else {
+            // Normal merge: --theirs = remote changes (what we want)
+            await this.git.raw(['checkout', '--theirs', file]);
+          }
           await this.git.add(file);
         }
       }

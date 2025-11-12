@@ -580,11 +580,10 @@ Use this template to record your test results:
 
 needs changing : on first start the Data Source Not Found dialog shows which doesnt have the github option
 
-all emojies needs changing to vectors 
-
 pressing enter in the edit dialog should "save and close"
 
-redesigne of the conflict dialog
+redesigne of the conflict dialog to look better andd have better UX and modern lightweight design
+also all emojies needs changing to vectors 
 
 ### Test 1: Basic Publish
 - Status: ✅ PASS
@@ -675,7 +674,7 @@ to inform the user to make sure he have internet connection
 
 ### Test 12: Recovery
 - Status: ✅ PASS
-- Notes: as intended
+- Notes: we need to make sure it works
 
 ---
 
