@@ -1985,16 +1985,20 @@ class GitService {
       }
       
       // Get versions based on conflict type
+      // Git show uses stage numbers:
+      //   :1:file = base (common ancestor)
+      //   :2:file = ours (local/HEAD in merge, remote in stash-pop)
+      //   :3:file = theirs (remote/MERGE_HEAD in merge, local in stash-pop)
       if (isStashConflict) {
-        // Stash conflict: --theirs = local, --ours = remote
-        const localContent = await this.git.show(['--theirs:products.json']);
-        const remoteContent = await this.git.show(['--ours:products.json']);
+        // Stash conflict: :3 = local (your stashed changes), :2 = remote (what we pulled)
+        const localContent = await this.git.show([':3:products.json']);
+        const remoteContent = await this.git.show([':2:products.json']);
         localProducts = JSON.parse(localContent);
         remoteProducts = JSON.parse(remoteContent);
       } else {
-        // Merge conflict: --ours = local, --theirs = remote
-        const localContent = await this.git.show(['--ours:products.json']);
-        const remoteContent = await this.git.show(['--theirs:products.json']);
+        // Merge conflict: :2 = local (our HEAD), :3 = remote (their MERGE_HEAD)
+        const localContent = await this.git.show([':2:products.json']);
+        const remoteContent = await this.git.show([':3:products.json']);
         localProducts = JSON.parse(localContent);
         remoteProducts = JSON.parse(remoteContent);
       }
