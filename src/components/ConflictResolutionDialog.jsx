@@ -1,10 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { showSuccess, showError, showInfo } from '../services/toastService';
+import {
+  WarningIcon,
+  LocalIcon,
+  RemoteIcon,
+  MergeIcon,
+  CancelIcon,
+  ProductIcon,
+  FileIcon,
+  InfoIcon,
+  CheckIcon,
+  AdvancedIcon,
+  SparkleIcon,
+  SpinnerIcon
+} from './icons/ConflictIcons';
 import './ConflictResolutionDialog.css';
 
 /**
- * ConflictResolutionDialog - User-friendly dialog for resolving merge conflicts
- * Provides simple options: Keep Local, Keep Remote, or Cancel
+ * ConflictResolutionDialog - Modern 2-column dialog for resolving merge conflicts
+ * Features vector icons and improved visual hierarchy
+ * Provides simple options: Keep Local, Keep Remote, Smart Merge, or Cancel
  */
 function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: externalIsResolving = false }) {
   const [conflictDetails, setConflictDetails] = useState(null);
@@ -197,7 +212,9 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
     <div className="conflict-dialog-overlay" onClick={() => !isResolving && handleResolve('cancel')}>
       <div className="conflict-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="conflict-dialog-header">
-          <div className="conflict-icon">⚠️</div>
+          <div className="conflict-icon-wrapper">
+            <WarningIcon size={56} className="conflict-icon" />
+          </div>
           <h2>Merge Conflict Detected</h2>
           <p className="conflict-subtitle">
             {externalIsResolving !== false 
@@ -209,7 +226,7 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
         <div className="conflict-dialog-content">
           {isLoading ? (
             <div className="conflict-loading">
-              <div className="spinner"></div>
+              <SpinnerIcon size={40} className="spinner" />
               <p>Loading conflict details...</p>
             </div>
           ) : conflictDetails && conflictDetails.hasConflicts ? (
@@ -226,7 +243,7 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                       {conflictDetails.productConflicts.map((product, pIndex) => (
                         <div key={pIndex} className="product-conflict-item">
                           <div className="product-conflict-header">
-                            <span className="product-icon">📦</span>
+                            <ProductIcon size={20} className="product-icon" />
                             <strong>{product.productName}</strong>
                             <span className="conflict-count">{product.fieldConflicts?.length || 0} field(s) differ</span>
                           </div>
@@ -256,7 +273,7 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                                 <div className="field-name">{field.fieldLabel}:</div>
                                 <div className={`field-comparison ${showAdvancedMode ? 'interactive' : ''}`}>
                                   <div 
-                                    className={`field-version github-version ${showAdvancedMode && !fieldSelections[product.productId]?.[field.field] ? 'selected' : ''}`}
+                                    className={`field-version remote-version ${showAdvancedMode && !fieldSelections[product.productId]?.[field.field] ? 'selected' : ''}`}
                                     onClick={() => showAdvancedMode && toggleFieldSelection(product.productId, field.field)}
                                     style={{ cursor: showAdvancedMode ? 'pointer' : 'default' }}
                                   >
@@ -269,7 +286,10 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                                         className="field-radio"
                                       />
                                     )}
-                                    <div className="version-label">🌐 Store</div>
+                                    <div className="version-label">
+                                      <RemoteIcon size={16} className="version-icon" />
+                                      <span>Store Version</span>
+                                    </div>
                                     <div className="version-value">
                                       {field.field === 'price' ? `$${field.remoteValue != null ? Number(field.remoteValue).toFixed(2) : '0.00'}` : 
                                        field.field === 'isNew' ? (field.remoteValue ? 'Yes' : 'No') :
@@ -292,7 +312,10 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                                         className="field-radio"
                                       />
                                     )}
-                                    <div className="version-label">💻 Your Version</div>
+                                    <div className="version-label">
+                                      <LocalIcon size={16} className="version-icon" />
+                                      <span>Your Version</span>
+                                    </div>
                                     <div className="version-value">
                                       {field.field === 'price' ? `$${field.localValue != null ? Number(field.localValue).toFixed(2) : '0.00'}` :
                                        field.field === 'isNew' ? (field.localValue ? 'Yes' : 'No') :
@@ -321,7 +344,7 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                         <ul>
                           {conflictDetails.conflictedFiles.map((file, index) => (
                             <li key={index}>
-                              <span className="file-icon">📄</span>
+                              <FileIcon size={16} className="file-icon" />
                               {file}
                             </li>
                           ))}
@@ -341,39 +364,63 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                 <div className="conflict-options">
                   {conflictDetails.hasProductConflicts && conflictDetails.productConflicts?.some(pc => pc.canAutoMerge) && (
                     <div className="conflict-option conflict-option-recommended">
-                      <div className="option-icon merge">🔀</div>
+                      <div className="option-icon-container merge">
+                        <MergeIcon size={32} className="option-icon" />
+                      </div>
                       <div className="option-content">
-                        <h4>Smart Merge <span className="badge-recommended">✨ Recommended</span></h4>
+                        <h4>
+                          Smart Merge 
+                          <span className="badge-recommended">
+                            <SparkleIcon size={14} />
+                            Recommended
+                          </span>
+                        </h4>
                         <p>Combine both changes automatically - keep all updates from both sides</p>
-                        <p className="option-note">✓ Best of both worlds - no data loss!</p>
+                        <p className="option-note">
+                          <CheckIcon size={14} className="note-icon" />
+                          Best of both worlds - no data loss!
+                        </p>
                       </div>
                     </div>
                   )}
 
-                  <div className="conflict-option">
-                    <div className="option-icon local">💻</div>
-                    <div className="option-content">
-                      <h4>Use My Version</h4>
-                      <p>Keep your changes and update the store with your version</p>
-                      <p className="option-note">⚠️ Store changes will be overwritten</p>
+                  <div className="conflict-option-grid">
+                    <div className="conflict-option">
+                      <div className="option-icon-container local">
+                        <LocalIcon size={32} className="option-icon" />
+                      </div>
+                      <div className="option-content">
+                        <h4>Use My Version</h4>
+                        <p>Keep your changes and update the store with your version</p>
+                        <p className="option-note">
+                          <InfoIcon size={14} className="note-icon" />
+                          Store changes will be overwritten
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="conflict-option">
+                      <div className="option-icon-container remote">
+                        <RemoteIcon size={32} className="option-icon" />
+                      </div>
+                      <div className="option-content">
+                        <h4>Keep Store Version</h4>
+                        <p>Discard your changes and keep what's currently on the store</p>
+                        <p className="option-note">
+                          <InfoIcon size={14} className="note-icon" />
+                          Your edits will be lost
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="conflict-option">
-                    <div className="option-icon remote">☁️</div>
-                    <div className="option-content">
-                      <h4>Keep Store Version</h4>
-                      <p>Discard your changes and keep what's currently on the store</p>
-                      <p className="option-note">⚠️ Your edits will be lost</p>
+                  <div className="conflict-option conflict-option-secondary">
+                    <div className="option-icon-container cancel">
+                      <CancelIcon size={32} className="option-icon" />
                     </div>
-                  </div>
-
-                  <div className="conflict-option">
-                    <div className="option-icon cancel">🚫</div>
                     <div className="option-content">
-                      <h4>Cancel</h4>
-                      <p>Abort and don't publish anything right now</p>
-                      <p className="option-note">ℹ️ You can try again later or manually resolve</p>
+                      <h4>Cancel Operation</h4>
+                      <p>Abort and don't publish anything right now - you can try again later or manually resolve</p>
                     </div>
                   </div>
                   
@@ -383,7 +430,8 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                       onClick={() => setShowAdvancedMode(true)}
                       disabled={resolving}
                     >
-                      🎯 Choose Individual Fields (Advanced)
+                      <AdvancedIcon size={18} />
+                      Choose Individual Fields (Advanced)
                     </button>
                     <p className="advanced-hint">Select which specific fields to keep from each version</p>
                   </div>
@@ -393,8 +441,13 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
               {showAdvancedMode && (
                 <div className="advanced-mode-active">
                   <div className="advanced-mode-header">
-                    <h4>🎯 Custom Field Selection</h4>
-                    <p>Click on any field to choose which version to keep. Selected fields are highlighted.</p>
+                    <div className="advanced-header-content">
+                      <AdvancedIcon size={24} className="advanced-icon" />
+                      <div>
+                        <h4>Custom Field Selection</h4>
+                        <p>Click on any field to choose which version to keep. Selected fields are highlighted.</p>
+                      </div>
+                    </div>
                     <button 
                       className="btn-back-simple"
                       onClick={() => setShowAdvancedMode(false)}
@@ -422,7 +475,8 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                 disabled={resolving || isLoading}
                 title="Apply your custom field selections"
               >
-                {resolving ? 'Applying...' : '✓ Apply Custom Selection'}
+                <CheckIcon size={20} />
+                {resolving ? 'Applying...' : 'Apply Custom Selection'}
               </button>
               <button
                 className="conflict-btn conflict-btn-cancel"
@@ -442,7 +496,8 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                   disabled={resolving || isLoading}
                   title="Intelligently combine both your changes and the store's changes"
                 >
-                  {resolving ? 'Merging...' : '🔀 Smart Merge (Recommended)'}
+                  <MergeIcon size={20} />
+                  {resolving ? 'Merging...' : 'Smart Merge (Recommended)'}
                 </button>
               )}
               
@@ -452,7 +507,8 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                 disabled={resolving || isLoading}
                 title="Keep your changes and publish them to the store"
               >
-                {resolving ? 'Resolving...' : '💻 Use My Version'}
+                <LocalIcon size={20} />
+                {resolving ? 'Resolving...' : 'Use My Version'}
               </button>
               
               <button
@@ -461,7 +517,8 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
                 disabled={resolving || isLoading}
                 title="Discard your changes and keep the current store version"
               >
-                {resolving ? 'Resolving...' : '☁️ Keep Store Version'}
+                <RemoteIcon size={20} />
+                {resolving ? 'Resolving...' : 'Keep Store Version'}
               </button>
               
               <button
@@ -479,11 +536,13 @@ function ConflictResolutionDialog({ isOpen, onClose, onResolved, isResolving: ex
         <div className="conflict-dialog-footer">
           {resolving ? (
             <p className="conflict-help resolving">
-              🔄 <strong>Resolving conflict and publishing...</strong> This may take a moment.
+              <SpinnerIcon size={16} className="inline-spinner" />
+              <strong>Resolving conflict and publishing...</strong> This may take a moment.
             </p>
           ) : (
             <p className="conflict-help">
-              💡 <strong>Tip:</strong> If you're unsure, click Cancel and contact your team to coordinate.
+              <InfoIcon size={16} className="inline-icon" />
+              <strong>Tip:</strong> If you're unsure, click Cancel and contact your team to coordinate.
             </p>
           )}
         </div>
