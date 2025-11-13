@@ -1448,6 +1448,44 @@ ipcMain.handle('git:checkRemoteChanges', async (event) => {
 });
 
 /**
+ * IPC Handler for getting detailed remote changes (files that would be pulled)
+ */
+ipcMain.handle('git:getRemoteChangeDetails', async (event) => {
+  try {
+    const { getConfigService } = await import('../src/services/configService.js');
+    const GitService = (await import('../src/services/gitService.js')).default;
+    
+    const configService = getConfigService();
+    const config = configService.getConfigWithToken();
+    
+    if (!config || !config.projectPath) {
+      return {
+        success: false,
+        message: 'No project path configured'
+      };
+    }
+    
+    const gitPath = findGitPath();
+    const gitService = new GitService(config.projectPath, {
+      username: config.username,
+      token: config.token,
+      repoUrl: config.repoUrl,
+      gitPath: gitPath
+    });
+    
+    const result = await gitService.getRemoteChangeDetails();
+    return result;
+  } catch (error) {
+    console.error('Error getting remote change details:', error);
+    return {
+      success: false,
+      message: `Failed to get remote change details: ${error.message}`,
+      error: error.message
+    };
+  }
+});
+
+/**
  * IPC Handler for pulling changes with strategy for local changes
  * Supports: auto (ask user), stash (save+restore), commit, force (discard)
  */

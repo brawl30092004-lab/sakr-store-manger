@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { showSuccess, showError, showInfo } from '../services/toastService';
 import ConflictResolutionDialog from './ConflictResolutionDialog';
+import RemoteChangesSummaryDialog from './RemoteChangesSummaryDialog';
 import './SyncStatusIndicator.css';
 
 /**
@@ -15,6 +16,7 @@ function SyncStatusIndicator() {
   const [syncStatus, setSyncStatus] = useState(null);
   const [remoteChanges, setRemoteChanges] = useState(null);
   const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [showRemoteChangesDialog, setShowRemoteChangesDialog] = useState(false);
   const [checkInterval, setCheckInterval] = useState(null);
 
   /**
@@ -51,24 +53,38 @@ function SyncStatusIndicator() {
   /**
    * Check for remote changes without pulling
    */
-  const checkForRemoteChanges = useCallback(async () => {
+  const checkForRemoteChanges = useCallback(async (showNotification = false) => {
     try {
       const result = await window.electron.checkRemoteChanges();
       
       if (result.success) {
         setRemoteChanges(result);
         
-        // Show notification if there are new changes
-        if (result.hasRemoteChanges && result.behindBy > 0) {
-          showInfo(`${result.behindBy} new change(s) available from your store. Click sync to update.`, {
-            autoClose: 5000
-          });
+        // Show notification if there are new changes (only when auto-checking or manually triggered)
+        if (showNotification) {
+          if (result.hasRemoteChanges && result.behindBy > 0) {
+            showInfo(`${result.behindBy} new change(s) available from your store. Click sync to update.`, {
+              autoClose: 5000
+            });
+          } else {
+            showSuccess('Already up to date with your store');
+          }
         }
       }
     } catch (error) {
       console.error('Error checking remote changes:', error);
+      if (showNotification) {
+        showError('Failed to check for remote changes');
+      }
     }
   }, []);
+
+  /**
+   * Handle manual refresh of remote changes
+   */
+  const handleRefresh = async () => {
+    await checkForRemoteChanges(true);
+  };
 
   /**
    * Format relative time (e.g., "2 minutes ago")
@@ -186,17 +202,43 @@ function SyncStatusIndicator() {
           )}
         </div>
 
-        <button
-          className={`sync-button ${isSyncing ? 'syncing' : ''} ${remoteChanges?.hasRemoteChanges ? 'has-updates' : ''}`}
-          onClick={handleSync}
-          disabled={isSyncing}
-          title="Pull latest changes from your online store"
-        >
-          <span className="sync-icon">🔄</span>
-          <span className="sync-text">
-            {isSyncing ? 'Syncing...' : remoteChanges?.hasRemoteChanges ? 'Get Updates' : 'Sync'}
-          </span>
-        </button>
+        <div className="sync-actions">
+          <button
+            className="refresh-btn"
+            onClick={handleRefresh}
+            disabled={isSyncing}
+            title="Check for new changes from your store"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+              <path fillRule="evenodd" d="M8 3a5 5 0 104.546 2.914.5.5 0 00-.908-.417A4 4 0 118 4v1.076l.812-.812a.5.5 0 11.707.708L7.477 6.914a.5.5 0 01-.708 0L4.727 4.872a.5.5 0 11.708-.708L6.248 5H8V3z"/>
+            </svg>
+          </button>
+
+          <button
+            className={`view-remote-changes-btn ${remoteChanges?.hasRemoteChanges ? 'has-changes' : ''}`}
+            onClick={() => setShowRemoteChangesDialog(true)}
+            disabled={isSyncing}
+            title={remoteChanges?.hasRemoteChanges ? 'View incoming changes from GitHub' : 'No remote changes to view'}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 9.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>
+              <path fillRule="evenodd" d="M8 0a8 8 0 100 16A8 8 0 008 0zM1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z"/>
+            </svg>
+            View Changes
+          </button>
+
+          <button
+            className={`sync-button ${isSyncing ? 'syncing' : ''} ${remoteChanges?.hasRemoteChanges ? 'has-updates' : ''}`}
+            onClick={handleSync}
+            disabled={isSyncing}
+            title="Pull latest changes from your online store"
+          >
+            <span className="sync-icon">🔄</span>
+            <span className="sync-text">
+              {isSyncing ? 'Syncing...' : remoteChanges?.hasRemoteChanges ? 'Get Updates' : 'Sync'}
+            </span>
+          </button>
+        </div>
 
         {syncStatus && (
           <div className="sync-status-message">
@@ -205,6 +247,12 @@ function SyncStatusIndicator() {
           </div>
         )}
       </div>
+
+      <RemoteChangesSummaryDialog
+        isOpen={showRemoteChangesDialog}
+        onClose={() => setShowRemoteChangesDialog(false)}
+        onSync={handleSync}
+      />
 
       <ConflictResolutionDialog
         isOpen={showConflictDialog}

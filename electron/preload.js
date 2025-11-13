@@ -63,6 +63,7 @@ contextBridge.exposeInMainWorld('electron', {
   
   // New sync and conflict resolution APIs
   checkRemoteChanges: () => ipcRenderer.invoke('git:checkRemoteChanges'),
+  getRemoteChangeDetails: () => ipcRenderer.invoke('git:getRemoteChangeDetails'),
   pullManual: () => ipcRenderer.invoke('git:pullManual'),
   pullWithStrategy: (strategy) => ipcRenderer.invoke('git:pullWithStrategy', strategy),
   getConflictDetails: () => ipcRenderer.invoke('git:getConflictDetails'),

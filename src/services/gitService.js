@@ -1444,6 +1444,250 @@ class GitService {
   }
 
   /**
+   * Analyzes remote changes in products.json to show detailed product-level changes
+   * Compares local HEAD with remote origin/branch
+   * @param {string} branch - Branch name
+   * @returns {Promise<Array>} - Array of detailed change descriptions
+   */
+  async analyzeRemoteProductChanges(branch) {
+    try {
+      // Get local version (current HEAD)
+      let localProducts = [];
+      try {
+        const localContent = await this.git.show(['HEAD:products.json']);
+        localProducts = JSON.parse(localContent);
+      } catch (error) {
+        console.log('Could not get local products.json:', error.message);
+      }
+
+      // Get remote version (origin/branch)
+      let remoteProducts = [];
+      try {
+        const remoteContent = await this.git.show([`origin/${branch}:products.json`]);
+        remoteProducts = JSON.parse(remoteContent);
+      } catch (error) {
+        console.log('Could not get remote products.json:', error.message);
+        return [];
+      }
+
+      // Create maps for easy lookup
+      const localMap = new Map(localProducts.map(p => [p.id, p]));
+      const remoteMap = new Map(remoteProducts.map(p => [p.id, p]));
+
+      const changes = [];
+
+      // Check for deleted products (in local but not in remote)
+      for (const [id, product] of localMap) {
+        if (!remoteMap.has(id)) {
+          changes.push({
+            type: 'deleted',
+            productId: id,
+            productName: product.name,
+            description: `${product.name}: deleted`
+          });
+        }
+      }
+
+      // Check for new and modified products
+      for (const [id, remoteProduct] of remoteMap) {
+        const localProduct = localMap.get(id);
+
+        if (!localProduct) {
+          // New product in remote
+          changes.push({
+            type: 'added',
+            productId: id,
+            productName: remoteProduct.name,
+            description: `${remoteProduct.name}: added`
+          });
+        } else {
+          // Check for modifications
+          const productChanges = [];
+
+          // Name change
+          if (localProduct.name !== remoteProduct.name) {
+            productChanges.push(`renamed from "${localProduct.name}" to "${remoteProduct.name}"`);
+          }
+
+          // Stock change
+          if (localProduct.stock !== remoteProduct.stock) {
+            productChanges.push(`stock changed from ${localProduct.stock} to ${remoteProduct.stock}`);
+          }
+
+          // Price change
+          if (localProduct.price !== remoteProduct.price) {
+            const localPrice = localProduct.price != null ? localProduct.price.toFixed(2) : '0.00';
+            const remotePrice = remoteProduct.price != null ? remoteProduct.price.toFixed(2) : '0.00';
+            productChanges.push(`price changed from EGP ${localPrice} to EGP ${remotePrice}`);
+          }
+
+          // Discount change
+          if (localProduct.discount !== remoteProduct.discount) {
+            if (remoteProduct.discount) {
+              const discountedPrice = remoteProduct.discountedPrice != null ? remoteProduct.discountedPrice.toFixed(2) : '0.00';
+              productChanges.push(`discount added (EGP ${discountedPrice})`);
+            } else {
+              productChanges.push('discount removed');
+            }
+          } else if (localProduct.discount && remoteProduct.discount && 
+                     localProduct.discountedPrice !== remoteProduct.discountedPrice) {
+            const localDiscounted = localProduct.discountedPrice != null ? localProduct.discountedPrice.toFixed(2) : '0.00';
+            const remoteDiscounted = remoteProduct.discountedPrice != null ? remoteProduct.discountedPrice.toFixed(2) : '0.00';
+            productChanges.push(`discounted price changed from EGP ${localDiscounted} to EGP ${remoteDiscounted}`);
+          }
+
+          // Category change
+          if (localProduct.category !== remoteProduct.category) {
+            productChanges.push(`category changed from "${localProduct.category}" to "${remoteProduct.category}"`);
+          }
+
+          // Description change
+          if (localProduct.description !== remoteProduct.description) {
+            productChanges.push('description updated');
+          }
+
+          // Image changes
+          if (localProduct.image !== remoteProduct.image || 
+              JSON.stringify(localProduct.images) !== JSON.stringify(remoteProduct.images)) {
+            productChanges.push('images updated');
+          }
+
+          // isNew flag change
+          if (localProduct.isNew !== remoteProduct.isNew) {
+            productChanges.push(remoteProduct.isNew ? 'marked as new' : 'unmarked as new');
+          }
+
+          // If there are changes, add them
+          if (productChanges.length > 0) {
+            changes.push({
+              type: 'modified',
+              productId: id,
+              productName: remoteProduct.name,
+              description: `${remoteProduct.name}: ${productChanges.join(', ')}`
+            });
+          }
+        }
+      }
+
+      return changes;
+    } catch (error) {
+      console.error('Error analyzing remote product changes:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Gets detailed information about remote changes that would be pulled
+   * Shows which files would be added, modified, or deleted
+   * Analyzes products.json to show detailed product-level changes
+   * @param {string} branch - Branch name (defaults to current branch)
+   * @returns {Promise<Object>} - Result with detailed file changes
+   */
+  async getRemoteChangeDetails(branch = null) {
+    try {
+      // Get current branch if not specified
+      if (!branch) {
+        const status = await this.git.status();
+        branch = status.current;
+      }
+
+      console.log(`Getting remote change details for ${branch}...`);
+
+      // Fetch latest remote refs
+      await this.git.fetch('origin');
+
+      // Get local and remote commit hashes
+      const localHead = await this.git.revparse(['HEAD']);
+      const remoteHead = await this.git.revparse([`origin/${branch}`]);
+
+      // Check if we're behind
+      const behindBy = localHead !== remoteHead 
+        ? parseInt(await this.git.raw(['rev-list', '--count', `HEAD..origin/${branch}`]))
+        : 0;
+
+      if (behindBy === 0) {
+        return {
+          success: true,
+          hasRemoteChanges: false,
+          behindBy: 0,
+          totalChanges: 0,
+          files: { modified: [], added: [], deleted: [] },
+          productChanges: [],
+          message: 'Your local copy is up to date'
+        };
+      }
+
+      // Get diff between local and remote
+      const diffSummary = await this.git.diffSummary(['HEAD', `origin/${branch}`]);
+      
+      // Categorize changes
+      const files = {
+        modified: [],
+        added: [],
+        deleted: []
+      };
+
+      let hasProductsFile = false;
+
+      diffSummary.files.forEach(file => {
+        const fileInfo = {
+          path: file.file,
+          insertions: file.insertions,
+          deletions: file.deletions,
+          changes: file.changes
+        };
+
+        // Categorize by change type
+        if (file.binary) {
+          fileInfo.binary = true;
+        }
+
+        // Check if products.json was changed
+        if (file.file === 'products.json') {
+          hasProductsFile = true;
+        }
+
+        // Determine change type based on git status
+        if (file.insertions > 0 && file.deletions === 0) {
+          files.added.push(fileInfo);
+        } else if (file.insertions === 0 && file.deletions > 0) {
+          files.deleted.push(fileInfo);
+        } else {
+          files.modified.push(fileInfo);
+        }
+      });
+
+      // Analyze product changes if products.json changed
+      let productChanges = [];
+      if (hasProductsFile) {
+        productChanges = await this.analyzeRemoteProductChanges(branch);
+      }
+
+      const totalChanges = files.modified.length + files.added.length + files.deleted.length;
+
+      return {
+        success: true,
+        hasRemoteChanges: true,
+        behindBy,
+        totalChanges,
+        modified: files.modified.length,
+        added: files.added.length,
+        deleted: files.deleted.length,
+        files,
+        productChanges,
+        message: `${totalChanges} file(s) would be updated from GitHub`
+      };
+    } catch (error) {
+      console.error('Failed to get remote change details:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: `Failed to get remote change details: ${error.message}`
+      };
+    }
+  }
+
+  /**
    * Checks if a merge would cause conflicts without actually merging
    * Uses git merge --no-commit --no-ff to simulate merge
    * @param {string} branch - Branch name (defaults to current branch)
