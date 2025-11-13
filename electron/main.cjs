@@ -638,6 +638,93 @@ ipcMain.handle('settings:load', async (event) => {
 });
 
 /**
+ * IPC Handler for force resetting the app (deletes all app data)
+ * Used when app crashes persist or user wants a clean start
+ * @param {Object} options - Reset options
+ * @param {boolean} options.includeProjectData - If true, also deletes project folder, images, and products.json
+ * @param {string} options.projectPath - Path to project folder (required if includeProjectData is true)
+ */
+ipcMain.handle('app:forceReset', async (event, options = {}) => {
+  try {
+    const { includeProjectData = false, projectPath = null } = options;
+    
+    console.log('[app:forceReset] Starting force reset of app data...');
+    console.log('[app:forceReset] Include project data:', includeProjectData);
+    
+    const userDataPath = app.getPath('userData');
+    const tempPath = app.getPath('temp');
+    const logsPath = app.getPath('logs');
+    
+    console.log('[app:forceReset] User data path:', userDataPath);
+    console.log('[app:forceReset] Temp path:', tempPath);
+    console.log('[app:forceReset] Logs path:', logsPath);
+    
+    // Close all windows first
+    BrowserWindow.getAllWindows().forEach(win => {
+      try {
+        win.removeAllListeners();
+        win.close();
+      } catch (e) {
+        console.error('[app:forceReset] Error closing window:', e);
+      }
+    });
+    
+    // Delete userData directory (contains config.json and other app data)
+    if (await fs.pathExists(userDataPath)) {
+      console.log('[app:forceReset] Deleting userData directory...');
+      await fs.remove(userDataPath);
+      console.log('[app:forceReset] ✓ userData deleted');
+    }
+    
+    // Delete app-specific temp files (if any)
+    const appTempPath = path.join(tempPath, 'SakrStoreManager');
+    if (await fs.pathExists(appTempPath)) {
+      console.log('[app:forceReset] Deleting app temp directory...');
+      await fs.remove(appTempPath);
+      console.log('[app:forceReset] ✓ App temp deleted');
+    }
+    
+    // Delete logs directory
+    if (await fs.pathExists(logsPath)) {
+      console.log('[app:forceReset] Deleting logs directory...');
+      await fs.remove(logsPath);
+      console.log('[app:forceReset] ✓ Logs deleted');
+    }
+    
+    // Optionally delete project data
+    if (includeProjectData && projectPath) {
+      console.log('[app:forceReset] ⚠️ DELETING PROJECT DATA at:', projectPath);
+      
+      if (await fs.pathExists(projectPath)) {
+        try {
+          await fs.remove(projectPath);
+          console.log('[app:forceReset] ✓ Project folder deleted (including products.json and images)');
+        } catch (error) {
+          console.error('[app:forceReset] ⚠️ Failed to delete project folder:', error.message);
+          // Continue anyway - app data was deleted
+        }
+      } else {
+        console.log('[app:forceReset] Project path does not exist, skipping');
+      }
+    }
+    
+    console.log('[app:forceReset] Force reset completed successfully!');
+    
+    // Quit and relaunch the app
+    app.relaunch();
+    app.quit();
+    
+    return { success: true };
+  } catch (error) {
+    console.error('[app:forceReset] Error during force reset:', error);
+    return { 
+      success: false, 
+      error: error.message 
+    };
+  }
+});
+
+/**
  * IPC Handler for checking if Git is installed on the system
  */
 ipcMain.handle('git:checkInstallation', async () => {

@@ -156,3 +156,153 @@
   color: #8b949e;
   margin: 0;
 }
+
+/* Force Reset Section */
+.error-force-reset {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #30363d;
+}
+
+.force-reset-details {
+  background: rgba(248, 81, 73, 0.05);
+  border: 1px solid rgba(248, 81, 73, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.force-reset-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #f85149;
+  user-select: none;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.force-reset-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.force-reset-details summary:hover {
+  background-color: rgba(248, 81, 73, 0.1);
+}
+
+.force-reset-content {
+  margin-top: 16px;
+  padding: 16px;
+  text-align: left;
+}
+
+.force-reset-warning {
+  font-size: 14px;
+  color: #e6edf3;
+  margin-bottom: 12px;
+}
+
+.force-reset-list {
+  margin: 12px 0;
+  padding-left: 24px;
+  color: #8b949e;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.force-reset-list li {
+  margin-bottom: 4px;
+}
+
+.force-reset-note {
+  font-size: 13px;
+  color: #8b949e;
+  margin: 16px 0;
+  padding: 12px;
+  background: rgba(88, 166, 255, 0.05);
+  border-left: 3px solid #58a6ff;
+  border-radius: 4px;
+}
+
+.force-reset-note strong {
+  color: #58a6ff;
+}
+
+.btn-force-reset {
+  width: 100%;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #da3633;
+  color: white;
+  margin-top: 8px;
+}
+
+.btn-force-reset:hover {
+  background: #c93030;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(218, 54, 51, 0.4);
+}
+
+.btn-force-reset:active {
+  transform: translateY(0);
+}
+
+/* Force Reset Danger Zone */
+.force-reset-danger-zone {
+  margin: 16px 0;
+  padding: 16px;
+  background: rgba(218, 54, 51, 0.05);
+  border: 2px solid rgba(218, 54, 51, 0.3);
+  border-radius: 8px;
+}
+
+.force-reset-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.force-reset-checkbox input[type="checkbox"] {
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #da3633;
+}
+
+.force-reset-checkbox .checkbox-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.force-reset-checkbox .checkbox-text strong {
+  color: #f85149;
+  font-size: 14px;
+  display: block;
+}
+
+.force-reset-checkbox .checkbox-text small {
+  color: #8b949e;
+  font-size: 12px;
+  line-height: 1.7;
+  display: block;
+  margin-left: 4px;
+}
+
+.force-reset-checkbox .checkbox-text small em {
+  color: #f85149;
+  font-weight: 600;
+  font-style: normal;
+}

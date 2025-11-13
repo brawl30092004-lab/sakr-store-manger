@@ -349,6 +349,225 @@
   box-shadow: 0 4px 12px rgba(88, 166, 255, 0.5);
 }
 
+.btn-secondary {
+  background: rgba(88, 166, 255, 0.1);
+  color: #79c0ff;
+  border: 1px solid rgba(88, 166, 255, 0.3);
+}
+
+.btn-secondary:hover {
+  background: rgba(88, 166, 255, 0.2);
+  border-color: rgba(88, 166, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #da3633 0%, #c93030 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(218, 54, 51, 0.3);
+}
+
+.btn-danger:hover {
+  background: linear-gradient(135deg, #f85149 0%, #da3633 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(248, 81, 73, 0.5);
+}
+
+/* Reset App Dialog */
+.reset-app-dialog {
+  max-width: 650px;
+  text-align: left;
+}
+
+.reset-app-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.reset-app-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.reset-app-header h2 {
+  margin: 0;
+  color: #f85149;
+  font-size: 24px;
+}
+
+.reset-app-warning {
+  background: rgba(248, 81, 73, 0.1);
+  border-left: 4px solid #f85149;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.reset-app-warning p {
+  margin: 8px 0;
+  color: #e6edf3;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.reset-app-warning strong {
+  color: #f85149;
+}
+
+.reset-app-list {
+  background: rgba(22, 27, 34, 0.8);
+  border: 1px solid rgba(248, 81, 73, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.reset-app-list ul {
+  margin: 0;
+  padding-left: 24px;
+  color: #8b949e;
+  line-height: 2;
+}
+
+.reset-app-list li {
+  font-size: 14px;
+}
+
+.reset-app-safe {
+  background: rgba(88, 166, 255, 0.05);
+  border-left: 4px solid #58a6ff;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.reset-app-safe p {
+  margin: 8px 0 12px 0;
+  color: #58a6ff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.reset-app-safe ul {
+  margin: 0;
+  padding-left: 24px;
+  color: #8b949e;
+  line-height: 2;
+}
+
+.reset-app-safe li {
+  font-size: 14px;
+}
+
+.reset-app-note {
+  background: rgba(88, 166, 255, 0.05);
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.reset-app-note p {
+  margin: 0;
+  color: #c9d1d9;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.reset-app-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.reset-app-actions .btn {
+  min-width: 140px;
+}
+
+/* Reset App Danger Zone */
+.reset-app-danger-zone {
+  background: rgba(218, 54, 51, 0.08);
+  border: 2px solid rgba(218, 54, 51, 0.4);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.reset-app-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.reset-app-checkbox input[type="checkbox"] {
+  margin-top: 2px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #da3633;
+  flex-shrink: 0;
+}
+
+.reset-app-checkbox .checkbox-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reset-app-checkbox .checkbox-title {
+  color: #f85149;
+  font-size: 15px;
+  font-weight: 600;
+  display: block;
+}
+
+.reset-app-checkbox .checkbox-description {
+  color: #c9d1d9;
+  font-size: 13px;
+  display: block;
+}
+
+.reset-app-checkbox .checkbox-list {
+  margin: 8px 0 8px 20px;
+  padding: 0;
+  color: #f85149;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.reset-app-checkbox .checkbox-list li {
+  margin-bottom: 4px;
+}
+
+.reset-app-checkbox .checkbox-warning {
+  color: #f85149;
+  font-size: 12px;
+  font-weight: 600;
+  display: block;
+  margin-top: 4px;
+  padding: 8px 12px;
+  background: rgba(248, 81, 73, 0.15);
+  border-radius: 4px;
+  text-align: center;
+}
+
+.btn-danger-extreme {
+  background: linear-gradient(135deg, #8b0000 0%, #a00000 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.5);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.btn-danger-extreme:hover {
+  background: linear-gradient(135deg, #a00000 0%, #b00000 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(139, 0, 0, 0.7);
+}
+
 .app-body {
   flex: 1;
   display: flex;

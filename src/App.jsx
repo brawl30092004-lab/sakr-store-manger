@@ -40,6 +40,8 @@ function App() {
   const [showCommandPalette, setShowCommandPalette] = useState(false); // Command palette
   const [bulkOperationDialog, setBulkOperationDialog] = useState({ isOpen: false, type: null });
   const [showWelcomeScreen, setShowWelcomeScreen] = useState(false);
+  const [showResetAppDialog, setShowResetAppDialog] = useState(false); // Reset app confirmation dialog
+  const [deleteProjectData, setDeleteProjectData] = useState(false); // Option to also delete project data
   
   // Refs for keyboard shortcut handlers
   const mainContentRef = useRef(null);
@@ -536,6 +538,40 @@ function App() {
     setActiveMenu(null);
   };
 
+  const handleResetApp = () => {
+    setShowResetAppDialog(true);
+    setActiveMenu(null);
+  };
+
+  const handleTestCrash = () => {
+    // Test button to trigger error boundary
+    setActiveMenu(null);
+    throw new Error("Test crash - This is intentional for testing the crash screen");
+  };
+
+  const handleConfirmResetApp = async () => {
+    try {
+      showSuccess('Resetting app data... The app will restart.');
+      
+      // Give the toast a moment to show
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Call the force reset IPC handler with options
+      const result = await window.electron.forceReset({
+        includeProjectData: deleteProjectData,
+        projectPath: deleteProjectData ? projectPath : null
+      });
+      
+      if (!result.success) {
+        showError('Failed to reset app data: ' + (result.error || 'Unknown error'));
+      }
+      // If successful, the app will quit and relaunch automatically
+    } catch (error) {
+      console.error('Error during app reset:', error);
+      showError('Failed to reset app data. Please try manually deleting the AppData folder.');
+    }
+  };
+
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -753,6 +789,11 @@ function App() {
               <div className="menu-option" onClick={handleOpenDataFolder}>
                 <span>Open Data Folder</span>
               </div>
+              <div className="menu-divider"></div>
+              <div className="menu-section-label">Danger Zone</div>
+              <div className="menu-option menu-option-danger" onClick={handleResetApp}>
+                <span>⚠️ Reset App...</span>
+              </div>
             </div>
           )}
         </div>
@@ -788,6 +829,15 @@ function App() {
               <div className="menu-option" onClick={handleShowAbout}>
                 <span>About</span>
               </div>
+              {import.meta.env.DEV && (
+                <>
+                  <div className="menu-divider"></div>
+                  <div className="menu-section-label">Development</div>
+                  <div className="menu-option menu-option-danger" onClick={handleTestCrash}>
+                    <span>🧪 Test Crash Screen</span>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -898,6 +948,91 @@ function App() {
             <button className="btn btn-primary" onClick={() => setShowShortcutsDialog(false)}>
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Reset App Confirmation Dialog */}
+      {showResetAppDialog && (
+        <div className="modal-overlay" onClick={() => setShowResetAppDialog(false)}>
+          <div className="modal-content reset-app-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="reset-app-header">
+              <div className="reset-app-icon">⚠️</div>
+              <h2>Reset Application Data</h2>
+            </div>
+            
+            <div className="reset-app-warning">
+              <p><strong>⚠️ WARNING: This action cannot be undone!</strong></p>
+              <p>This will permanently delete all application data:</p>
+            </div>
+
+            <div className="reset-app-list">
+              <ul>
+                <li>✗ All settings and configurations</li>
+                <li>✗ GitHub credentials and connection details</li>
+                <li>✗ Cached data in AppData/Roaming</li>
+                <li>✗ Application logs and temporary files</li>
+                <li>✗ Welcome screen preferences</li>
+                <li>✗ Window size and position settings</li>
+              </ul>
+            </div>
+
+            <div className="reset-app-safe">
+              <p><strong>✓ Your product data will be safe (by default):</strong></p>
+              <ul>
+                <li>✓ products.json file will NOT be deleted</li>
+                <li>✓ Product images will NOT be deleted</li>
+                <li>✓ Your project folder will remain intact</li>
+              </ul>
+            </div>
+
+            <div className="reset-app-danger-zone">
+              <label className="reset-app-checkbox">
+                <input 
+                  type="checkbox" 
+                  checked={deleteProjectData}
+                  onChange={(e) => setDeleteProjectData(e.target.checked)}
+                />
+                <span className="checkbox-content">
+                  <strong className="checkbox-title">🚨 Also delete ALL project data (DANGEROUS!)</strong>
+                  <span className="checkbox-description">
+                    This will permanently delete your entire project folder including:
+                  </span>
+                  <ul className="checkbox-list">
+                    <li>🗑️ products.json (ALL your products)</li>
+                    <li>🗑️ All product images</li>
+                    <li>🗑️ Entire project directory</li>
+                  </ul>
+                  <span className="checkbox-warning">
+                    ⚠️ THIS CANNOT BE UNDONE! Use only if you want to completely start over.
+                  </span>
+                </span>
+              </label>
+            </div>
+
+            <div className="reset-app-note">
+              <p>
+                After reset, the application will restart and you'll see the welcome screen again. 
+                You'll need to reconfigure your settings{deleteProjectData ? ' and create or select a new project folder' : ' and GitHub connection'}.
+              </p>
+            </div>
+
+            <div className="reset-app-actions">
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setShowResetAppDialog(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className={`btn ${deleteProjectData ? 'btn-danger-extreme' : 'btn-danger'}`}
+                onClick={handleConfirmResetApp}
+              >
+                {deleteProjectData 
+                  ? '🚨 Delete EVERYTHING & Reset' 
+                  : '⚠️ Yes, Reset App Data'}
+              </button>
+            </div>
           </div>
         </div>
       )}

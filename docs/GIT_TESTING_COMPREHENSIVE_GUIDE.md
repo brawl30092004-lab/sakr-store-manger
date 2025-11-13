@@ -607,14 +607,9 @@ Use this template to record your test results:
 ### ✨ What's New in This Version:
 
 ### Known Improvements Needed:
-- [ ] On first start, Data Source Not Found dialog should include GitHub option and when the dialog is triggered from the "File" in the menu bar it shows wrong text which is : Data Source Not Found
-The products.json file could not be found at the configured location.
-Would you like to create a new file or browse for an existing one?
-what are the possible improvements maybe we could replace it with I dialog that redirects the user to settings?
 - [ ] redesign "conflict dialog" with vectors instead of emojis
 - [ ] Modern lightweight design improvements for the conflict dialog to be a 2 column instead of 1 
-- [ ] Sync flow improvements : the user cant tell whats new in the sync so the sync should have a "view changes" button which should have similar functionality to the other "view changes" (local to github) button next to the publish button but for the things which would go the other way (github to local), redesign is also needed to make sure the addtion looks clean and modern
-- [ ] add the ability to force reset the app (deletes all the app data) if app crashes presists
+- [ ] git Sync flow improvements : the user cant tell whats new in the sync so the sync should have a "view changes" button which should have similar functionality to the other "view changes" (local to github) button next to the publish button but for the things which would go the other way (github to local), redesign is also needed to make sure the addtion looks clean and modern
 
 ### Test 1: Basic Publish
 - Status: ✅ PASS
