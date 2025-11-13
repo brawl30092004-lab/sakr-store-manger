@@ -361,6 +361,25 @@ const ProductForm = forwardRef(({ product, onClose, onSave }, ref) => {
     }
   });
 
+  // Handle Enter key press to Save and Close
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Check if Enter key is pressed (not in a textarea) and form is valid
+      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && !isSaving && isValid) {
+        e.preventDefault();
+        handleSaveAndClose();
+      }
+    };
+
+    // Add event listener to the document
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleSaveAndClose, isValid, isSaving]);
+
   // Expose methods to parent via ref
   useImperativeHandle(ref, () => ({
     handleSave: () => {

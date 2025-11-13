@@ -611,11 +611,9 @@ Use this template to record your test results:
 The products.json file could not be found at the configured location.
 Would you like to create a new file or browse for an existing one?
 what are the possible improvements maybe we could replace it with I dialog that redirects the user to settings?
-- [ ] Pressing Enter in edit dialog should "Save and Close"
-- [ ] Consider redesigning conflict dialog with vectors instead of emojis (optional)
+- [ ] redesign "conflict dialog" with vectors instead of emojis
 - [ ] Modern lightweight design improvements for the conflict dialog to be a 2 column instead of 1 
 - [ ] Sync flow improvements : the user cant tell whats new in the sync so the sync should have a "view changes" button which should have similar functionality to the other "view changes" (local to github) button next to the publish button but for the things which would go the other way (github to local), redesign is also needed to make sure the addtion looks clean and modern
-- [ ] redesign welcome screen to be in dark theme and Modern lightweight design improvements and remove the "version" text
 - [ ] add the ability to force reset the app (deletes all the app data) if app crashes presists
 
 ### Test 1: Basic Publish

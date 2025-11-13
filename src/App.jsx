@@ -11,7 +11,7 @@ import MainContent from './components/MainContent';
 import Dashboard from './components/Dashboard';
 import StatusBar from './components/StatusBar';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
-import DataSourceNotFoundDialog from './components/DataSourceNotFoundDialog';
+import DataSourceSetupDialog from './components/DataSourceSetupDialog';
 import SettingsPanel from './components/SettingsPanel';
 import Breadcrumbs from './components/Breadcrumbs';
 import FloatingActionButtons from './components/FloatingActionButtons';
@@ -33,6 +33,7 @@ function App() {
   const [activeFilters, setActiveFilters] = useState([]); // Array to support multiple filters
   const [showSettingsPanel, setShowSettingsPanel] = useState(false); // Settings panel instead of view
   const [showDataSourceDialog, setShowDataSourceDialog] = useState(false);
+  const [dataSourceDialogContext, setDataSourceDialogContext] = useState('missing'); // 'missing', 'first-start', or 'manual'
   const [activeMenu, setActiveMenu] = useState(null); // Track which menu is open
   const [showAboutDialog, setShowAboutDialog] = useState(false);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
@@ -71,6 +72,7 @@ function App() {
     
     // After welcome screen, check if we need to show data source dialog
     if (!projectPath) {
+      setDataSourceDialogContext('first-start');
       setShowDataSourceDialog(true);
     }
   }, [projectPath]);
@@ -87,12 +89,14 @@ function App() {
         .catch((err) => {
           // Check if error is due to missing products.json
           if (err.includes('PRODUCTS_NOT_FOUND') || err.includes('ENOENT')) {
+            setDataSourceDialogContext('missing');
             setShowDataSourceDialog(true);
           }
         });
     } else {
       // No project path - show data source dialog (but not if welcome screen is showing)
       if (!showWelcomeScreen) {
+        setDataSourceDialogContext('first-start');
         setShowDataSourceDialog(true);
       }
     }
@@ -104,6 +108,7 @@ function App() {
       dispatch(loadProducts()).unwrap()
         .catch((err) => {
           if (err.includes('PRODUCTS_NOT_FOUND') || err.includes('ENOENT')) {
+            setDataSourceDialogContext('missing');
             setShowDataSourceDialog(true);
           }
         });
@@ -220,6 +225,7 @@ function App() {
           })
           .catch((err) => {
             if (err.includes('PRODUCTS_NOT_FOUND') || err.includes('ENOENT')) {
+              setDataSourceDialogContext('missing');
               setShowDataSourceDialog(true);
             }
           });
@@ -257,8 +263,17 @@ function App() {
   }, []);
 
   const handleBrowseDataSource = useCallback(() => {
+    setDataSourceDialogContext('manual');
     setShowDataSourceDialog(true);
     setActiveMenu(null);
+  }, []);
+
+  const handleConnectGitHub = useCallback(() => {
+    setShowDataSourceDialog(false);
+    setShowSettingsPanel(true);
+    // Settings panel should open to GitHub section
+    // Note: SettingsPanel component would need to support a prop to scroll to GitHub section
+    showSuccess('Opening Settings - Configure your GitHub repository');
   }, []);
 
   const handleOpenSettings = useCallback(() => {
@@ -542,12 +557,14 @@ function App() {
         <WelcomeScreen onGetStarted={handleWelcomeComplete} />
       )}
       
-      {/* Data Source Not Found Dialog */}
+      {/* Data Source Setup Dialog */}
       {showDataSourceDialog && !showWelcomeScreen && (
-        <DataSourceNotFoundDialog
+        <DataSourceSetupDialog
           onCreateNew={handleCreateNewFile}
           onBrowseExisting={handleBrowseForExisting}
+          onConnectGitHub={handleConnectGitHub}
           onClose={handleCloseDialog}
+          context={dataSourceDialogContext}
         />
       )}
       
