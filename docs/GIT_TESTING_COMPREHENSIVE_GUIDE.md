@@ -607,7 +607,6 @@ Use this template to record your test results:
 ### ✨ What's New in This Version:
 
 ### Known Improvements Needed:
-- [ ] redesign "conflict dialog" with vectors instead of emojis do Modern lightweight design improvements for the conflict dialog to be a 2 column instead of 1 and other needed changes also
 
 ### Test 1: Basic Publish
 - Status: ✅ PASS
