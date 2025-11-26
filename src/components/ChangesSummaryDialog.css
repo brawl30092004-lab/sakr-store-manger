@@ -296,6 +296,29 @@
   word-break: break-word;
 }
 
+/* Coupon Changes Section - Uses purple theme */
+.coupon-changes-section {
+  background: rgba(139, 92, 246, 0.05);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.coupon-changes-section .product-changes-header {
+  border-bottom-color: rgba(139, 92, 246, 0.15);
+}
+
+.coupon-changes-section .product-changes-header svg {
+  color: #a78bfa;
+}
+
+.coupon-changes-section .product-changes-header h3 {
+  color: #a78bfa;
+}
+
+.coupon-changes-section .product-changes-count {
+  background: rgba(139, 92, 246, 0.15);
+  color: #c4b5fd;
+}
+
 .btn-undo-product {
   display: flex;
   align-items: center;

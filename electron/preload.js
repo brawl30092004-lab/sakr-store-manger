@@ -60,6 +60,7 @@ contextBridge.exposeInMainWorld('electron', {
   publishToGitHub: (commitMessage, files) => ipcRenderer.invoke('git:publish', commitMessage, files),
   restoreFile: (filePath) => ipcRenderer.invoke('git:restoreFile', filePath),
   undoProductChange: (productChange) => ipcRenderer.invoke('git:undoProductChange', productChange),
+  undoCouponChange: (couponChange) => ipcRenderer.invoke('git:undoCouponChange', couponChange),
   
   // Repository validation and management APIs
   validateRepoIntegrity: (projectPath) => ipcRenderer.invoke('git:validateRepoIntegrity', projectPath),

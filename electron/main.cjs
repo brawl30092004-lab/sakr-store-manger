@@ -1485,6 +1485,46 @@ ipcMain.handle('git:undoProductChange', async (event, productChange) => {
 });
 
 /**
+ * IPC Handler for undoing a specific coupon change
+ */
+ipcMain.handle('git:undoCouponChange', async (event, couponChange) => {
+  try {
+    const { getConfigService } = await import('../src/services/configService.js');
+    const GitService = (await import('../src/services/gitService.js')).default;
+    
+    const configService = getConfigService();
+    const config = configService.getConfigWithToken();
+    
+    if (!config || !config.projectPath) {
+      return {
+        success: false,
+        message: 'No project path configured'
+      };
+    }
+    
+    // Find Git executable path
+    const gitPath = findGitPath();
+    
+    const gitService = new GitService(config.projectPath, {
+      username: config.username,
+      token: config.token,
+      repoUrl: config.repoUrl,
+      gitPath: gitPath
+    });
+    
+    const result = await gitService.undoCouponChange(couponChange);
+    return result;
+  } catch (error) {
+    console.error('Error undoing coupon change:', error);
+    return {
+      success: false,
+      message: `Failed to undo coupon change: ${error.message}`,
+      error: error.message
+    };
+  }
+});
+
+/**
  * IPC Handler for checking remote changes (without pulling)
  */
 ipcMain.handle('git:checkRemoteChanges', async (event) => {

@@ -76,6 +76,7 @@ function StatusBar() {
           deleted: status.deleted || 0,
           files: status.files || { modified: [], created: [], deleted: [] },
           productChanges: status.productChanges || [], // Add product changes
+          couponChanges: status.couponChanges || [], // Add coupon changes
           message: status.hasChanges 
             ? `Unsaved changes: ${status.totalChanges} file${status.totalChanges !== 1 ? 's' : ''}`
             : 'Ready'
@@ -89,6 +90,8 @@ function StatusBar() {
           created: 0,
           deleted: 0,
           files: { modified: [], created: [], deleted: [] },
+          productChanges: [],
+          couponChanges: [],
           message: 'Ready'
         });
       }
@@ -101,6 +104,8 @@ function StatusBar() {
         created: 0,
         deleted: 0,
         files: { modified: [], created: [], deleted: [] },
+        productChanges: [],
+        couponChanges: [],
         message: 'Ready'
       });
     }
@@ -176,11 +181,21 @@ function StatusBar() {
           <span className="status-text">
             {isPublishing ? 'Publishing changes to store...' : (
               gitStatus.hasChanges ? (
-                gitStatus.productChanges && gitStatus.productChanges.length > 0 ? (
-                  `${gitStatus.productChanges.length} product${gitStatus.productChanges.length !== 1 ? 's' : ''} changed`
-                ) : (
-                  `${gitStatus.totalChanges} file${gitStatus.totalChanges !== 1 ? 's' : ''} modified`
-                )
+                // Show combined product and coupon changes count
+                (() => {
+                  const productCount = gitStatus.productChanges?.length || 0;
+                  const couponCount = gitStatus.couponChanges?.length || 0;
+                  
+                  if (productCount > 0 && couponCount > 0) {
+                    return `${productCount} product${productCount !== 1 ? 's' : ''}, ${couponCount} coupon${couponCount !== 1 ? 's' : ''} changed`;
+                  } else if (productCount > 0) {
+                    return `${productCount} product${productCount !== 1 ? 's' : ''} changed`;
+                  } else if (couponCount > 0) {
+                    return `${couponCount} coupon${couponCount !== 1 ? 's' : ''} changed`;
+                  } else {
+                    return `${gitStatus.totalChanges} file${gitStatus.totalChanges !== 1 ? 's' : ''} modified`;
+                  }
+                })()
               ) : (
                 'All changes published • Ready'
               )

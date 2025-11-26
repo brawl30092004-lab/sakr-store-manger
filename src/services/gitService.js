@@ -210,21 +210,14 @@ class GitService {
    */
   async analyzeProductChanges() {
     try {
-      // Get the diff for products.json
-      const diff = await this.git.diff(['HEAD', 'products.json']);
-      
-      if (!diff) {
-        return [];
-      }
-
-      // Get old version (HEAD)
+      // Get old version (HEAD) - might not exist if file is new
       let oldProducts = [];
       try {
         const oldContent = await this.git.show(['HEAD:products.json']);
         oldProducts = JSON.parse(oldContent);
       } catch (error) {
-        // File might be new, that's okay
-        console.log('Could not get old products.json:', error.message);
+        // File might be new, that's okay - oldProducts stays empty
+        console.log('Could not get old products.json (file may be new):', error.message);
       }
 
       // Get new version (working directory)
@@ -236,6 +229,11 @@ class GitService {
         newProducts = JSON.parse(newContent);
       } catch (error) {
         console.log('Could not get new products.json:', error.message);
+        return [];
+      }
+
+      // If both are empty or identical, no changes
+      if (oldProducts.length === 0 && newProducts.length === 0) {
         return [];
       }
 
@@ -346,6 +344,132 @@ class GitService {
   }
 
   /**
+   * Analyzes changes in coupons.json to show detailed coupon-level changes
+   * @returns {Promise<Array>} - Array of detailed change descriptions
+   */
+  async analyzeCouponChanges() {
+    try {
+      // Get old version (HEAD) - might not exist if file is new
+      let oldCoupons = [];
+      try {
+        const oldContent = await this.git.show(['HEAD:coupons.json']);
+        oldCoupons = JSON.parse(oldContent);
+      } catch (error) {
+        // File might be new, that's okay - oldCoupons stays empty
+        console.log('Could not get old coupons.json (file may be new):', error.message);
+      }
+
+      // Get new version (working directory)
+      let newCoupons = [];
+      try {
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        const newContent = await fs.readFile(path.join(this.projectPath, 'coupons.json'), 'utf-8');
+        newCoupons = JSON.parse(newContent);
+      } catch (error) {
+        console.log('Could not get new coupons.json:', error.message);
+        return [];
+      }
+
+      // If both are empty or identical, no changes
+      if (oldCoupons.length === 0 && newCoupons.length === 0) {
+        return [];
+      }
+
+      // Create maps for easy lookup
+      const oldMap = new Map(oldCoupons.map(c => [c.id, c]));
+      const newMap = new Map(newCoupons.map(c => [c.id, c]));
+
+      const changes = [];
+
+      // Check for deleted coupons
+      for (const [id, coupon] of oldMap) {
+        if (!newMap.has(id)) {
+          changes.push({
+            type: 'deleted',
+            couponId: id,
+            couponCode: coupon.code,
+            description: `Coupon "${coupon.code}": deleted`
+          });
+        }
+      }
+
+      // Check for new and modified coupons
+      for (const [id, newCoupon] of newMap) {
+        const oldCoupon = oldMap.get(id);
+
+        if (!oldCoupon) {
+          // New coupon
+          const discountText = newCoupon.type === 'percentage' 
+            ? `${newCoupon.amount}% off` 
+            : `${newCoupon.amount} EGP off`;
+          changes.push({
+            type: 'added',
+            couponId: id,
+            couponCode: newCoupon.code,
+            description: `Coupon "${newCoupon.code}": added (${discountText})`
+          });
+        } else {
+          // Check for modifications
+          const couponChanges = [];
+
+          // Code change
+          if (oldCoupon.code !== newCoupon.code) {
+            couponChanges.push(`code changed from "${oldCoupon.code}" to "${newCoupon.code}"`);
+          }
+
+          // Type change
+          if (oldCoupon.type !== newCoupon.type) {
+            couponChanges.push(`type changed from ${oldCoupon.type} to ${newCoupon.type}`);
+          }
+
+          // Amount change
+          if (oldCoupon.amount !== newCoupon.amount) {
+            const oldAmount = oldCoupon.type === 'percentage' ? `${oldCoupon.amount}%` : `${oldCoupon.amount} EGP`;
+            const newAmount = newCoupon.type === 'percentage' ? `${newCoupon.amount}%` : `${newCoupon.amount} EGP`;
+            couponChanges.push(`amount changed from ${oldAmount} to ${newAmount}`);
+          }
+
+          // Min spend change
+          if (oldCoupon.minSpend !== newCoupon.minSpend) {
+            couponChanges.push(`min spend changed from ${oldCoupon.minSpend} EGP to ${newCoupon.minSpend} EGP`);
+          }
+
+          // Category change
+          if (oldCoupon.category !== newCoupon.category) {
+            couponChanges.push(`category changed from "${oldCoupon.category}" to "${newCoupon.category}"`);
+          }
+
+          // Enabled/Disabled change
+          if (oldCoupon.enabled !== newCoupon.enabled) {
+            couponChanges.push(newCoupon.enabled ? 'enabled' : 'disabled');
+          }
+
+          // Description change
+          if (oldCoupon.description !== newCoupon.description) {
+            couponChanges.push('description updated');
+          }
+
+          // If there are changes, add them
+          if (couponChanges.length > 0) {
+            changes.push({
+              type: 'modified',
+              couponId: id,
+              couponCode: newCoupon.code,
+              description: `Coupon "${newCoupon.code}": ${couponChanges.join(', ')}`
+            });
+          }
+        }
+      }
+
+      return changes;
+    } catch (error) {
+      console.error('Error analyzing coupon changes:', error);
+      return [];
+    }
+  }
+
+  /**
    * Gets the current repository status with detailed change information
    * @returns {Promise<Object>} - Git status object with hasChanges flag and file counts
    */
@@ -366,6 +490,13 @@ class GitService {
           status.created.includes('products.json')) {
         productChanges = await this.analyzeProductChanges();
       }
+
+      // Check if coupons.json is modified and get detailed changes
+      let couponChanges = [];
+      if (status.modified.includes('coupons.json') || 
+          status.created.includes('coupons.json')) {
+        couponChanges = await this.analyzeCouponChanges();
+      }
       
       return {
         hasChanges: !status.isClean(),
@@ -382,6 +513,7 @@ class GitService {
           renamed: status.renamed
         },
         productChanges, // Add detailed product changes
+        couponChanges, // Add detailed coupon changes
         current: status.current,
         tracking: status.tracking,
         ahead: status.ahead,
@@ -632,6 +764,77 @@ class GitService {
         success: false,
         error: error.message,
         message: `Failed to undo product change: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Undoes a specific coupon change by restoring the old value from HEAD
+   * @param {Object} couponChange - The coupon change object with couponId and type
+   * @returns {Promise<Object>} - Result object with success status
+   */
+  async undoCouponChange(couponChange) {
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      const couponsPath = path.join(this.projectPath, 'coupons.json');
+
+      // Get old version from HEAD
+      let oldCoupons = [];
+      try {
+        const oldContent = await this.git.show(['HEAD:coupons.json']);
+        oldCoupons = JSON.parse(oldContent);
+      } catch (error) {
+        // File might not exist in HEAD yet (new file)
+        console.log('Could not read original coupons.json from repository:', error.message);
+      }
+
+      // Get current version
+      let currentCoupons = [];
+      try {
+        const currentContent = await fs.readFile(couponsPath, 'utf-8');
+        currentCoupons = JSON.parse(currentContent);
+      } catch (error) {
+        return {
+          success: false,
+          message: 'Could not read current coupons.json'
+        };
+      }
+
+      // Find the coupon by ID
+      const oldCoupon = oldCoupons.find(c => c.id === couponChange.couponId);
+      const currentCouponIndex = currentCoupons.findIndex(c => c.id === couponChange.couponId);
+
+      if (couponChange.type === 'deleted') {
+        // Coupon was deleted, restore it
+        if (oldCoupon) {
+          currentCoupons.push(oldCoupon);
+        }
+      } else if (couponChange.type === 'added') {
+        // Coupon was added, remove it
+        if (currentCouponIndex !== -1) {
+          currentCoupons.splice(currentCouponIndex, 1);
+        }
+      } else if (couponChange.type === 'modified') {
+        // Coupon was modified, restore old version
+        if (oldCoupon && currentCouponIndex !== -1) {
+          currentCoupons[currentCouponIndex] = oldCoupon;
+        }
+      }
+
+      // Save the updated coupons.json
+      await fs.writeFile(couponsPath, JSON.stringify(currentCoupons, null, 2), 'utf-8');
+
+      return {
+        success: true,
+        message: `Undone changes for coupon: ${couponChange.couponCode}`
+      };
+    } catch (error) {
+      console.error('Failed to undo coupon change:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: `Failed to undo coupon change: ${error.message}`
       };
     }
   }
@@ -1577,6 +1780,126 @@ class GitService {
   }
 
   /**
+   * Analyzes changes in coupons.json between local and remote
+   * Compares local HEAD with remote origin/branch
+   * @param {string} branch - Branch name
+   * @returns {Promise<Array>} - Array of detailed change descriptions
+   */
+  async analyzeRemoteCouponChanges(branch) {
+    try {
+      // Get local version (current HEAD)
+      let localCoupons = [];
+      try {
+        const localContent = await this.git.show(['HEAD:coupons.json']);
+        localCoupons = JSON.parse(localContent);
+      } catch (error) {
+        console.log('Could not get local coupons.json:', error.message);
+      }
+
+      // Get remote version (origin/branch)
+      let remoteCoupons = [];
+      try {
+        const remoteContent = await this.git.show([`origin/${branch}:coupons.json`]);
+        remoteCoupons = JSON.parse(remoteContent);
+      } catch (error) {
+        console.log('Could not get remote coupons.json:', error.message);
+        return [];
+      }
+
+      // Create maps for easy lookup
+      const localMap = new Map(localCoupons.map(c => [c.id, c]));
+      const remoteMap = new Map(remoteCoupons.map(c => [c.id, c]));
+
+      const changes = [];
+
+      // Check for deleted coupons (in local but not in remote)
+      for (const [id, coupon] of localMap) {
+        if (!remoteMap.has(id)) {
+          changes.push({
+            type: 'deleted',
+            couponId: id,
+            couponCode: coupon.code,
+            description: `Coupon "${coupon.code}": deleted`
+          });
+        }
+      }
+
+      // Check for new and modified coupons
+      for (const [id, remoteCoupon] of remoteMap) {
+        const localCoupon = localMap.get(id);
+
+        if (!localCoupon) {
+          // New coupon in remote
+          const discountText = remoteCoupon.type === 'percentage' 
+            ? `${remoteCoupon.amount}% off` 
+            : `${remoteCoupon.amount} EGP off`;
+          changes.push({
+            type: 'added',
+            couponId: id,
+            couponCode: remoteCoupon.code,
+            description: `Coupon "${remoteCoupon.code}": added (${discountText})`
+          });
+        } else {
+          // Check for modifications
+          const couponChanges = [];
+
+          // Code change
+          if (localCoupon.code !== remoteCoupon.code) {
+            couponChanges.push(`code changed from "${localCoupon.code}" to "${remoteCoupon.code}"`);
+          }
+
+          // Type change
+          if (localCoupon.type !== remoteCoupon.type) {
+            couponChanges.push(`type changed from ${localCoupon.type} to ${remoteCoupon.type}`);
+          }
+
+          // Amount change
+          if (localCoupon.amount !== remoteCoupon.amount) {
+            const localAmount = localCoupon.type === 'percentage' ? `${localCoupon.amount}%` : `${localCoupon.amount} EGP`;
+            const remoteAmount = remoteCoupon.type === 'percentage' ? `${remoteCoupon.amount}%` : `${remoteCoupon.amount} EGP`;
+            couponChanges.push(`amount changed from ${localAmount} to ${remoteAmount}`);
+          }
+
+          // Min spend change
+          if (localCoupon.minSpend !== remoteCoupon.minSpend) {
+            couponChanges.push(`min spend changed from ${localCoupon.minSpend} EGP to ${remoteCoupon.minSpend} EGP`);
+          }
+
+          // Category change
+          if (localCoupon.category !== remoteCoupon.category) {
+            couponChanges.push(`category changed from "${localCoupon.category}" to "${remoteCoupon.category}"`);
+          }
+
+          // Enabled/Disabled change
+          if (localCoupon.enabled !== remoteCoupon.enabled) {
+            couponChanges.push(remoteCoupon.enabled ? 'enabled' : 'disabled');
+          }
+
+          // Description change
+          if (localCoupon.description !== remoteCoupon.description) {
+            couponChanges.push('description updated');
+          }
+
+          // If there are changes, add them
+          if (couponChanges.length > 0) {
+            changes.push({
+              type: 'modified',
+              couponId: id,
+              couponCode: remoteCoupon.code,
+              description: `Coupon "${remoteCoupon.code}": ${couponChanges.join(', ')}`
+            });
+          }
+        }
+      }
+
+      return changes;
+    } catch (error) {
+      console.error('Error analyzing remote coupon changes:', error);
+      return [];
+    }
+  }
+
+  /**
    * Gets detailed information about remote changes that would be pulled
    * Shows which files would be added, modified, or deleted
    * Analyzes products.json to show detailed product-level changes
@@ -1613,6 +1936,7 @@ class GitService {
           totalChanges: 0,
           files: { modified: [], added: [], deleted: [] },
           productChanges: [],
+          couponChanges: [],
           message: 'Your local copy is up to date'
         };
       }
@@ -1628,6 +1952,7 @@ class GitService {
       };
 
       let hasProductsFile = false;
+      let hasCouponsFile = false;
 
       diffSummary.files.forEach(file => {
         const fileInfo = {
@@ -1647,6 +1972,11 @@ class GitService {
           hasProductsFile = true;
         }
 
+        // Check if coupons.json was changed
+        if (file.file === 'coupons.json') {
+          hasCouponsFile = true;
+        }
+
         // Determine change type based on git status
         if (file.insertions > 0 && file.deletions === 0) {
           files.added.push(fileInfo);
@@ -1663,6 +1993,12 @@ class GitService {
         productChanges = await this.analyzeRemoteProductChanges(branch);
       }
 
+      // Analyze coupon changes if coupons.json changed
+      let couponChanges = [];
+      if (hasCouponsFile) {
+        couponChanges = await this.analyzeRemoteCouponChanges(branch);
+      }
+
       const totalChanges = files.modified.length + files.added.length + files.deleted.length;
 
       return {
@@ -1675,6 +2011,7 @@ class GitService {
         deleted: files.deleted.length,
         files,
         productChanges,
+        couponChanges,
         message: `${totalChanges} file(s) would be updated from GitHub`
       };
     } catch (error) {

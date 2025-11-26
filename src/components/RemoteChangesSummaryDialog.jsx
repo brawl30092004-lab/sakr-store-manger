@@ -167,6 +167,43 @@ function RemoteChangesSummaryDialog({ isOpen, onClose, onSync }) {
                 </div>
               )}
 
+              {/* Coupon Changes Summary */}
+              {remoteChanges.couponChanges && remoteChanges.couponChanges.length > 0 && (
+                <div className="product-changes-section coupon-changes-section">
+                  <div className="product-changes-header">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/>
+                    </svg>
+                    <h3>Coupon Changes</h3>
+                    <span className="product-changes-count">{remoteChanges.couponChanges.length}</span>
+                  </div>
+                  <ul className="product-changes-list">
+                    {remoteChanges.couponChanges.map((change, index) => (
+                      <li key={`coupon-${index}`} className={`product-change-item ${change.type}`}>
+                        <div className="product-change-content">
+                          {change.type === 'added' && (
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                              <path d="M8 2a.75.75 0 01.75.75v4.5h4.5a.75.75 0 010 1.5h-4.5v4.5a.75.75 0 01-1.5 0v-4.5h-4.5a.75.75 0 010-1.5h4.5v-4.5A.75.75 0 018 2z"/>
+                            </svg>
+                          )}
+                          {change.type === 'deleted' && (
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                              <path d="M2.75 7.25a.75.75 0 000 1.5h10.5a.75.75 0 000-1.5H2.75z"/>
+                            </svg>
+                          )}
+                          {change.type === 'modified' && (
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                              <path d="M11.93 8.5a4.002 4.002 0 01-7.86 0H.75a.75.75 0 010-1.5h3.32a4.002 4.002 0 017.86 0h3.32a.75.75 0 010 1.5h-3.32zM8 6a2 2 0 100 4 2 2 0 000-4z"/>
+                            </svg>
+                          )}
+                          <span className="product-change-description">{change.description}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Info Message */}
               <div className="info-message">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
