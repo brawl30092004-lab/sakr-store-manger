@@ -328,6 +328,81 @@ ipcMain.handle('fs:saveProducts', async (event, projectPath, products) => {
 });
 
 /**
+ * IPC Handler to load coupons from coupons.json
+ */
+ipcMain.handle('fs:loadCoupons', async (event, projectPath) => {
+  const couponsFilePath = path.join(projectPath, 'coupons.json');
+  
+  try {
+    // Check if file exists
+    const exists = await fs.pathExists(couponsFilePath);
+    
+    if (!exists) {
+      // Auto-create empty coupons.json for first-time users
+      console.log('coupons.json not found, creating empty file...');
+      await fs.ensureDir(projectPath);
+      await fs.writeJSON(couponsFilePath, [], { spaces: 2, encoding: 'utf8' });
+      return [];
+    }
+    
+    // Read and parse coupons.json with UTF-8 encoding
+    const coupons = await fs.readJSON(couponsFilePath, { encoding: 'utf8' });
+    return coupons;
+  } catch (error) {
+    console.error('Error loading coupons:', error);
+    // If it's a parse error or other issue, try to create empty file
+    if (error.code === 'ENOENT' || error.name === 'SyntaxError') {
+      console.log('Creating empty coupons.json due to error...');
+      try {
+        await fs.ensureDir(projectPath);
+        await fs.writeJSON(couponsFilePath, [], { spaces: 2, encoding: 'utf8' });
+        return [];
+      } catch (createError) {
+        console.error('Failed to create coupons.json:', createError);
+        throw new Error('COUPONS_NOT_FOUND: ' + couponsFilePath);
+      }
+    }
+    throw error;
+  }
+});
+
+/**
+ * IPC Handler to save coupons to coupons.json
+ */
+ipcMain.handle('fs:saveCoupons', async (event, projectPath, coupons) => {
+  try {
+    const couponsFilePath = path.join(projectPath, 'coupons.json');
+    
+    // Custom replacer to preserve number formatting
+    const replacer = (key, value) => {
+      if ((key === 'amount' || key === 'minSpend') && typeof value === 'number') {
+        return parseFloat(value.toFixed(2));
+      }
+      return value;
+    };
+    
+    // Convert to JSON string with custom formatting
+    const jsonString = JSON.stringify(coupons, replacer, 2);
+    
+    // Use regex to ensure amount and minSpend always have proper decimal places
+    const formattedJsonString = jsonString.replace(
+      /"(amount|minSpend)":\s*(\d+(?:\.\d{1,2})?)/g,
+      (match, fieldName, number) => {
+        const num = parseFloat(number);
+        return `"${fieldName}": ${num.toFixed(2)}`;
+      }
+    );
+    
+    // Write the formatted JSON to file
+    await fs.writeFile(couponsFilePath, formattedJsonString, 'utf8');
+    return true;
+  } catch (error) {
+    console.error('Error saving coupons:', error);
+    throw error;
+  }
+});
+
+/**
  * IPC Handler to get absolute path for image
  * Resolves relative image paths (e.g., "images/product-1.jpg") to absolute paths
  */

@@ -1,0 +1,32 @@
+﻿[
+  {
+    "id": 1,
+    "code": "WELCOME10",
+    "type": "percentage",
+    "amount": 10,
+    "minSpend": 0,
+    "category": "All",
+    "description": "Welcome discount",
+    "enabled": true
+  },
+  {
+    "id": 2,
+    "code": "SUMMER25",
+    "type": "percentage",
+    "amount": 25,
+    "minSpend": 100,
+    "category": "All",
+    "description": "Summer sale",
+    "enabled": false
+  },
+  {
+    "id": 3,
+    "code": "SAVE50",
+    "type": "fixed",
+    "amount": 50,
+    "minSpend": 200,
+    "category": "All",
+    "description": "Save 50 EGP",
+    "enabled": true
+  }
+]

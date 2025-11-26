@@ -8,19 +8,32 @@ import './FloatingActionButtons.css';
  */
 function FloatingActionButtons({ 
   onNewProduct, 
+  onNewCoupon,
   onSave, 
   onExport,
-  showExport = true 
+  showExport = true,
+  currentView = 'products'
 }) {
+  const handleNewClick = () => {
+    if (currentView === 'coupons' && onNewCoupon) {
+      onNewCoupon();
+    } else if (onNewProduct) {
+      onNewProduct();
+    }
+  };
+
+  const newButtonTitle = currentView === 'coupons' ? 'New Coupon (Ctrl+N)' : 'New Product (Ctrl+N)';
+  const newButtonLabel = currentView === 'coupons' ? 'Add new coupon' : 'Add new product';
+
   return (
     <div className="fab-container">
       <div className="fab-group">
-        {/* New Product - Primary Action */}
+        {/* New Product/Coupon - Primary Action */}
         <button
           className="fab fab-primary"
-          onClick={onNewProduct}
-          title="New Product (Ctrl+N)"
-          aria-label="Add new product"
+          onClick={handleNewClick}
+          title={newButtonTitle}
+          aria-label={newButtonLabel}
         >
           <Plus size={24} />
         </button>

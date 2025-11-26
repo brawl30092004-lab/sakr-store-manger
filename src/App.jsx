@@ -3,11 +3,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 import { Minus, Maximize2, X, Home, Package, Plus, Save, Upload, Settings, Github, Keyboard, BarChart3 } from 'lucide-react';
 import { loadProducts, bulkRemoveNewBadge, bulkRemoveDiscount, bulkDeleteProducts, bulkApplyDiscount, bulkMakeNew, bulkImprovePricing, saveProducts } from './store/slices/productsSlice';
+import { loadCoupons } from './store/slices/couponsSlice';
 import { setProjectPath } from './store/slices/settingsSlice';
 import { attachKeyboardShortcuts } from './services/keyboardShortcuts';
 import { showSuccess, showError } from './services/toastService';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
+import CouponGrid from './components/CouponGrid';
 import Dashboard from './components/Dashboard';
 import StatusBar from './components/StatusBar';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
@@ -28,7 +30,7 @@ function App() {
   const dispatch = useDispatch();
   const { items: products, loading, error } = useSelector((state) => state.products);
   const { projectPath, dataSource } = useSelector((state) => state.settings);
-  const [currentView, setCurrentView] = useState('products'); // 'dashboard' or 'products'
+  const [currentView, setCurrentView] = useState('products'); // 'dashboard', 'products', or 'coupons'
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeFilters, setActiveFilters] = useState([]); // Array to support multiple filters
   const [showSettingsPanel, setShowSettingsPanel] = useState(false); // Settings panel instead of view
@@ -85,7 +87,7 @@ function App() {
       return;
     }
     
-    // Load products on app startup only if projectPath is set
+    // Load products and coupons on app startup only if projectPath is set
     if (projectPath) {
       dispatch(loadProducts()).unwrap()
         .catch((err) => {
@@ -95,6 +97,11 @@ function App() {
             setShowDataSourceDialog(true);
           }
         });
+      
+      // Load coupons (won't show error if file doesn't exist)
+      dispatch(loadCoupons()).catch((err) => {
+        console.log('Coupons not loaded:', err);
+      });
     } else {
       // No project path - show data source dialog (but not if welcome screen is showing)
       if (!showWelcomeScreen) {
@@ -104,7 +111,7 @@ function App() {
     }
   }, [dispatch, projectPath, showWelcomeScreen]);
 
-  // Reload products when data source changes
+  // Reload products and coupons when data source changes
   useEffect(() => {
     if (dataSource && projectPath) {
       dispatch(loadProducts()).unwrap()
@@ -114,6 +121,11 @@ function App() {
             setShowDataSourceDialog(true);
           }
         });
+      
+      // Load coupons
+      dispatch(loadCoupons()).catch((err) => {
+        console.log('Coupons not loaded:', err);
+      });
     }
   }, [dataSource, dispatch, projectPath]);
 
@@ -1041,23 +1053,31 @@ function App() {
         {/* Breadcrumbs and Sync Status */}
         <div className="app-header-bar">
           <Breadcrumbs 
-            path={currentView === 'dashboard' ? [
-              { 
-                label: 'Dashboard', 
-                icon: <BarChart3 size={14} />,
-                onClick: () => setCurrentView('dashboard')
-              }
-            ] : [
-              { 
-                label: 'Products', 
-                icon: <Package size={14} />,
-                onClick: () => setSelectedCategory('all')
-              },
-              selectedCategory !== 'all' && {
-                label: selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1),
-                icon: null
-              }
-            ].filter(Boolean)}
+            path={
+              currentView === 'dashboard' ? [
+                { 
+                  label: 'Dashboard', 
+                  icon: <BarChart3 size={14} />,
+                  onClick: () => setCurrentView('dashboard')
+                }
+              ] : currentView === 'coupons' ? [
+                { 
+                  label: 'Coupons', 
+                  icon: <Package size={14} />,
+                  onClick: () => setCurrentView('coupons')
+                }
+              ] : [
+                { 
+                  label: 'Products', 
+                  icon: <Package size={14} />,
+                  onClick: () => setSelectedCategory('all')
+                },
+                selectedCategory !== 'all' && {
+                  label: selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1),
+                  icon: null
+                }
+              ].filter(Boolean)
+            }
           />
           
           {/* Sync Status Indicator - Only shows in GitHub mode */}
@@ -1072,19 +1092,25 @@ function App() {
               <Sidebar 
                 selectedCategory={selectedCategory}
                 onCategorySelect={setSelectedCategory}
+                currentView={currentView}
+                onViewChange={setCurrentView}
               />
-              <MainContent 
-                ref={mainContentRef}
-                selectedCategory={selectedCategory}
-                activeFilters={activeFilters}
-                onFilterToggle={(filterId) => {
-                  setActiveFilters(prev => 
-                    prev.includes(filterId) 
-                      ? prev.filter(id => id !== filterId)
-                      : [...prev, filterId]
-                  );
-                }}
-              />
+              {currentView === 'coupons' ? (
+                <CouponGrid ref={mainContentRef} />
+              ) : (
+                <MainContent 
+                  ref={mainContentRef}
+                  selectedCategory={selectedCategory}
+                  activeFilters={activeFilters}
+                  onFilterToggle={(filterId) => {
+                    setActiveFilters(prev => 
+                      prev.includes(filterId) 
+                        ? prev.filter(id => id !== filterId)
+                        : [...prev, filterId]
+                    );
+                  }}
+                />
+              )}
             </>
           )}
         </div>
@@ -1098,7 +1124,13 @@ function App() {
 
       {/* Floating Action Buttons */}
       <FloatingActionButtons
+        currentView={currentView}
         onNewProduct={handleNewProduct}
+        onNewCoupon={() => {
+          if (mainContentRef.current?.handleNewCoupon) {
+            mainContentRef.current.handleNewCoupon();
+          }
+        }}
         onSave={handleSaveAll}
         onExport={handleExport}
       />
@@ -1125,6 +1157,14 @@ function App() {
             category: 'View',
             keywords: ['products', 'items', 'inventory', 'list'],
             action: () => setCurrentView('products')
+          },
+          {
+            id: 'coupons',
+            label: 'Show Coupons',
+            icon: <Package size={16} />,
+            category: 'View',
+            keywords: ['coupons', 'discounts', 'codes', 'promo'],
+            action: () => setCurrentView('coupons')
           },
           {
             id: 'reload',

@@ -22,6 +22,12 @@ contextBridge.exposeInMainWorld('electron', {
     joinPath: (...parts) => ipcRenderer.invoke('fs:joinPath', ...parts),
   },
 
+  // Coupons API for coupons.json
+  coupons: {
+    load: (projectPath) => ipcRenderer.invoke('fs:loadCoupons', projectPath),
+    save: (projectPath, coupons) => ipcRenderer.invoke('fs:saveCoupons', projectPath, coupons),
+  },
+
   // Export API
   export: {
     createDirectory: (dirPath) => ipcRenderer.invoke('export:createDirectory', dirPath),

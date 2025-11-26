@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { loadProducts } from '../store/slices/productsSlice';
+import { loadCoupons, markCouponsSaved } from '../store/slices/couponsSlice';
 import { showSuccess, showError, showLoading, dismissToast, ToastMessages } from '../services/toastService';
 import ChangesSummaryDialog from './ChangesSummaryDialog';
 import ConflictResolutionDialog from './ConflictResolutionDialog';
@@ -32,11 +33,13 @@ function StatusBar() {
     checkAndHandleConflict
   } = useConflictHandler(async () => {
     // Callback after conflict resolution and successful publish
-    // Reload products from file to sync with published version
-    console.log('🔄 Reloading products after conflict resolution and publish...');
+    // Reload products and coupons from file to sync with published version
+    console.log('🔄 Reloading products and coupons after conflict resolution and publish...');
     await dispatch(loadProducts()).unwrap();
+    await dispatch(loadCoupons()).unwrap();
+    dispatch(markCouponsSaved());
     await checkGitStatus();
-    console.log('✅ Products reloaded successfully');
+    console.log('✅ Products and coupons reloaded successfully');
   });
 
   // Check git status on component mount and set up periodic checks
@@ -137,13 +140,17 @@ function StatusBar() {
         // Success - show notification
         showSuccess(ToastMessages.GITHUB_PUBLISHED);
         
-        // Reload products from file to sync with published version
-        console.log('🔄 Reloading products after successful publish...');
+        // Reload products and coupons from file to sync with published version
+        console.log('🔄 Reloading products and coupons after successful publish...');
         await dispatch(loadProducts()).unwrap();
+        await dispatch(loadCoupons()).unwrap();
+        
+        // Mark coupons as saved (reset unsaved changes flag)
+        dispatch(markCouponsSaved());
         
         // Refresh git status to update the UI
         await checkGitStatus();
-        console.log('✅ Products reloaded successfully');
+        console.log('✅ Products and coupons reloaded successfully');
       } else {
         // Failed - show error (not a conflict)
         setPublishError(result.message || 'Failed to publish changes');

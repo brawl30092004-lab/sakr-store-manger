@@ -1,15 +1,16 @@
 import React, { useMemo, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Package, Edit2 } from 'lucide-react';
+import { Package, Edit2, Tag } from 'lucide-react';
 import { getCategoriesFromProducts } from '../services/productValidation';
 import { renameCategory } from '../store/slices/productsSlice';
 import RenameCategoryDialog from './RenameCategoryDialog';
 import { showSuccess, showError } from '../services/toastService';
 import './Sidebar.css';
 
-function Sidebar({ selectedCategory, onCategorySelect }) {
+function Sidebar({ selectedCategory, onCategorySelect, currentView, onViewChange }) {
   const dispatch = useDispatch();
   const { items: products } = useSelector((state) => state.products);
+  const { items: coupons } = useSelector((state) => state.coupons);
   const [renamingCategory, setRenamingCategory] = useState(null);
 
   // Generate dynamic categories from products
@@ -63,37 +64,64 @@ function Sidebar({ selectedCategory, onCategorySelect }) {
 
   return (
     <div className="sidebar">
+      {/* View Selector */}
       <div className="sidebar-section">
-        <h3 className="sidebar-title">CATEGORIES</h3>
+        <h3 className="sidebar-title">VIEWS</h3>
         <div className="sidebar-divider"></div>
         <ul className="sidebar-list">
-          {categories.map((category) => (
-            <li 
-              key={category.id} 
-              className={`sidebar-item ${selectedCategory === category.id ? 'active' : ''}`}
-              onClick={() => onCategorySelect(category.id)}
-            >
-              <span className="sidebar-icon"><category.icon size={18} /></span>
-              <span className="sidebar-label">{category.name}</span>
-              <div className="sidebar-item-right">
-                {category.count !== undefined && (
-                  <span className="sidebar-count">{category.count}</span>
-                )}
-                {category.id !== 'all' && (
-                  <button
-                    className="sidebar-rename-btn"
-                    onClick={(e) => handleRenameClick(e, category)}
-                    title={`Rename "${category.name}" category`}
-                    aria-label={`Rename ${category.name}`}
-                  >
-                    <Edit2 size={14} />
-                  </button>
-                )}
-              </div>
-            </li>
-          ))}
+          <li 
+            className={`sidebar-item ${currentView === 'products' ? 'active' : ''}`}
+            onClick={() => onViewChange && onViewChange('products')}
+          >
+            <span className="sidebar-icon"><Package size={18} /></span>
+            <span className="sidebar-label">Products</span>
+            <span className="sidebar-count">{products.length}</span>
+          </li>
+          <li 
+            className={`sidebar-item ${currentView === 'coupons' ? 'active' : ''}`}
+            onClick={() => onViewChange && onViewChange('coupons')}
+          >
+            <span className="sidebar-icon"><Tag size={18} /></span>
+            <span className="sidebar-label">Coupons</span>
+            <span className="sidebar-count">{coupons.length}</span>
+          </li>
         </ul>
       </div>
+
+      {/* Categories (only show for products view) */}
+      {currentView === 'products' && (
+        <div className="sidebar-section">
+          <h3 className="sidebar-title">CATEGORIES</h3>
+          <div className="sidebar-divider"></div>
+          <ul className="sidebar-list">
+            {categories.map((category) => (
+              <li 
+                key={category.id} 
+                className={`sidebar-item ${selectedCategory === category.id ? 'active' : ''}`}
+                onClick={() => onCategorySelect(category.id)}
+              >
+                <span className="sidebar-icon"><category.icon size={18} /></span>
+                <span className="sidebar-label">{category.name}</span>
+                <div className="sidebar-item-right">
+                  {category.count !== undefined && (
+                    <span className="sidebar-count">{category.count}</span>
+                  )}
+                  {category.id !== 'all' && (
+                    <button
+                      className="sidebar-rename-btn"
+                      onClick={(e) => handleRenameClick(e, category)}
+                      title={`Rename "${category.name}" category`}
+                      aria-label={`Rename ${category.name}`}
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Rename Category Dialog */}
       <RenameCategoryDialog
