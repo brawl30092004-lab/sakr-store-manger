@@ -278,64 +278,79 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters, onFilterToggl
           </div>
         ) : (
           filteredProducts.map((product) => (
-            <div 
-              key={product.id} 
-              className="product-card"
-              onContextMenu={(e) => handleContextMenu(e, product)}
-            >
-              {/* Product Image */}
-              <ProductImage product={product} />
-
-              {/* Product Info */}
-              <div className="product-info">
-                <h3 className="product-name" dir="auto">{product.name}</h3>
-                
-                <div className="product-price">
-                  {product.discount ? (
-                    <>
-                      <span className="price-original">EGP {product.price != null ? Number(product.price).toFixed(2) : '0.00'}</span>
-                      <span className="price-discounted">EGP {product.discountedPrice != null ? Number(product.discountedPrice).toFixed(2) : '0.00'}</span>
-                    </>
-                  ) : (
-                    <span className="price">EGP {product.price != null ? Number(product.price).toFixed(2) : '0.00'}</span>
-                  )}
+            <div key={product.id}>
+              {deleteConfirmId === product.id ? (
+                <div className="product-card product-card-deleting">
+                  <InlineConfirmation
+                    message={`Delete "${product.name}"?`}
+                    onConfirm={handleDeleteConfirm}
+                    onCancel={handleDeleteCancel}
+                    confirmText="Delete"
+                    cancelText="Cancel"
+                    variant="danger"
+                    autoFocus
+                  />
                 </div>
+              ) : (
+                <div 
+                  className="product-card"
+                  onContextMenu={(e) => handleContextMenu(e, product)}
+                >
+                  {/* Product Image */}
+                  <ProductImage product={product} />
 
-                <div className="product-meta">
-                  <span className={`product-stock ${product.stock === 0 ? 'out-of-stock' : ''}`}>
-                    {product.stock === 0 ? 'Out of Stock' : `Stock: ${product.stock}`}
-                  </span>
-                  <span className="product-category">{product.category}</span>
+                  {/* Product Info */}
+                  <div className="product-info">
+                    <h3 className="product-name" dir="auto">{product.name}</h3>
+                    
+                    <div className="product-price">
+                      {product.discount ? (
+                        <>
+                          <span className="price-original">EGP {product.price != null ? Number(product.price).toFixed(2) : '0.00'}</span>
+                          <span className="price-discounted">EGP {product.discountedPrice != null ? Number(product.discountedPrice).toFixed(2) : '0.00'}</span>
+                        </>
+                      ) : (
+                        <span className="price">EGP {product.price != null ? Number(product.price).toFixed(2) : '0.00'}</span>
+                      )}
+                    </div>
+
+                    <div className="product-meta">
+                      <span className={`product-stock ${product.stock === 0 ? 'out-of-stock' : ''}`}>
+                        {product.stock === 0 ? 'Out of Stock' : `Stock: ${product.stock}`}
+                      </span>
+                      <span className="product-category">{product.category}</span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div 
+                    className="product-actions"
+                    onClick={() => setSelectedProductId(product.id)}
+                  >
+                    <button 
+                      className="btn-action btn-edit" 
+                      title="Edit (or Right-click for menu)"
+                      onClick={() => handleEditProduct(product)}
+                    >
+                      <Edit size={16} /> Edit
+                    </button>
+                    <button 
+                      className="btn-action btn-duplicate" 
+                      title="Duplicate"
+                      onClick={() => handleDuplicateProduct(product.id)}
+                    >
+                      <Copy size={16} /> Duplicate
+                    </button>
+                    <button 
+                      className="btn-action btn-delete" 
+                      title="Delete"
+                      onClick={() => handleDeleteClick(product.id)}
+                    >
+                      <Trash2 size={16} /> Delete
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div 
-                className="product-actions"
-                onClick={() => setSelectedProductId(product.id)}
-              >
-                <button 
-                  className="btn-action btn-edit" 
-                  title="Edit (or Right-click for menu)"
-                  onClick={() => handleEditProduct(product)}
-                >
-                  <Edit size={16} /> Edit
-                </button>
-                <button 
-                  className="btn-action btn-duplicate" 
-                  title="Duplicate"
-                  onClick={() => handleDuplicateProduct(product.id)}
-                >
-                  <Copy size={16} /> Duplicate
-                </button>
-                <button 
-                  className="btn-action btn-delete" 
-                  title="Delete"
-                  onClick={() => handleDeleteClick(product.id)}
-                >
-                  <Trash2 size={16} /> Delete
-                </button>
-              </div>
+              )}
             </div>
           ))
         )}
@@ -367,28 +382,6 @@ const MainContent = forwardRef(({ selectedCategory, activeFilters, onFilterToggl
           onClose={handleCloseForm}
           onSave={handleSaveProduct}
         />
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {deleteConfirmId && (
-        <div style={{ 
-          position: 'fixed', 
-          top: '70px', 
-          left: '50%', 
-          transform: 'translateX(-50%)',
-          zIndex: 1000,
-          maxWidth: '500px',
-          width: '90%'
-        }}>
-          <InlineConfirmation
-            message={`Are you sure you want to delete "${products.find(p => p.id === deleteConfirmId)?.name}"? You can undo this action.`}
-            onConfirm={handleDeleteConfirm}
-            onCancel={handleDeleteCancel}
-            confirmText="Delete"
-            cancelText="Cancel"
-            variant="danger"
-          />
-        </div>
       )}
       
       {/* Export Dialog */}

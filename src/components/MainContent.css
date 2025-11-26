@@ -194,6 +194,27 @@
   transform: translateY(-4px);
 }
 
+/* Product Card Delete Confirmation State */
+.product-card-deleting {
+  background: linear-gradient(135deg, #2d1f1f, #1e2129);
+  border-color: rgba(248, 81, 73, 0.4);
+  padding: 16px;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-card-deleting:hover {
+  transform: none;
+  border-color: rgba(248, 81, 73, 0.6);
+}
+
+.product-card-deleting .inline-confirmation {
+  margin: 0;
+  width: 100%;
+}
+
 /* Product Image */
 .product-image {
   position: relative;
