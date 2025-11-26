@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useSelector } from 'react-redux';
-import { X, Tag, Percent, DollarSign, ShoppingCart, List, FileText, ToggleLeft } from 'lucide-react';
+import { X, Tag, Percent, DollarSign, ShoppingCart, List, FileText, ToggleLeft, Sparkles } from 'lucide-react';
 import { couponSchema } from '../schemas/couponSchema';
 import { getCategoriesFromProducts } from '../services/productValidation';
 import { showError } from '../services/toastService';
@@ -52,6 +52,41 @@ const CouponForm = ({ coupon, onClose, onSave }) => {
   const watchType = watch('type');
   const watchAmount = watch('amount');
   const watchCode = watch('code');
+  const watchMinSpend = watch('minSpend');
+  const watchCategory = watch('category');
+
+  // Generate auto description based on coupon properties
+  const generateDescription = () => {
+    const type = watchType || 'percentage';
+    const amount = watchAmount || 0;
+    const minSpend = watchMinSpend || 0;
+    const category = watchCategory || 'All';
+    
+    let description = '';
+    
+    // Base discount text
+    if (type === 'percentage') {
+      description = `Get ${amount}% off`;
+    } else {
+      description = `Save ${amount} EGP`;
+    }
+    
+    // Add category info
+    if (category && category !== 'All') {
+      description += ` on ${category} products`;
+    } else {
+      description += ' on your order';
+    }
+    
+    // Add minimum spend requirement
+    if (minSpend > 0) {
+      description += ` when you spend ${minSpend} EGP or more`;
+    }
+    
+    description += '!';
+    
+    setValue('description', description);
+  };
 
   // Format coupon code to uppercase
   useEffect(() => {
@@ -234,10 +269,21 @@ const CouponForm = ({ coupon, onClose, onSave }) => {
 
             {/* Description */}
             <div className="form-group">
-              <label htmlFor="description">
-                <FileText size={16} />
-                Description
-              </label>
+              <div className="label-with-action">
+                <label htmlFor="description">
+                  <FileText size={16} />
+                  Description
+                </label>
+                <button
+                  type="button"
+                  className="auto-generate-btn"
+                  onClick={generateDescription}
+                  title="Auto-generate description based on coupon properties"
+                >
+                  <Sparkles size={14} />
+                  <span>Auto Generate</span>
+                </button>
+              </div>
               <textarea
                 id="description"
                 rows={3}
